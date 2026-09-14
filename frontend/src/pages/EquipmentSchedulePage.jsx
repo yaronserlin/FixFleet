@@ -27,7 +27,7 @@ import { useTheme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SpeedIcon from '@mui/icons-material/Speed';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotify } from '../contexts/NotificationContext';
 import equipmentService from '../services/equipmentService';
