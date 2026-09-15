@@ -4,6 +4,16 @@ const { REFRESH_COOKIE_MAX_AGE, ACCESS_COOKIE_MAX_AGE } = require('../constants/
 
 /**
  * Builds the options object for an auth cookie.
+ *
+ * `domain` is only set when `COOKIE_DOMAIN` is configured (e.g.
+ * `.example.com`) -- for a deployment where the frontend and API are on
+ * different subdomains of the same registrable domain (`app.example.com`
+ * + `api.example.com`), this is what makes the cookie a shared, first-party
+ * cookie across both rather than host-only to the API subdomain alone.
+ * Left unset, cookies stay host-only (unchanged default behavior) --
+ * correct for local dev and for a same-origin reverse-proxy deployment,
+ * where no cross-subdomain sharing is needed in the first place.
+ *
  * @param {number} maxAge - Cookie lifetime in milliseconds.
  * @param {string} [path='/'] - Cookie path scope.
  * @returns {import('express').CookieOptions}
@@ -12,6 +22,7 @@ const getCookieOptions = (maxAge, path = '/') => ({
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
     maxAge,
     path,
 });
