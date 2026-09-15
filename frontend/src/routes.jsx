@@ -6,12 +6,15 @@ import { NotificationProvider, useNotify } from './contexts/NotificationContext'
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToolProvider, useTool } from './contexts/ToolContext';
 import { FaultProvider, useFault } from './contexts/FaultContext';
+import { PageRefreshProvider, usePageRefreshTrigger } from './contexts/PageRefreshContext';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import RequireAdmin from './components/RequireAdmin';
 import Navbar from './components/Navbar';
 import { BOTTOM_NAV_HEIGHT } from './components/Navbar/navConstants';
 import CreateFaultDialog from './components/Fault/CreateFaultDialog/CreateFaultDialog';
+import PullToRefresh from './components/PullToRefresh/PullToRefresh';
+import { PageSkeleton } from './components/Skeletons/Skeletons';
 import LoadingComponent from './components/LoadingComponent/LoadingComponent';
 import { ROUTES } from './constants/routes';
 import { ROLES } from './constants/roles';
@@ -45,14 +48,14 @@ const preloadRouteChunks = () => {
     import('./pages/EquipmentBooksPage');
 };
 
-// Top-level route fallback with immediate progress feedback
+// Top-level route fallback: a thin progress bar for immediate feedback,
+// over a generic page skeleton. The concrete page's own skeleton takes over
+// as soon as its chunk parses, so the two hand off without a blank frame.
 function RouteFallback() {
     return (
         <Box sx={{ width: '100%' }}>
             <LinearProgress sx={{ height: 3 }} />
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-                <LoadingComponent message="Loading page..." />
-            </Box>
+            <PageSkeleton />
         </Box>
     );
 }
@@ -82,13 +85,18 @@ function AppLayout() {
     const notify = useNotify();
     const { fetchEquipment } = useTool();
     const { createFault, fetchFaults } = useFault();
+    // Single app-wide pull-to-refresh: pages register what "refresh" means
+    // for them via usePageRefresh(), and this one gesture/indicator (below)
+    // drives whichever page is on screen. See contexts/PageRefreshContext.
+    const refreshPage = usePageRefreshTrigger();
     const hideNavbar = HIDE_NAVBAR_PATHS.some(p => location.pathname === p);
 
     // Fault-creation dialog state is lifted up here (rather than living only
     // inside Dashboard) so the phone bottom nav's center FAB can open fault
     // creation from anywhere in the app, not just from Dashboard's own
-    // local dialog. Existing per-page "Report Fault" buttons (Dashboard,
-    // OperatorReportsPage) keep using their own local dialog/state as-is.
+    // local dialog. Per-page "Report Fault" buttons (Dashboard,
+    // OperatorReportsPage) keep their own local dialog/state as-is; they're
+    // hidden at phone widths, where this FAB stands in for them.
     const [globalCreateFaultOpen, setGlobalCreateFaultOpen] = useState(false);
 
     const handleOpenGlobalCreateFault = useCallback(() => setGlobalCreateFaultOpen(true), []);
@@ -291,7 +299,9 @@ function AppLayout() {
                     pb: { xs: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom))`, sm: 0 },
                 }}
             >
-                {routedContent}
+                <PullToRefresh onRefresh={refreshPage}>
+                    {routedContent}
+                </PullToRefresh>
             </Box>
             <CreateFaultDialog
                 open={globalCreateFaultOpen}
@@ -308,7 +318,9 @@ export default function AppRoutes() {
             <AuthProvider>
                 <ToolProvider>
                     <FaultProvider>
-                        <AppLayout />
+                        <PageRefreshProvider>
+                            <AppLayout />
+                        </PageRefreshProvider>
                     </FaultProvider>
                 </ToolProvider>
             </AuthProvider>

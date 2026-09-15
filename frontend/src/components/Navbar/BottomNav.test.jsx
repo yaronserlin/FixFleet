@@ -16,11 +16,23 @@ jest.mock('react-router-dom', () => ({
 const pages = ['Dashboard', 'Equipment', 'Manuals', 'Admin'];
 const user = { id: 'u1', name: 'jane doe', role: 'admin', avatar: null };
 
-function setup({ route = '/dashboard', onOpenCreateFault = jest.fn(), overrides = {} } = {}) {
+function setup({
+    route = '/dashboard',
+    onOpenCreateFault = jest.fn(),
+    overrides = {},
+    navPages = pages,
+    menuPages = [],
+} = {}) {
     useThemeMode.mockReturnValue({ mode: 'light', toggleColorMode: jest.fn(), ...overrides });
     const utils = render(
         <MemoryRouter initialEntries={[route]}>
-            <BottomNav display={{ xs: 'flex', sm: 'none' }} user={user} pages={pages} onOpenCreateFault={onOpenCreateFault} />
+            <BottomNav
+                display={{ xs: 'flex', sm: 'none' }}
+                user={user}
+                pages={navPages}
+                menuPages={menuPages}
+                onOpenCreateFault={onOpenCreateFault}
+            />
         </MemoryRouter>
     );
     return { ...utils, onOpenCreateFault };
@@ -108,6 +120,42 @@ describe('BottomNav', () => {
             setup({ overrides: { mode: 'dark' } });
             fireEvent.click(screen.getByRole('button', { name: /open account menu/i }));
             expect(screen.getByText('Light Mode')).toBeInTheDocument();
+        });
+    });
+
+    describe('pages demoted into the account sheet', () => {
+        const demoted = { navPages: ['Dashboard', 'Equipment', 'Manuals'], menuPages: ['Admin'] };
+
+        it('keeps a demoted page out of the tab bar', () => {
+            setup(demoted);
+            expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument();
+        });
+
+        it('leaves the bar at five icons: three tabs, the center FAB, and the account tab', () => {
+            setup(demoted);
+            expect(screen.getAllByRole('link')).toHaveLength(3);
+            expect(screen.getByRole('button', { name: /report a fault/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /open account menu/i })).toBeInTheDocument();
+        });
+
+        it('offers the demoted page in the account sheet under its fuller menu label', () => {
+            setup(demoted);
+            fireEvent.click(screen.getByRole('button', { name: /open account menu/i }));
+            expect(screen.getByText('Admin Panel')).toBeInTheDocument();
+        });
+
+        it('navigates to the demoted page and closes the sheet when its entry is clicked', () => {
+            setup(demoted);
+            fireEvent.click(screen.getByRole('button', { name: /open account menu/i }));
+            fireEvent.click(screen.getByText('Admin Panel'));
+            expect(mockNavigate).toHaveBeenCalledWith('/admin');
+        });
+
+        it('adds no menu entries when nothing was demoted', () => {
+            setup({ navPages: ['Dashboard', 'Equipment', 'Manuals'] });
+            fireEvent.click(screen.getByRole('button', { name: /open account menu/i }));
+            expect(screen.queryByText('Admin Panel')).not.toBeInTheDocument();
+            expect(screen.getByText('Account Settings')).toBeInTheDocument();
         });
     });
 });

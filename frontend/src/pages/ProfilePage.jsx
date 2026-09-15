@@ -1,5 +1,5 @@
 // src/pages/ProfilePage.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Container,
     Typography,
@@ -12,6 +12,7 @@ import {
     Button,
     Paper,
     Grid,
+    Skeleton,
 } from '@mui/material';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -25,7 +26,9 @@ import { useAuth } from '../contexts/AuthContext';
 import faultService from '../services/faultsService';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../utils/formatUtils';
-import LoadingComponent from '../components/LoadingComponent/LoadingComponent';
+import { usePageRefresh } from '../contexts/PageRefreshContext';
+import { FilterBarSkeleton, CardGridSkeleton, KpiCardsSkeleton } from '../components/Skeletons/Skeletons';
+import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 import { ROUTES, equipmentDetailRoute } from '../constants/routes';
 import { DEFAULT_ROLE } from '../constants/roles';
 import { FAULT_STATUS } from '../constants/faultStatus';
@@ -43,36 +46,57 @@ export default function ProfilePage() {
 
     const effectiveUserId = userId || user?.id || user?._id;
 
-    useEffect(() => {
-        async function loadFaults() {
-            try {
-                const all = await faultService.getAll();
-                const mine = all.filter(f => {
-                    const op = f.operator && (f.operator._id || f.operator);
-                    return op === effectiveUserId;
-                });
-                const sorted = mine.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                setFaults(sorted);
-            } catch (err) {
-                console.error(err);
-                setError('Failed to load your reported faults');
-            } finally {
-                setLoading(false);
-            }
+    const loadFaults = useCallback(async () => {
+        if (!effectiveUserId) {
+            setLoading(false);
+            return;
         }
-        if (effectiveUserId) {
-            loadFaults();
-        } else {
+        try {
+            const all = await faultService.getAll();
+            const mine = all.filter(f => {
+                const op = f.operator && (f.operator._id || f.operator);
+                return op === effectiveUserId;
+            });
+            const sorted = mine.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            setFaults(sorted);
+            setError(null);
+        } catch (err) {
+            console.error(err);
+            setError('Failed to load your reported faults');
+        } finally {
             setLoading(false);
         }
     }, [effectiveUserId]);
+
+    useEffect(() => {
+        loadFaults();
+    }, [loadFaults]);
+
+    usePageRefresh(loadFaults);
 
     const filteredFaults = useMemo(() => {
         if (statusFilter === 'all') return faults;
         return faults.filter(f => f.status === statusFilter);
     }, [faults, statusFilter]);
 
-    if (loading) return <LoadingComponent message="Loading profile and activity..." />;
+    if (loading) {
+        return (
+            <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }} {...skeletonA11yProps('Loading profile and activity')}>
+                <Paper variant="outlined" sx={{ p: { xs: 2.5, sm: 3 }, borderRadius: 3, mb: 4 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
+                        <Skeleton variant="circular" width={72} height={72} />
+                        <Box sx={{ flexGrow: 1 }}>
+                            <Skeleton variant="text" width="45%" height={36} sx={{ maxWidth: 260 }} />
+                            <Skeleton variant="text" width="60%" height={22} sx={{ maxWidth: 320 }} />
+                        </Box>
+                    </Box>
+                </Paper>
+                <KpiCardsSkeleton count={3} />
+                <FilterBarSkeleton chips={3} search={false} />
+                <CardGridSkeleton count={6} height={170} />
+            </Container>
+        );
+    }
 
     if (error) {
         return (

@@ -22,9 +22,10 @@ import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 
 import ToolsList from '../components/Tool/ToolsList/ToolsList';
-import LoadingComponent from '../components/LoadingComponent/LoadingComponent';
 import ErrorComponent from '../components/ErrorComponent/ErrorComponent';
-import PullToRefresh from '../components/PullToRefresh/PullToRefresh';
+import { usePageRefresh } from '../contexts/PageRefreshContext';
+import { PageHeaderSkeleton, FilterBarSkeleton, CardGridSkeleton } from '../components/Skeletons/Skeletons';
+import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 import { CreateToolForm } from '../components/Tool/ToolForms/ToolForms';
 import { useEquipment } from '../contexts/EquipmentContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -79,6 +80,8 @@ export default function EquipmentsPage() {
         ]);
     }, [fetchEquipment, fetchOpenFaultCounts]);
 
+    usePageRefresh(handleRefresh);
+
     // Filter equipment by search query and status filter
     const filteredEquipment = useMemo(() => {
         return (equipment || []).filter(item => {
@@ -109,10 +112,10 @@ export default function EquipmentsPage() {
 
     if (loading && (!equipment || equipment.length === 0)) {
         return (
-            <Container maxWidth="xl" sx={{ mt: 4, mb: 6 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-                    <LoadingComponent message="Loading equipment fleet..." />
-                </Box>
+            <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }} {...skeletonA11yProps('Loading equipment fleet')}>
+                <PageHeaderSkeleton actions={isAdmin ? 1 : 0} />
+                <FilterBarSkeleton chips={3} sx={{ mb: 3 }} />
+                <CardGridSkeleton count={6} height={210} />
             </Container>
         );
     }
@@ -121,7 +124,6 @@ export default function EquipmentsPage() {
     const operationalCount = Math.max(0, (equipment?.length || 0) - faultyCount);
 
     return (
-        <PullToRefresh onRefresh={handleRefresh}>
         <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Header with Title and Add Action */}
             <Box
@@ -231,6 +233,7 @@ export default function EquipmentsPage() {
             <ToolsList
                 tools={filteredEquipment}
                 viewMode={viewMode}
+                loading={loading}
                 openFaultsByTool={openFaultsByTool}
             />
 
@@ -252,6 +255,5 @@ export default function EquipmentsPage() {
                 </DialogContent>
             </Dialog>
         </Container>
-        </PullToRefresh>
     );
 }

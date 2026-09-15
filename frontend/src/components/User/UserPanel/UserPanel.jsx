@@ -16,6 +16,7 @@ import {
     MenuItem,
     Box,
     CircularProgress,
+    Skeleton,
     TextField,
     InputAdornment,
     Tooltip,
@@ -31,7 +32,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useAuth } from '../../../contexts/AuthContext';
 import { CreateUserForm } from '../UserForms/UserForms';
 import { formatUserName } from '../../../utils/formatUtils';
-import LoadingComponent from '../../LoadingComponent/LoadingComponent';
+import { TableSkeleton } from '../../Skeletons/Skeletons';
+import { skeletonA11yProps } from '../../Skeletons/skeletonA11y';
 import ErrorComponent from '../../ErrorComponent/ErrorComponent';
 import DialogComponent from '../../DialogComponent';
 import { DEFAULT_ROLE, ROLES } from '../../../constants/roles';
@@ -122,8 +124,14 @@ export default function UserPanel({
     if (loading) {
         return (
             <Grid size={{ xs: 12, lg: 6 }}>
-                <Paper variant="outlined" sx={{ p: 4, borderRadius: 3, textAlign: 'center', borderLeft: '4px solid #2563EB' }}>
-                    <LoadingComponent message="Loading users..." />
+                <Paper
+                    variant="outlined"
+                    sx={{ p: 2.5, borderRadius: 3, borderLeft: '4px solid #2563EB' }}
+                    {...skeletonA11yProps('Loading users')}
+                >
+                    <Skeleton variant="text" width="45%" height={30} sx={{ mb: 2 }} />
+                    <Skeleton variant="rounded" height={40} sx={{ borderRadius: 1, mb: 2 }} />
+                    <TableSkeleton rows={5} columns={3} />
                 </Paper>
             </Grid>
         );

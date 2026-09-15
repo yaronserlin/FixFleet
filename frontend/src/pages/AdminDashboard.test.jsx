@@ -74,10 +74,14 @@ describe('AdminDashboard', () => {
         consoleErrorSpy.mockRestore();
     });
 
-    it('shows a loading state before the initial user fetch resolves', () => {
+    it('shows a loading skeleton before the initial user fetch resolves', () => {
         adminService.getUsers.mockReturnValueOnce(new Promise(() => {})); // never resolves
         render(<AdminDashboard />);
-        expect(screen.getByText(/Loading system administration/i)).toBeInTheDocument();
+        // The skeleton stands in for the whole page, panels included, and
+        // carries the accessible name the old spinner's caption used to.
+        expect(screen.getByRole('status', { name: /loading system administration/i })).toBeInTheDocument();
+        expect(screen.queryByTestId('user-panel')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('tools-panel')).not.toBeInTheDocument();
     });
 
     it('renders the header stat chips and panels once users have loaded', async () => {

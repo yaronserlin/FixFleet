@@ -39,6 +39,18 @@ export function pageIcon(page) {
     return PAGE_ICON_MAP[page.toLowerCase()] || <DashboardIcon fontSize="small" />;
 }
 
+// Nav tabs are icon-only and labelled by `aria-label`, but a page demoted
+// into a menu (see BottomNav's `menuPages`) is read as text and gets room
+// for a fuller name.
+const PAGE_MENU_LABEL_MAP = {
+    'admin': 'Admin Panel',
+};
+
+/** Label for `page` when it appears as a text menu entry rather than a tab. */
+export function pageMenuLabel(page) {
+    return PAGE_MENU_LABEL_MAP[page.toLowerCase()] || page;
+}
+
 /** True when `pathname` should highlight the nav item for `page`. */
 export function isPageActive(page, pathname) {
     const targetPath = pageToPath(page);

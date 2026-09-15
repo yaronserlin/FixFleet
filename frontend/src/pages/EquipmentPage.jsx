@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Container, Typography, Box, Button, Tabs, Tab, Chip, Paper, useMediaQuery, useTheme } from '@mui/material';
+import { Container, Typography, Box, Button, Tabs, Tab, Chip, Paper, Skeleton, useMediaQuery, useTheme } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -12,7 +12,9 @@ import CreateFaultDialog from '../components/Fault/CreateFaultDialog/CreateFault
 import CloseFaultDialog from '../components/Fault/CloseFaultDialog/CloseFaultDialog';
 import EquipmentMaintenanceTab from '../components/Tool/EquipmentMaintenanceTab/EquipmentMaintenanceTab';
 import EquipmentBooksTab from '../components/Tool/EquipmentBooksTab/EquipmentBooksTab';
-import LoadingComponent from '../components/LoadingComponent/LoadingComponent';
+import { usePageRefresh } from '../contexts/PageRefreshContext';
+import { DetailBannerSkeleton, TabsSkeleton, CardGridSkeleton } from '../components/Skeletons/Skeletons';
+import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 import ErrorComponent from '../components/ErrorComponent/ErrorComponent';
 import ConfirmDialog from '../components/ConfirmDialog/ConfirmDialog';
 import { useEquipment } from '../contexts/EquipmentContext';
@@ -57,7 +59,7 @@ export default function EquipmentPage() {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { equipment, loading, error: equipmentError, fetchEquipment } = useEquipment();
-    const { faults, error: faultError, fetchFaults, createFault, deleteFault, closeFault, reopenFault } = useFault(id);
+    const { faults, loading: faultsLoading, error: faultError, fetchFaults, createFault, deleteFault, closeFault, reopenFault } = useFault(id);
 
     const [selectedFault, setSelectedFault] = useState(null);
     const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -110,6 +112,8 @@ export default function EquipmentPage() {
             fetchFaults ? fetchFaults() : Promise.resolve(),
         ]);
     }, [loadTool, fetchEquipment, fetchFaults]);
+
+    usePageRefresh(handleRefresh);
 
     const handleChange = (event, newValue) => {
         setValue(newValue);
@@ -175,8 +179,15 @@ export default function EquipmentPage() {
         await handleRefresh();
     };
 
-    if (loading) {
-        return <LoadingComponent />;
+    if (loading && !tool) {
+        return (
+            <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }} {...skeletonA11yProps('Loading equipment details')}>
+                <Skeleton variant="text" width={190} height={32} sx={{ mb: 2 }} />
+                <DetailBannerSkeleton />
+                <TabsSkeleton count={3} />
+                <CardGridSkeleton count={4} height={190} size={{ xs: 12, md: 6 }} />
+            </Container>
+        );
     }
 
     if (faultError || equipmentError) {
@@ -353,6 +364,7 @@ export default function EquipmentPage() {
                     </Box>
                     <FaultList
                         faults={faults}
+                        loading={faultsLoading}
                         onFaultClick={handleFaultClick}
                         onCloseFault={handleOpenCloseDialog}
                         onReopenFault={handleReopenFault}

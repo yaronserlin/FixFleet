@@ -51,31 +51,42 @@ import FaultCard from '../components/Fault/FaultCard/FaultCard';
 import CloseFaultDialog from '../components/Fault/CloseFaultDialog/CloseFaultDialog';
 import CreateFaultDialog from '../components/Fault/CreateFaultDialog/CreateFaultDialog';
 import ConfirmDialog from '../components/ConfirmDialog/ConfirmDialog';
-import PullToRefresh from '../components/PullToRefresh/PullToRefresh';
+import { usePageRefresh } from '../contexts/PageRefreshContext';
+import {
+    PageHeaderSkeleton,
+    KpiCardsSkeleton,
+    ChartCardSkeleton,
+    FilterBarSkeleton,
+    CardGridSkeleton,
+} from '../components/Skeletons/Skeletons';
+import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 
-// ─── Skeleton loading state ──────────────────────────────────────────────────
-function DashboardSkeleton() {
+// ─── Skeleton loading states ─────────────────────────────────────────────────
+// Each mirrors the view it stands in for, down to the narrow-screen rules
+// below (the KPI row and the operator hero are phone-hidden in both).
+function DashboardSkeleton({ isOperator = false }) {
+    if (isOperator) {
+        return (
+            <Container maxWidth="md" sx={{ mt: 3, mb: 6 }} {...skeletonA11yProps('Loading dashboard')}>
+                <Skeleton
+                    variant="rounded"
+                    height={320}
+                    sx={{ borderRadius: 3, mb: 4, display: { xs: 'none', sm: 'block' } }}
+                />
+                <PageHeaderSkeleton actions={[{ display: { xs: 'none', sm: 'block' } }]} />
+                <CardGridSkeleton count={4} height={170} size={{ xs: 12, sm: 6 }} sx={{ mb: 4 }} />
+                <CardGridSkeleton count={2} height={150} size={{ xs: 12, sm: 6 }} />
+            </Container>
+        );
+    }
+
     return (
-        <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
-            <Box sx={{ mb: 3.5 }}>
-                <Skeleton variant="text" width={280} height={44} />
-                <Skeleton variant="text" width={200} height={22} />
-            </Box>
-            <Grid container spacing={2} sx={{ mb: 4 }}>
-                {[0,1,2,3].map(i => (
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
-                        <Skeleton variant="rounded" height={100} sx={{ borderRadius: 3 }} />
-                    </Grid>
-                ))}
-            </Grid>
-            <Skeleton variant="rounded" height={240} sx={{ borderRadius: 3, mb: 4 }} />
-            <Grid container spacing={2}>
-                {[0,1,2].map(i => (
-                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={i}>
-                        <Skeleton variant="rounded" height={160} sx={{ borderRadius: 3 }} />
-                    </Grid>
-                ))}
-            </Grid>
+        <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }} {...skeletonA11yProps('Loading dashboard')}>
+            <PageHeaderSkeleton actions={[{}, { display: { xs: 'none', sm: 'block' } }]} />
+            <KpiCardsSkeleton display={{ xs: 'none', sm: 'flex' }} />
+            <ChartCardSkeleton />
+            <FilterBarSkeleton />
+            <CardGridSkeleton count={6} height={180} />
         </Container>
     );
 }
@@ -257,6 +268,10 @@ export default function Dashboard() {
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
+    // Pull down anywhere on this page to re-fetch (the gesture + indicator
+    // itself lives once in AppLayout -- see contexts/PageRefreshContext).
+    usePageRefresh(fetchData);
+
     // 14-day chart data
     const chartData = useMemo(() => {
         const days = 14;
@@ -375,7 +390,7 @@ export default function Dashboard() {
         }
     };
 
-    if (loading) return <DashboardSkeleton />;
+    if (loading) return <DashboardSkeleton isOperator={isOperator} />;
 
     const operationalRate = stats.fleetTotal > 0
         ? Math.round((stats.fleetOperational / stats.fleetTotal) * 100)
@@ -391,9 +406,12 @@ export default function Dashboard() {
             .slice(0, 4);
 
         return (
-            <PullToRefresh onRefresh={fetchData}>
             <Container maxWidth="md" sx={{ mt: 3, mb: 6 }}>
-                {/* Centered Hero CTA */}
+                {/* Centered Hero CTA -- hidden on phone: the whole block exists to
+                    host one "Report a Fault" button, and at that width the
+                    bottom nav bar already carries a permanent center FAB for
+                    exactly that. Dropping it puts the operator's own reports
+                    at the top of their phone dashboard instead. */}
                 <Paper
                     variant="outlined"
                     sx={{
@@ -401,7 +419,7 @@ export default function Dashboard() {
                         mb: 4,
                         borderRadius: 3,
                         textAlign: 'center',
-                        display: 'flex',
+                        display: { xs: 'none', sm: 'flex' },
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -467,7 +485,7 @@ export default function Dashboard() {
                             size="small"
                             startIcon={<AddIcon />}
                             onClick={() => setCreateDialogOpen(true)}
-                            sx={{ fontWeight: 700 }}
+                            sx={{ fontWeight: 700, display: { xs: 'none', sm: 'inline-flex' } }}
                         >
                             Report Fault
                         </Button>
@@ -579,13 +597,11 @@ export default function Dashboard() {
                 )}
                 <CreateFaultDialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} onSubmit={handleCreateFault} />
             </Container>
-            </PullToRefresh>
         );
     }
 
     // ─── TECHNICIAN / ADMIN VIEW ─────────────────────────────────────────────
     return (
-        <PullToRefresh onRefresh={fetchData}>
         <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Welcome Header */}
             <Box
@@ -616,19 +632,25 @@ export default function Dashboard() {
                     >
                         Browse Equipment
                     </Button>
+                    {/* Phone widths already carry a permanent "report fault"
+                        FAB in the center of the bottom nav bar, so this
+                        duplicate is dropped there. */}
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={() => setCreateDialogOpen(true)}
-                        sx={{ minHeight: 44, fontWeight: 700 }}
+                        sx={{ minHeight: 44, fontWeight: 700, display: { xs: 'none', sm: 'inline-flex' } }}
                     >
                         Report Fault
                     </Button>
                 </Box>
             </Box>
 
-            {/* KPI Cards */}
-            <Grid container spacing={2} sx={{ mb: 4 }}>
+            {/* KPI Cards -- hidden on phone: at that width the four stat cards
+                push the trend chart and the fault list (what a technician
+                actually acts on) below the fold, so narrow screens go
+                straight to chart + faults. */}
+            <Grid container spacing={2} sx={{ mb: 4, display: { xs: 'none', sm: 'flex' } }}>
                 {[
                     {
                         label: 'TOTAL REPORTED',
@@ -772,7 +794,7 @@ export default function Dashboard() {
                     size="small"
                     startIcon={<AddIcon />}
                     onClick={() => setCreateDialogOpen(true)}
-                    sx={{ fontWeight: 700 }}
+                    sx={{ fontWeight: 700, display: { xs: 'none', sm: 'inline-flex' } }}
                 >
                     Report Fault
                 </Button>
@@ -844,6 +866,5 @@ export default function Dashboard() {
                 onCancel={() => setFaultToDelete(null)}
             />
         </Container>
-        </PullToRefresh>
     );
 }

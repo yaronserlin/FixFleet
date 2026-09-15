@@ -14,6 +14,7 @@ import {
     Box,
     TextField,
     InputAdornment,
+    Skeleton,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -21,7 +22,8 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 
 import { CreateToolForm, UpdateToolForm } from '../ToolForms/ToolForms';
-import LoadingComponent from '../../LoadingComponent/LoadingComponent';
+import { TableSkeleton } from '../../Skeletons/Skeletons';
+import { skeletonA11yProps } from '../../Skeletons/skeletonA11y';
 import ErrorComponent from '../../ErrorComponent/ErrorComponent';
 import DialogComponent from '../../DialogComponent';
 
@@ -71,8 +73,9 @@ export default function ToolsPanel({ tools = [], loading, error, onCreate, onUpd
     }, [tools, searchQuery]);
 
     const body = loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-            <LoadingComponent />
+        <Box {...skeletonA11yProps('Loading equipment')}>
+            <Skeleton variant="rounded" height={40} sx={{ borderRadius: 1, mb: 2 }} />
+            <TableSkeleton rows={5} columns={4} />
         </Box>
     ) : error ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>

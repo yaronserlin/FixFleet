@@ -24,6 +24,7 @@ jest.mock('./SidebarNav', () => (props) => (
 jest.mock('./BottomNav', () => (props) => (
     <div data-testid="bottom-nav">
         {props.user ? `user:${props.user.role}` : 'no-user'} | pages:{props.pages.join(',')}
+        {' | menu:'}{(props.menuPages || []).join(',')}
         <button onClick={props.onOpenCreateFault}>trigger-create-fault</button>
     </div>
 ));
@@ -61,6 +62,23 @@ describe('Navbar', () => {
         setup({ id: 'u1', role: 'admin' });
         const expected = 'pages:Dashboard,Equipment,Manuals,Admin';
         expect(screen.getByTestId('sidebar-full')).toHaveTextContent(expected);
+        expect(screen.getByTestId('sidebar-rail')).toHaveTextContent(expected);
+    });
+
+    it("demotes an admin's Admin page out of the phone tab bar and into its account sheet", () => {
+        // The bottom bar is a fixed row of icons; keeping Admin as a fourth
+        // tab would make it the only role with six. It moves to the sheet
+        // instead, so every role gets the same five-icon bar.
+        setup({ id: 'u1', role: 'admin' });
+        const bottomNav = screen.getByTestId('bottom-nav');
+        expect(bottomNav).toHaveTextContent('pages:Dashboard,Equipment,Manuals');
+        expect(bottomNav).toHaveTextContent('menu:Admin');
+    });
+
+    it('leaves non-admin roles with nothing demoted into the account sheet', () => {
+        setup({ id: 'u1', role: 'mechanic' });
+        expect(screen.getByTestId('bottom-nav')).toHaveTextContent('menu:');
+        expect(screen.getByTestId('bottom-nav')).not.toHaveTextContent('menu:Admin');
     });
 
     it('gives an operator Dashboard/My Reports/Manuals (their own reports, not the full equipment/admin set)', () => {

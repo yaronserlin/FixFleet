@@ -22,6 +22,7 @@ import {
     DialogActions,
     Divider,
     Paper,
+    Skeleton,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { alpha } from '@mui/material/styles';
@@ -33,7 +34,9 @@ import { isMechanicOrAdmin } from '../constants/roles';
 import { equipmentDetailTabRoute } from '../constants/routes';
 import { useNotify } from '../contexts/NotificationContext';
 import equipmentService from '../services/equipmentService';
-import LoadingComponent from '../components/LoadingComponent/LoadingComponent';
+import { usePageRefresh } from '../contexts/PageRefreshContext';
+import { ListRowsSkeleton } from '../components/Skeletons/Skeletons';
+import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 import ErrorComponent from '../components/ErrorComponent/ErrorComponent';
 import ConfirmDialog from '../components/ConfirmDialog/ConfirmDialog';
 
@@ -59,9 +62,13 @@ export default function EquipmentSchedulePage() {
 
     const canManage = isMechanicOrAdmin(user?.role);
 
-    const loadData = useCallback(async () => {
+    // `showSkeleton: false` keeps the current content on screen while
+    // re-fetching -- what a pull-to-refresh wants, since that gesture draws
+    // its own indicator and blanking the page under the user's finger reads
+    // as a navigation, not a refresh.
+    const loadData = useCallback(async ({ showSkeleton = true } = {}) => {
         try {
-            setLoading(true);
+            if (showSkeleton) setLoading(true);
             const data = await equipmentService.getSchedule(id, scheduleId);
             setEquipment(data.equipment);
             setSchedule(data.schedule);
@@ -77,6 +84,9 @@ export default function EquipmentSchedulePage() {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    const handleRefresh = useCallback(() => loadData({ showSkeleton: false }), [loadData]);
+    usePageRefresh(handleRefresh);
 
     const handleToggleTask = async (itemId) => {
         if (!canManage) return;
@@ -158,7 +168,24 @@ export default function EquipmentSchedulePage() {
         }
     };
 
-    if (loading) return <LoadingComponent />;
+    if (loading) {
+        return (
+            <Container maxWidth="md" sx={{ mt: 3, mb: 6 }} {...skeletonA11yProps('Loading maintenance schedule')}>
+                <Skeleton variant="text" width={180} height={32} sx={{ mb: 2 }} />
+                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2, mb: 3 }}>
+                    <Skeleton variant="text" width="55%" height={36} />
+                    <Skeleton variant="text" width="75%" height={24} sx={{ mb: 1.5 }} />
+                    <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mb: 2 }}>
+                        <Skeleton variant="rounded" width={140} height={26} sx={{ borderRadius: 4 }} />
+                        <Skeleton variant="rounded" width={120} height={26} sx={{ borderRadius: 4 }} />
+                    </Box>
+                    <Skeleton variant="rounded" height={8} sx={{ borderRadius: 4 }} />
+                </Paper>
+                <Skeleton variant="text" width={200} height={28} sx={{ mb: 1.5 }} />
+                <ListRowsSkeleton rows={5} height={52} />
+            </Container>
+        );
+    }
     if (error) return <ErrorComponent message={error} />;
     if (!schedule || !equipment) return <Typography>Schedule not found.</Typography>;
 

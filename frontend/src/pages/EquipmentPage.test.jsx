@@ -123,13 +123,26 @@ describe('EquipmentPage', () => {
         mockFaultCtx();
     });
 
-    it('shows a loading state and nothing else while equipment is loading', async () => {
-        mockEquipmentCtx({ loading: true });
+    it('shows a loading skeleton and nothing else when loading with no equipment cached', async () => {
+        mockEquipmentCtx({ loading: true, equipment: [] });
+        equipmentService.getById.mockReturnValueOnce(new Promise(() => {})); // never resolves
         render(<EquipmentPage />);
+        expect(screen.getByRole('status', { name: /loading equipment details/i })).toBeInTheDocument();
         expect(screen.queryByTestId('fault-list')).not.toBeInTheDocument();
         // The page's own equipment-detail fetch effect still fires on mount
         // regardless of the context's loading flag; wait for it to settle so
         // it doesn't leak an unwrapped state update into the next test.
+        await waitFor(() => expect(equipmentService.getById).toHaveBeenCalled());
+    });
+
+    it('keeps showing already-loaded equipment while a refresh is in flight', async () => {
+        // A pull-to-refresh re-runs the context fetch, flipping `loading`
+        // back to true. Blanking a fully-rendered page for that would read
+        // as a navigation, so cached content stays put.
+        mockEquipmentCtx({ loading: true });
+        render(<EquipmentPage />);
+        expect(screen.queryByRole('status', { name: /loading equipment details/i })).not.toBeInTheDocument();
+        expect(screen.getByTestId('fault-list')).toBeInTheDocument();
         await waitFor(() => expect(equipmentService.getById).toHaveBeenCalled());
     });
 

@@ -1,5 +1,5 @@
 // src/pages/EquipmentBooksPage.jsx
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import {
     Container,
     Grid,
@@ -12,7 +12,6 @@ import {
     InputAdornment,
     Chip,
     Paper,
-    Skeleton,
     Divider,
     IconButton,
     Tooltip,
@@ -30,6 +29,9 @@ import { getMediaUrl } from '../utils/mediaUtils';
 import { useNotify } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 import PdfViewerDialog from '../components/PdfViewer/PdfViewerDialog';
+import { usePageRefresh } from '../contexts/PageRefreshContext';
+import { CardGridSkeleton } from '../components/Skeletons/Skeletons';
+import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 
 function formatFileSize(bytes) {
     if (!bytes) return '';
@@ -46,22 +48,29 @@ export default function EquipmentBooksPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [activePdf, setActivePdf] = useState(null);
 
-    useEffect(() => {
-        const fetchEquipment = async () => {
-            if (!user || user.mustChangePassword) return;
-            try {
-                setLoading(true);
-                const data = await equipmentService.getAll();
-                setTools(data || []);
-            } catch (err) {
-                console.error('Failed to load equipment manuals:', err);
-                notify.error('Failed to load equipment manuals');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchEquipment();
+    const fetchEquipment = useCallback(async ({ showSkeleton = true } = {}) => {
+        if (!user || user.mustChangePassword) return;
+        try {
+            if (showSkeleton) setLoading(true);
+            const data = await equipmentService.getAll();
+            setTools(data || []);
+        } catch (err) {
+            console.error('Failed to load equipment manuals:', err);
+            notify.error('Failed to load equipment manuals');
+        } finally {
+            setLoading(false);
+        }
     }, [notify, user]);
+
+    useEffect(() => {
+        fetchEquipment();
+    }, [fetchEquipment]);
+
+    const handleRefresh = useCallback(
+        () => fetchEquipment({ showSkeleton: false }),
+        [fetchEquipment]
+    );
+    usePageRefresh(handleRefresh);
 
     // Only show equipment that actually has books/manuals uploaded
     const toolsWithBooks = useMemo(() => {
@@ -147,13 +156,9 @@ export default function EquipmentBooksPage() {
 
             {/* Tools Grid */}
             {loading ? (
-                <Grid container spacing={2.5}>
-                    {[0, 1, 2, 3].map(i => (
-                        <Grid size={{ xs: 12, md: 6 }} key={i}>
-                            <Skeleton variant="rounded" height={220} sx={{ borderRadius: 3 }} />
-                        </Grid>
-                    ))}
-                </Grid>
+                <Box {...skeletonA11yProps('Loading equipment manuals')}>
+                    <CardGridSkeleton count={4} height={220} size={{ xs: 12, md: 6 }} spacing={2.5} />
+                </Box>
             ) : filteredTools.length === 0 ? (
                 <Paper
                     variant="outlined"

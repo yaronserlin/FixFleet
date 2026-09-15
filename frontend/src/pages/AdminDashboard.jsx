@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Container, Typography, Grid, Box, Chip } from '@mui/material';
+import { Container, Typography, Grid, Box, Chip, Paper, Skeleton } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -7,7 +7,9 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import adminService from '../services/adminService';
 import UserPanel from '../components/User/UserPanel/UserPanel';
 import ToolsPanel from '../components/Tool/ToolsPanel/ToolsPanel';
-import LoadingComponent from '../components/LoadingComponent/LoadingComponent';
+import { usePageRefresh } from '../contexts/PageRefreshContext';
+import { PageHeaderSkeleton, TableSkeleton } from '../components/Skeletons/Skeletons';
+import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 import { useTool } from '../contexts/ToolContext';
 import { useNotify } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -28,6 +30,7 @@ export default function AdminDashboard() {
         createTool,
         updateTool,
         deleteTool,
+        fetchEquipment,
     } = useTool();
 
     // users state
@@ -53,6 +56,23 @@ export default function AdminDashboard() {
             isMounted = false;
         };
     }, []);
+
+    // Pull-to-refresh re-pulls both halves of this page: the user list it
+    // owns, and the equipment list it reads from context.
+    const handleRefresh = useCallback(async () => {
+        await Promise.all([
+            adminService
+                .getUsers()
+                .then((data) => {
+                    setUsers(data);
+                    setErrorUsers(null);
+                })
+                .catch((err) => setErrorUsers(err)),
+            fetchEquipment ? fetchEquipment() : Promise.resolve(),
+        ]);
+    }, [fetchEquipment]);
+
+    usePageRefresh(handleRefresh);
 
     // tool handlers (just forward to context)
     const handleCreateTool = useCallback(
@@ -121,10 +141,23 @@ export default function AdminDashboard() {
 
     if (loadingUsers && users.length === 0) {
         return (
-            <Container maxWidth="xl" sx={{ mt: 4, mb: 6 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-                    <LoadingComponent message="Loading system administration..." />
+            <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }} {...skeletonA11yProps('Loading system administration')}>
+                <PageHeaderSkeleton actions={0} />
+                <Box sx={{ display: 'flex', gap: 1.5, mb: 4 }}>
+                    <Skeleton variant="rounded" width={150} height={32} sx={{ borderRadius: 4 }} />
+                    <Skeleton variant="rounded" width={180} height={32} sx={{ borderRadius: 4 }} />
                 </Box>
+                <Grid container spacing={3}>
+                    {[0, 1].map(i => (
+                        <Grid size={{ xs: 12, lg: 6 }} key={i}>
+                            <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+                                <Skeleton variant="text" width="45%" height={30} sx={{ mb: 2 }} />
+                                <Skeleton variant="rounded" height={40} sx={{ borderRadius: 1, mb: 2 }} />
+                                <TableSkeleton rows={5} columns={3} />
+                            </Paper>
+                        </Grid>
+                    ))}
+                </Grid>
             </Container>
         );
     }

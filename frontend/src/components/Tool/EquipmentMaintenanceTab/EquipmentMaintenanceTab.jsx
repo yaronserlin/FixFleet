@@ -21,7 +21,6 @@ import {
     ListItemText,
     Divider,
     Paper,
-    CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -32,6 +31,8 @@ import HistoryIcon from '@mui/icons-material/History';
 import PersonIcon from '@mui/icons-material/Person';
 import EngineeringIcon from '@mui/icons-material/Engineering';
 import { useAuth } from '../../../contexts/AuthContext';
+import { ListRowsSkeleton } from '../../Skeletons/Skeletons';
+import { skeletonA11yProps } from '../../Skeletons/skeletonA11y';
 import { isMechanicOrAdmin } from '../../../constants/roles';
 import { equipmentScheduleRoute } from '../../../constants/routes';
 import { useNotify } from '../../../contexts/NotificationContext';
@@ -431,9 +432,7 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
             </Box>
 
             {loadingLogs ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
-                    <CircularProgress size={32} />
-                </Box>
+                <ListRowsSkeleton rows={3} height={92} spacing={2} {...skeletonA11yProps('Loading service history')} />
             ) : maintenanceLogs.length === 0 ? (
                 <Paper variant="outlined" sx={{ p: 4, textAlign: 'center', borderRadius: 2 }}>
                     <EngineeringIcon sx={{ fontSize: 44, color: 'text.disabled', mb: 1 }} />

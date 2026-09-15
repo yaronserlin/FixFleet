@@ -10,7 +10,6 @@ import {
     InputAdornment,
     Chip,
     Paper,
-    Skeleton,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
@@ -27,7 +26,9 @@ import { FAULT_STATUS } from '../constants/faultStatus';
 import FaultCard from '../components/Fault/FaultCard/FaultCard';
 import FaultDetailsDialog from '../components/Fault/FaultDetailsDialog/FaultDetailsDialog';
 import CreateFaultDialog from '../components/Fault/CreateFaultDialog/CreateFaultDialog';
-import PullToRefresh from '../components/PullToRefresh/PullToRefresh';
+import { usePageRefresh } from '../contexts/PageRefreshContext';
+import { CardGridSkeleton } from '../components/Skeletons/Skeletons';
+import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 
 export default function OperatorReportsPage() {
     const { user } = useAuth();
@@ -42,10 +43,12 @@ export default function OperatorReportsPage() {
     const [selectedFault, setSelectedFault] = useState(null);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-    const fetchReports = useCallback(async () => {
+    // `showSkeleton: false` re-fetches without blanking the list -- used by
+    // pull-to-refresh, which draws its own indicator above the content.
+    const fetchReports = useCallback(async ({ showSkeleton = true } = {}) => {
         if (!user || user.mustChangePassword) return;
         try {
-            setLoading(true);
+            if (showSkeleton) setLoading(true);
             const data = await faultService.getAll();
             const uid = user?.id || user?._id;
             // Filter to current user's reported faults if user is operator
@@ -66,13 +69,16 @@ export default function OperatorReportsPage() {
         fetchReports();
     }, [fetchReports]);
 
+    const handleRefresh = useCallback(() => fetchReports({ showSkeleton: false }), [fetchReports]);
+    usePageRefresh(handleRefresh);
+
     const handleCreateFault = async (values) => {
         try {
             await faultService.create({ ...values, operator: user?.id || user?._id });
             notify.success('Fault reported successfully');
             setCreateDialogOpen(false);
             await Promise.all([
-                fetchReports(),
+                fetchReports({ showSkeleton: false }),
                 fetchEquipment ? fetchEquipment() : Promise.resolve(),
                 fetchFaults ? fetchFaults() : Promise.resolve(),
             ]);
@@ -101,7 +107,6 @@ export default function OperatorReportsPage() {
     const resolvedCount = useMemo(() => faults.filter(f => f.status === FAULT_STATUS.CLOSED).length, [faults]);
 
     return (
-        <PullToRefresh onRefresh={fetchReports}>
         <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Header */}
             <Box
@@ -122,12 +127,20 @@ export default function OperatorReportsPage() {
                         View and track all maintenance tickets you have reported.
                     </Typography>
                 </Box>
+                {/* Dropped on phone: the bottom nav bar's center FAB already
+                    reports a fault from any page at that width. */}
                 <Button
                     variant="contained"
                     color="primary"
                     startIcon={<AddIcon />}
                     onClick={() => setCreateDialogOpen(true)}
-                    sx={{ fontWeight: 700, px: 2.5, minHeight: 42, width: { xs: '100%', sm: 'auto' } }}
+                    sx={{
+                        fontWeight: 700,
+                        px: 2.5,
+                        minHeight: 42,
+                        width: { xs: '100%', sm: 'auto' },
+                        display: { xs: 'none', sm: 'inline-flex' },
+                    }}
                 >
                     Report a Fault
                 </Button>
@@ -189,13 +202,9 @@ export default function OperatorReportsPage() {
 
             {/* Content List */}
             {loading ? (
-                <Grid container spacing={2}>
-                    {[0, 1, 2, 3].map(i => (
-                        <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={i}>
-                            <Skeleton variant="rounded" height={180} sx={{ borderRadius: 3 }} />
-                        </Grid>
-                    ))}
-                </Grid>
+                <Box {...skeletonA11yProps('Loading reported faults')}>
+                    <CardGridSkeleton count={6} height={180} size={{ xs: 12, sm: 6, lg: 4 }} />
+                </Box>
             ) : filteredFaults.length === 0 ? (
                 <Paper
                     variant="outlined"
@@ -247,6 +256,7 @@ export default function OperatorReportsPage() {
                             color="primary"
                             startIcon={<AddIcon />}
                             onClick={() => setCreateDialogOpen(true)}
+                            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                         >
                             Report a Fault
                         </Button>
@@ -278,6 +288,5 @@ export default function OperatorReportsPage() {
                 onSubmit={handleCreateFault}
             />
         </Container>
-        </PullToRefresh>
     );
 }

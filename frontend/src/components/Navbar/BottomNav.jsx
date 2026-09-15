@@ -22,7 +22,7 @@ import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { getMediaUrl } from '../../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../../utils/formatUtils';
 import { useThemeMode } from '../../contexts/ThemeContext';
-import { pageToPath, pageIcon, isPageActive } from './navItems';
+import { pageToPath, pageIcon, pageMenuLabel, isPageActive } from './navItems';
 import { BOTTOM_NAV_HEIGHT } from './navConstants';
 import { ROUTES } from '../../constants/routes';
 import { ROLES } from '../../constants/roles';
@@ -36,8 +36,13 @@ const ROLE_LABEL = { [ROLES.ADMIN]: 'Admin', [ROLES.MECHANIC]: 'Mechanic', [ROLE
  * (like Instagram/Uber's center action button), and an "Account" tab that
  * opens a bottom sheet keeping profile/activity/theme/logout reachable
  * without a persistent top bar.
+ *
+ * `pages` become tabs in the bar; `menuPages` are destinations the caller
+ * has chosen to demote into the account sheet instead, so the bar stays at
+ * a fixed icon count no matter how many pages a role can reach (Navbar uses
+ * this for admins' Admin page -- see src/components/Navbar/index.jsx).
  */
-export default function BottomNav({ display, user, pages, onOpenCreateFault }) {
+export default function BottomNav({ display, user, pages, menuPages = [], onOpenCreateFault }) {
     const [accountOpen, setAccountOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
@@ -56,8 +61,8 @@ export default function BottomNav({ display, user, pages, onOpenCreateFault }) {
         navigate(path);
     };
 
-    // Icon-only tabs (no text label) -- with up to 4 nav pages + the center
-    // FAB + the Account tab sharing a 390px-wide row, text labels don't fit
+    // Icon-only tabs (no text label) -- with the nav pages + the center FAB
+    // + the Account tab sharing a 390px-wide row, text labels don't fit
     // without overlapping (measured live). This also matches the
     // Instagram/Uber-style bottom bar the design brief calls out, which
     // doesn't label its tabs either; `aria-label` keeps them accessible.
@@ -105,8 +110,8 @@ export default function BottomNav({ display, user, pages, onOpenCreateFault }) {
                     {/* Each side is its own flex:1 group (not individual flex:1 tabs
                         directly in the row) so the two halves are always equal width
                         -- and the FAB stays exactly centered -- regardless of how many
-                        nav pages a role has (e.g. admin's 4 vs operator's 3) or that
-                        the right side also carries the Account tab. */}
+                        nav pages a role has, or that the right side also carries
+                        the Account tab. */}
                     <Box sx={{ flex: 1, display: 'flex', alignItems: 'stretch' }}>
                         {leftPages.map(renderTab)}
                     </Box>
@@ -203,6 +208,19 @@ export default function BottomNav({ display, user, pages, onOpenCreateFault }) {
                 <Divider />
 
                 <List sx={{ py: 1 }}>
+                    {menuPages.map(page => (
+                        <ListItemButton
+                            key={page}
+                            onClick={() => goTo(pageToPath(page))}
+                            selected={isPageActive(page, location.pathname)}
+                            sx={{ minHeight: 48 }}
+                        >
+                            <ListItemIcon>{pageIcon(page)}</ListItemIcon>
+                            <ListItemText primary={pageMenuLabel(page)} />
+                        </ListItemButton>
+                    ))}
+                    {menuPages.length > 0 && <Divider sx={{ my: 0.5 }} />}
+
                     <ListItemButton onClick={() => goTo(ROUTES.ACCOUNT)} sx={{ minHeight: 48 }}>
                         <ListItemIcon><ManageAccountsIcon fontSize="small" /></ListItemIcon>
                         <ListItemText primary="Account Settings" />

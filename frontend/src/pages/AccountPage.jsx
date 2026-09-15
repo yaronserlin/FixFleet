@@ -1,5 +1,5 @@
 // src/pages/AccountPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     Container,
     Typography,
@@ -12,6 +12,7 @@ import {
     CircularProgress,
     Paper,
     InputAdornment,
+    Skeleton,
 } from '@mui/material';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import Visibility from '@mui/icons-material/Visibility';
@@ -24,6 +25,9 @@ import userService from '../services/userService';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../utils/formatUtils';
 import { validateEmail, validatePassword } from '../utils/validate';
+import { usePageRefresh } from '../contexts/PageRefreshContext';
+import { FormSkeleton } from '../components/Skeletons/Skeletons';
+import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -66,6 +70,19 @@ export default function AccountPage() {
     useEffect(() => {
         if (user) setForm({ name: formatUserName(user.name) || '', email: user.email || '' });
     }, [user]);
+
+    // Pull down to re-read the profile from the server -- this page renders
+    // straight off the auth context, so refreshing that refreshes the page.
+    const handleRefresh = useCallback(async () => {
+        try {
+            const { data } = await userService.getProfile();
+            if (data) setUser(prev => ({ ...prev, ...data }));
+        } catch (err) {
+            console.error('Failed to refresh profile:', err);
+        }
+    }, [setUser]);
+
+    usePageRefresh(handleRefresh);
 
     const handleChange = e => {
         const { name, value } = e.target;
@@ -185,6 +202,32 @@ export default function AccountPage() {
     const strength = getStrength(pwd.newPassword);
     const strengthLabels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
     const strengthColors = ['', '#DC2626', '#F59E0B', '#F59E0B', '#16A34A'];
+
+    // Rendered straight from the auth context: until the user object lands,
+    // trace the avatar card + the two forms rather than flashing an empty page.
+    if (!user) {
+        return (
+            <Container maxWidth="sm" sx={{ mt: 3, mb: 6 }} {...skeletonA11yProps('Loading account settings')}>
+                <Box sx={{ mb: 3.5 }}>
+                    <Skeleton variant="text" width={240} height={44} />
+                    <Skeleton variant="text" width="80%" height={22} />
+                </Box>
+                <Paper variant="outlined" sx={{ display: 'flex', alignItems: 'center', gap: 3, p: 3, mb: 3.5, borderRadius: 3 }}>
+                    <Skeleton variant="circular" width={80} height={80} />
+                    <Box sx={{ flexGrow: 1 }}>
+                        <Skeleton variant="text" width="60%" height={28} />
+                        <Skeleton variant="text" width="45%" height={20} />
+                    </Box>
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 3, mb: 3.5, borderRadius: 3 }}>
+                    <FormSkeleton fields={2} />
+                </Paper>
+                <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
+                    <FormSkeleton fields={3} />
+                </Paper>
+            </Container>
+        );
+    }
 
     return (
         <Container maxWidth="sm" sx={{ mt: 3, mb: 6 }}>

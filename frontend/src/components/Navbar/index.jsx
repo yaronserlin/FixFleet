@@ -14,6 +14,10 @@ import BottomNav from './BottomNav';
  *  - Phone   (< sm / 600px):        BottomNav, a native-app-style bottom
  *                                    tab bar with a raised center FAB that
  *                                    opens fault creation from anywhere.
+ *                                    Admin is demoted from a tab to an entry
+ *                                    in its account sheet (see below), so
+ *                                    the bar holds five icons for every
+ *                                    role instead of six for admins.
  *  - Tablet  (sm-lg / 600-1200px):  SidebarNav variant="rail", an
  *                                    icon-only "navigation rail" with
  *                                    hover tooltips.
@@ -39,6 +43,20 @@ export default function Navbar({ onOpenCreateFault }) {
         return result;
     }, [user?.role]);
 
+    // The phone bar is a fixed-width row of icon-only tabs: three nav tabs
+    // plus the center FAB and the account tab already fill it. Rather than
+    // squeezing a fourth tab in for admins alone, Admin moves into the
+    // account sheet -- it's a settings-shaped destination, and every role
+    // then gets the same five-icon bar.
+    const bottomNavPages = useMemo(
+        () => navPages.filter(page => page !== 'Admin'),
+        [navPages]
+    );
+    const bottomMenuPages = useMemo(
+        () => navPages.filter(page => page === 'Admin'),
+        [navPages]
+    );
+
     return (
         <>
             <SidebarNav
@@ -56,7 +74,8 @@ export default function Navbar({ onOpenCreateFault }) {
             <BottomNav
                 display={{ xs: 'block', sm: 'none' }}
                 user={user}
-                pages={navPages}
+                pages={bottomNavPages}
+                menuPages={bottomMenuPages}
                 onOpenCreateFault={onOpenCreateFault}
             />
         </>

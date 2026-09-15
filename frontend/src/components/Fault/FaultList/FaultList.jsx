@@ -25,9 +25,12 @@ import { getMediaUrl } from '../../../utils/mediaUtils';
 import ImageViewerDialog from '../../ImageViewer/ImageViewerDialog';
 import { isMechanicOrAdmin } from '../../../constants/roles';
 import { FAULT_STATUS } from '../../../constants/faultStatus';
+import { ListRowsSkeleton, TableSkeleton } from '../../Skeletons/Skeletons';
+import { skeletonA11yProps } from '../../Skeletons/skeletonA11y';
 
 export default function FaultList({
     faults,
+    loading = false,
     onFaultClick,
     onCloseFault,
     onReopenFault,
@@ -40,6 +43,21 @@ export default function FaultList({
         if (!user) return false;
         return isMechanicOrAdmin(user.role);
     };
+
+    // Skeleton mirrors the same card/table split the loaded list uses below,
+    // so the layout doesn't shift when the faults arrive.
+    if (loading && (!faults || faults.length === 0)) {
+        return (
+            <Box sx={{ width: '100%' }} {...skeletonA11yProps('Loading faults')}>
+                <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+                    <ListRowsSkeleton rows={3} height={150} spacing={2} />
+                </Box>
+                <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+                    <TableSkeleton rows={5} columns={5} />
+                </Box>
+            </Box>
+        );
+    }
 
     if (!faults || faults.length === 0) {
         return <Typography color="text.secondary">No faults recorded for this equipment.</Typography>;

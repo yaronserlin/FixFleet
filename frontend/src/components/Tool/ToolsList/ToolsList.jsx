@@ -28,12 +28,26 @@ import BookIcon from '@mui/icons-material/Book';
 import BuildIcon from '@mui/icons-material/Build';
 import { useNavigate } from 'react-router-dom';
 import { equipmentDetailRoute } from '../../../constants/routes';
+import { CardGridSkeleton, TableSkeleton } from '../../Skeletons/Skeletons';
+import { skeletonA11yProps } from '../../Skeletons/skeletonA11y';
 
 /**
  * Displays a list of equipment in either responsive Card Grid or Table layout.
  */
-export default function ToolsList({ tools = [], viewMode = 'grid', openFaultsByTool = {} }) {
+export default function ToolsList({ tools = [], viewMode = 'grid', loading = false, openFaultsByTool = {} }) {
     const navigate = useNavigate();
+
+    // Trace whichever layout is selected, so toggling grid/table while
+    // loading still previews the right shape.
+    if (loading && tools.length === 0) {
+        return (
+            <Box {...skeletonA11yProps('Loading equipment')}>
+                {viewMode === 'table'
+                    ? <TableSkeleton rows={6} columns={5} />
+                    : <CardGridSkeleton count={6} height={210} />}
+            </Box>
+        );
+    }
 
     if (tools.length === 0) {
         return (
