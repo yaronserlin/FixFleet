@@ -1,28 +1,32 @@
 // src/components/Navbar/index.jsx
 import React, { useMemo } from 'react';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Container from '@mui/material/Container';
-import Box from '@mui/material/Box';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
-import { alpha, useScrollTrigger } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
-import { useThemeMode } from '../../contexts/ThemeContext';
 import { ROLES } from '../../constants/roles';
-import MobileNav from './MobileNav';
-import DesktopNav from './DesktopNav';
-import UserMenu from './UserMenu';
+import SidebarNav from './SidebarNav';
+import BottomNav from './BottomNav';
 
-export default function Navbar() {
+/**
+ * Top-level navigation. Renders three breakpoint variants, following the
+ * same "mount all, toggle with CSS display" pattern the previous
+ * MobileNav/DesktopNav pair used (rather than conditionally mounting via
+ * useMediaQuery), so there's no remount/flicker at a resize boundary:
+ *
+ *  - Phone   (< sm / 600px):        BottomNav, a native-app-style bottom
+ *                                    tab bar with a raised center FAB that
+ *                                    opens fault creation from anywhere.
+ *  - Tablet  (sm-lg / 600-1200px):  SidebarNav variant="rail", an
+ *                                    icon-only "navigation rail" with
+ *                                    hover tooltips.
+ *  - Desktop (>= lg / 1200px):      SidebarNav variant="full", icon + text
+ *                                    labels.
+ *
+ * `onOpenCreateFault` is threaded down from AppLayout (src/routes.jsx),
+ * which owns the lifted CreateFaultDialog open/close state so the phone
+ * bottom bar's center button can open it regardless of which page is
+ * currently rendered.
+ */
+export default function Navbar({ onOpenCreateFault }) {
     const { user } = useAuth();
-    const { mode, toggleColorMode } = useThemeMode();
-    const isDark = mode === 'dark';
-
-    // Elevate AppBar when scrolled
-    const scrolled = useScrollTrigger({ disableHysteresis: true, threshold: 10 });
 
     const navPages = useMemo(() => {
         if (user?.role === ROLES.OPERATOR) {
@@ -36,52 +40,25 @@ export default function Navbar() {
     }, [user?.role]);
 
     return (
-        <AppBar
-            position="sticky"
-            elevation={0}
-            sx={{
-                borderBottomColor: scrolled
-                    ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.1)')
-                    : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'),
-                boxShadow: scrolled
-                    ? (isDark ? '0 4px 24px rgba(0,0,0,0.4)' : '0 4px 24px rgba(0,0,0,0.06)')
-                    : 'none',
-                transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
-            }}
-        >
-            <Container maxWidth="xl">
-                <Toolbar disableGutters sx={{ minHeight: { xs: 64, sm: 64 } }}>
-                    <MobileNav display={{ xs: 'flex', sm: 'none' }} user={user} pages={navPages} />
-                    <DesktopNav display={{ xs: 'none', sm: 'flex' }} user={user} pages={navPages} />
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, ml: 'auto' }}>
-                        <Tooltip title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}>
-                            <IconButton
-                                onClick={toggleColorMode}
-                                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                                size="small"
-                                sx={{
-                                    width: 36,
-                                    height: 36,
-                                    color: 'text.secondary',
-                                    bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06),
-                                    '&:hover': {
-                                        bgcolor: (theme) => alpha(theme.palette.text.primary, 0.1),
-                                        color: 'text.primary',
-                                    },
-                                }}
-                            >
-                                {isDark
-                                    ? <LightModeIcon sx={{ fontSize: 18 }} />
-                                    : <DarkModeIcon sx={{ fontSize: 18 }} />
-                                }
-                            </IconButton>
-                        </Tooltip>
-
-                        {user && <UserMenu user={user} />}
-                    </Box>
-                </Toolbar>
-            </Container>
-        </AppBar>
+        <>
+            <SidebarNav
+                variant="full"
+                display={{ xs: 'none', lg: 'block' }}
+                user={user}
+                pages={navPages}
+            />
+            <SidebarNav
+                variant="rail"
+                display={{ xs: 'none', sm: 'block', lg: 'none' }}
+                user={user}
+                pages={navPages}
+            />
+            <BottomNav
+                display={{ xs: 'flex', sm: 'none' }}
+                user={user}
+                pages={navPages}
+                onOpenCreateFault={onOpenCreateFault}
+            />
+        </>
     );
 }

@@ -1,0 +1,225 @@
+// src/components/Navbar/BottomNav.jsx
+import React, { useState } from 'react';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import ButtonBase from '@mui/material/ButtonBase';
+import Typography from '@mui/material/Typography';
+import Drawer from '@mui/material/Drawer';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Avatar from '@mui/material/Avatar';
+import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
+import AddIcon from '@mui/icons-material/Add';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import HistoryIcon from '@mui/icons-material/History';
+import LogoutIcon from '@mui/icons-material/Logout';
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import { getMediaUrl } from '../../utils/mediaUtils';
+import { formatUserName, getUserInitials } from '../../utils/formatUtils';
+import { useThemeMode } from '../../contexts/ThemeContext';
+import { pageToPath, pageIcon, isPageActive } from './navItems';
+import { BOTTOM_NAV_HEIGHT } from './navConstants';
+import { ROUTES } from '../../constants/routes';
+import { ROLES } from '../../constants/roles';
+
+const ROLE_COLOR = { [ROLES.ADMIN]: 'error', [ROLES.MECHANIC]: 'primary', [ROLES.OPERATOR]: 'success' };
+const ROLE_LABEL = { [ROLES.ADMIN]: 'Admin', [ROLES.MECHANIC]: 'Mechanic', [ROLES.OPERATOR]: 'Operator' };
+
+/**
+ * Native-app-style bottom tab bar for phone widths (< sm / 600px), with a
+ * raised center FAB that opens fault creation from anywhere in the app
+ * (like Instagram/Uber's center action button), and an "Account" tab that
+ * opens a bottom sheet keeping profile/activity/theme/logout reachable
+ * without a persistent top bar.
+ */
+export default function BottomNav({ display, user, pages, onOpenCreateFault }) {
+    const [accountOpen, setAccountOpen] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { mode, toggleColorMode } = useThemeMode();
+    const isDark = mode === 'dark';
+
+    if (!user) return null;
+
+    const mid = Math.ceil(pages.length / 2);
+    const leftPages = pages.slice(0, mid);
+    const rightPages = pages.slice(mid);
+    const avatarSrc = getMediaUrl(user.avatar || user.avatarUrl);
+
+    const goTo = (path) => {
+        setAccountOpen(false);
+        navigate(path);
+    };
+
+    // Icon-only tabs (no text label) -- with up to 4 nav pages + the center
+    // FAB + the Account tab sharing a 390px-wide row, text labels don't fit
+    // without overlapping (measured live). This also matches the
+    // Instagram/Uber-style bottom bar the design brief calls out, which
+    // doesn't label its tabs either; `aria-label` keeps them accessible.
+    const renderTab = (page) => {
+        const active = isPageActive(page, location.pathname);
+        return (
+            <ButtonBase
+                key={page}
+                component={RouterLink}
+                to={pageToPath(page)}
+                aria-label={page}
+                aria-current={active ? 'page' : undefined}
+                sx={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: BOTTOM_NAV_HEIGHT,
+                    color: active ? 'primary.main' : 'text.secondary',
+                }}
+            >
+                {pageIcon(page)}
+            </ButtonBase>
+        );
+    };
+
+    return (
+        <>
+            <Paper
+                elevation={0}
+                sx={{
+                    display,
+                    position: 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: (theme) => theme.zIndex.appBar,
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 0,
+                    pb: 'env(safe-area-inset-bottom)',
+                }}
+            >
+                <Box sx={{ display: 'flex', alignItems: 'stretch', height: BOTTOM_NAV_HEIGHT }}>
+                    {leftPages.map(renderTab)}
+
+                    {/* Raised center FAB: quick fault creation, reachable from any page */}
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: BOTTOM_NAV_HEIGHT,
+                            flexShrink: 0,
+                        }}
+                    >
+                        <ButtonBase
+                            onClick={onOpenCreateFault}
+                            aria-label="Report a fault"
+                            sx={{
+                                width: 52,
+                                height: 52,
+                                borderRadius: '50%',
+                                bgcolor: 'primary.main',
+                                color: 'primary.contrastText',
+                                boxShadow: '0 4px 14px rgba(37,99,235,0.4)',
+                                transform: 'translateY(-14px)',
+                                transition: 'transform 0.15s ease',
+                                '&:active': { transform: 'translateY(-14px) scale(0.94)' },
+                            }}
+                        >
+                            <AddIcon />
+                        </ButtonBase>
+                    </Box>
+
+                    {rightPages.map(renderTab)}
+
+                    <ButtonBase
+                        onClick={() => setAccountOpen(true)}
+                        aria-label="Open account menu"
+                        sx={{
+                            flex: 1,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            minHeight: BOTTOM_NAV_HEIGHT,
+                            color: 'text.secondary',
+                        }}
+                    >
+                        <Avatar
+                            src={avatarSrc}
+                            sx={{ width: 26, height: 26, fontSize: '0.7rem', bgcolor: `${ROLE_COLOR[user.role] || 'primary'}.main` }}
+                        >
+                            {getUserInitials(user.name)}
+                        </Avatar>
+                    </ButtonBase>
+                </Box>
+            </Paper>
+
+            {/* Account bottom sheet: keeps profile/activity/theme/logout reachable
+                on phone without a persistent top bar. */}
+            <Drawer
+                anchor="bottom"
+                open={accountOpen}
+                onClose={() => setAccountOpen(false)}
+                PaperProps={{
+                    sx: {
+                        borderTopLeftRadius: 16,
+                        borderTopRightRadius: 16,
+                        pb: 'env(safe-area-inset-bottom)',
+                    },
+                }}
+            >
+                <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Avatar
+                        src={avatarSrc}
+                        sx={{ width: 44, height: 44, fontWeight: 700, bgcolor: `${ROLE_COLOR[user.role] || 'primary'}.main` }}
+                    >
+                        {getUserInitials(user.name)}
+                    </Avatar>
+                    <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body1" fontWeight={700} noWrap>
+                            {formatUserName(user.name)}
+                        </Typography>
+                        <Chip
+                            label={ROLE_LABEL[user.role] || user.role}
+                            size="small"
+                            color={ROLE_COLOR[user.role] || 'primary'}
+                            sx={{ height: 20, fontSize: '0.68rem', fontWeight: 700, mt: 0.25 }}
+                        />
+                    </Box>
+                </Box>
+
+                <Divider />
+
+                <List sx={{ py: 1 }}>
+                    <ListItemButton onClick={() => goTo(ROUTES.ACCOUNT)} sx={{ minHeight: 48 }}>
+                        <ListItemIcon><ManageAccountsIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText primary="Account Settings" />
+                    </ListItemButton>
+                    <ListItemButton onClick={() => goTo(ROUTES.PROFILE)} sx={{ minHeight: 48 }}>
+                        <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText primary="My Activity" />
+                    </ListItemButton>
+                    <ListItemButton onClick={toggleColorMode} sx={{ minHeight: 48 }}>
+                        <ListItemIcon>
+                            {isDark ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
+                        </ListItemIcon>
+                        <ListItemText primary={isDark ? 'Light Mode' : 'Dark Mode'} />
+                    </ListItemButton>
+
+                    <Divider sx={{ my: 0.5 }} />
+
+                    <ListItemButton
+                        onClick={() => goTo(ROUTES.LOGOUT)}
+                        sx={{ minHeight: 48, color: 'error.main' }}
+                    >
+                        <ListItemIcon sx={{ color: 'error.main' }}><LogoutIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText primary="Log out" />
+                    </ListItemButton>
+                </List>
+            </Drawer>
+        </>
+    );
+}
