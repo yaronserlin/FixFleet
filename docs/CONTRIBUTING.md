@@ -89,7 +89,8 @@ npm test
 
 When creating new backend tests:
 - Place test files under `backend/__tests__/` (e.g. `backend/__tests__/<feature>.test.js`).
-- Use helper utilities in `backend/__tests__/helpers/` for database setup and token generation.
+- Use helper utilities in `backend/__tests__/helpers/` for database setup and token generation (`connectTestDB`/`closeTestDB`/`registerCompanyAdmin`/`createCompanyAndUser`/`uniqueEmail`).
+- Prefer direct unit tests of `services/*.js` and `middleware/*.js` functions for business-logic and edge-case coverage (fast, precise failures); use the existing controller-level HTTP integration style (via `supertest`) for end-to-end route behavior. Both styles coexist in this suite.
 - Ensure all queries verify tenant isolation (`companyId`).
 
 ### Running Frontend Tests
@@ -101,8 +102,9 @@ npm test
 ```
 
 When creating new frontend tests:
-- Place test files under `frontend/__tests__/` or alongside components using `.test.jsx` extension.
-- Mock network requests via API client or service mocks.
+- Place test files under `frontend/__tests__/` (login/legal-flow tests) or co-located next to their source as `Component.test.jsx` / `module.test.js` (the pattern used for most components, hooks, services, and contexts) — both conventions are in active use, pick whichever matches the nearest existing sibling test.
+- Mock the network boundary (`apiClient`/`axios`), not internal implementation details.
+- Query by role/label/text (React Testing Library), not by implementation detail like class names.
 
 ---
 

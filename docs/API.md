@@ -7,6 +7,7 @@ This document provides the complete API specification for the MaintenanceSystemA
 ## General Architecture
 
 - **Base Path**: `/api`
+- **Layering**: `routes/` → `controllers/` (thin: parse request, call service, shape response) → `services/` (business logic and data access) → `models/` (Mongoose schemas). Centralized error handling lives in `middleware/errorMiddleware.js`; NoSQL-operator sanitization (`middleware/sanitizeMiddleware.js`) runs on every request body/query/params before it reaches a route handler.
 - **Authentication**: JWT token transmitted via HTTP-only cookie (`token`) or Authorization header.
 - **Multi-Tenancy**: Tenant isolation is enforced across all resources based on the authenticated user's `companyId`.
 - **Role-Based Access Control**:

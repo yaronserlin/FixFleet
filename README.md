@@ -2,8 +2,8 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
-[![React Version](https://img.shields.io/badge/react-19.1.0-blue.svg)](https://react.dev/)
-[![Express Version](https://img.shields.io/badge/express-5.1.0-lightgrey.svg)](https://expressjs.com/)
+[![React Version](https://img.shields.io/badge/react-19.3.0-blue.svg)](https://react.dev/)
+[![Express Version](https://img.shields.io/badge/express-5.2.1-lightgrey.svg)](https://expressjs.com/)
 
 A modern, multi-tenant web application designed for comprehensive industrial and commercial equipment maintenance, fault tracking, preventive maintenance scheduling, and spare parts management.
 
@@ -27,7 +27,7 @@ A modern, multi-tenant web application designed for comprehensive industrial and
   - `mechanic`: Equipment maintenance, schedule execution, checklist management, fault resolution, and parts tracking.
   - `operator`: Equipment status view, fault reporting with photo uploads, and task visibility.
 - **Progressive Web App (PWA)**: Built with `vite-plugin-pwa` for offline capability and mobile-friendly field operations.
-- **Robust Security**: Rate-limited authentication, HTTP-only JWT cookies, Helmet HTTP headers, strict CORS origin controls, and tenant-scoped media delivery.
+- **Robust Security**: Rate-limited authentication, HTTP-only JWT cookies, Helmet HTTP headers, strict CORS origin controls, tenant-scoped media delivery, and recursive NoSQL-operator sanitization on every request body/query/params.
 
 ---
 
@@ -35,7 +35,7 @@ A modern, multi-tenant web application designed for comprehensive industrial and
 
 ### Frontend
 - **Framework & Tooling**: [React 19](https://react.dev/), [Vite](https://vite.dev/), [Vite PWA](https://vite-pwa-org.netlify.app/)
-- **UI & Components**: [Material-UI (MUI v7)](https://mui.com/), [Emotion](https://emotion.sh/)
+- **UI & Components**: [Material-UI (MUI v9)](https://mui.com/), [Emotion](https://emotion.sh/)
 - **State & Routing**: React Context API, [React Router v7](https://reactrouter.com/)
 - **Data Visualization & Scheduling**: [Recharts](https://recharts.org/), [FullCalendar](https://fullcalendar.io/)
 - **HTTP Client**: [Axios](https://axios-http.com/) with global auth interceptors and notifications via [Notistack](https://notistack.com/)
@@ -57,21 +57,25 @@ A modern, multi-tenant web application designed for comprehensive industrial and
 MaintenanceSystemApp/
 ├── backend/                  # Express REST API
 │   ├── config/               # Database and server configuration
-│   ├── controllers/          # Request handlers and business logic
-│   ├── middleware/           # Auth, validation, upload, and error middleware
+│   ├── constants/            # Shared enums/config (roles, rate limits, fault/schedule status, auth)
+│   ├── controllers/          # Thin HTTP layer: parse request, call service, shape response
+│   ├── middleware/           # Auth, validation, upload, sanitize, and centralized error middleware
 │   ├── models/               # Mongoose data schemas (Tenant-scoped)
 │   ├── routes/               # Express API route declarations
-│   ├── seeders/              # Database seeding scripts
-│   ├── uploads/              # Local storage for manuals and images
-│   └── __tests__/            # Backend unit and integration tests
+│   ├── seeders/               # Database seeding scripts
+│   ├── services/              # Business logic and data access, called by controllers
+│   ├── uploads/               # Local storage for manuals and images
+│   └── __tests__/             # Backend unit and integration tests
 ├── frontend/                 # React Single Page Application (PWA)
 │   ├── src/
-│   │   ├── common/           # Shared UI components, hooks, contexts, utils
-│   │   ├── components/       # Feature-specific components (Fault, Tool, etc.)
-│   │   ├── contexts/         # React contexts (Auth, Fault, Tool)
-│   │   ├── pages/            # View pages and route layouts
-│   │   └── services/         # Axios API clients and endpoint wrappers
-│   └── __tests__/            # Frontend component tests
+│   │   ├── components/       # Feature-specific components (Fault, Tool, User, etc.)
+│   │   ├── constants/        # Shared literals (roles, fault status, route paths)
+│   │   ├── contexts/         # React contexts (Auth, Equipment, Fault, Notification, Theme, Tool)
+│   │   ├── hooks/             # Shared hooks (e.g. useForm)
+│   │   ├── pages/             # View pages and route layouts
+│   │   ├── services/          # Axios API clients and endpoint wrappers
+│   │   └── *.test.jsx / *.test.js  # Co-located component/hook/service tests
+│   └── __tests__/             # Additional component tests (login/legal flows)
 ├── docs/                     # Detailed project documentation
 │   ├── API.md                # Full REST API endpoint specification
 │   ├── CONTRIBUTING.md       # Development guide, testing, and PR checklist
