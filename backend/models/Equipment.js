@@ -1,5 +1,6 @@
 // models/Equipment.js
 const mongoose = require('mongoose');
+const { ALL_SCHEDULE_STATUSES, SCHEDULE_STATUS } = require('../constants/scheduleStatus');
 
 const EquipmentSchema = new mongoose.Schema({
     companyId: {
@@ -30,7 +31,7 @@ const EquipmentSchema = new mongoose.Schema({
         lastPerformedDate: { type: Date },
         nextDueHours: { type: Number, default: 0 },
         nextDueDate: { type: Date },
-        status: { type: String, enum: ['normal', 'due_soon', 'overdue'], default: 'normal' },
+        status: { type: String, enum: ALL_SCHEDULE_STATUSES, default: SCHEDULE_STATUS.NORMAL },
         checklist: [{
             text: { type: String, required: true, trim: true },
             done: { type: Boolean, default: false },

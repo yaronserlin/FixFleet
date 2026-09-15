@@ -1,5 +1,6 @@
 // backend/utils/equipmentEngineHours.js
 const mongoose = require('mongoose');
+const { SCHEDULE_STATUS, DUE_SOON_THRESHOLD_HOURS } = require('../constants/scheduleStatus');
 
 /**
  * Synchronizes an equipment's currentEngineHours to the highest recorded value among:
@@ -67,11 +68,11 @@ async function syncEquipmentEngineHours(toolId, companyId, additionalCandidate =
                 const nextDue = task.nextDueHours || ((task.lastPerformedHours || 0) + task.intervalHours);
                 const remainingHours = nextDue - tool.currentEngineHours;
                 if (remainingHours <= 0) {
-                    task.status = 'overdue';
-                } else if (remainingHours <= 20) {
-                    task.status = 'due_soon';
+                    task.status = SCHEDULE_STATUS.OVERDUE;
+                } else if (remainingHours <= DUE_SOON_THRESHOLD_HOURS) {
+                    task.status = SCHEDULE_STATUS.DUE_SOON;
                 } else {
-                    task.status = 'normal';
+                    task.status = SCHEDULE_STATUS.NORMAL;
                 }
             }
         });
