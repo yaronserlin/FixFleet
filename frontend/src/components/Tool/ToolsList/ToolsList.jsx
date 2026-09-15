@@ -65,9 +65,9 @@ export default function ToolsList({ tools = [], viewMode = 'grid', openFaultsByT
                         <TableRow>
                             <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>ID / Unit</TableCell>
                             <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Name</TableCell>
-                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Model</TableCell>
-                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Serial Number</TableCell>
-                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Engine Hours</TableCell>
+                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: { xs: 'none', sm: 'table-cell' } }}>Model</TableCell>
+                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: { xs: 'none', md: 'table-cell' } }}>Serial Number</TableCell>
+                            <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em', display: { xs: 'none', md: 'table-cell' } }}>Engine Hours</TableCell>
                             <TableCell sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Status</TableCell>
                             <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Actions</TableCell>
                         </TableRow>
@@ -97,9 +97,9 @@ export default function ToolsList({ tools = [], viewMode = 'grid', openFaultsByT
                                             {tool.name}
                                         </Typography>
                                     </TableCell>
-                                    <TableCell>{tool.model || '—'}</TableCell>
-                                    <TableCell>{tool.serialNumber || '—'}</TableCell>
-                                    <TableCell>
+                                    <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{tool.model || '—'}</TableCell>
+                                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{tool.serialNumber || '—'}</TableCell>
+                                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                                         {tool.currentEngineHours !== undefined ? (
                                             <Chip
                                                 icon={<SpeedIcon sx={{ fontSize: '0.9rem !important' }} />}

@@ -178,10 +178,10 @@ export default function FaultList({
                         <TableRow>
                             <TableCell>Status</TableCell>
                             <TableCell>Code</TableCell>
-                            <TableCell>Photo</TableCell>
+                            <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Photo</TableCell>
                             <TableCell>Hours</TableCell>
                             <TableCell>Description</TableCell>
-                            <TableCell>Reported</TableCell>
+                            <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Reported</TableCell>
                             {isUserAuthorized() && <TableCell align="right">Actions</TableCell>}
                         </TableRow>
                     </TableHead>
@@ -213,7 +213,7 @@ export default function FaultList({
                                     />
                                 </TableCell>
                                 <TableCell>{fault.code || 'N/A'}</TableCell>
-                                <TableCell>
+                                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                                     {fault.photos && fault.photos.length > 0 ? (
                                         <Box
                                             component="img"
@@ -246,7 +246,7 @@ export default function FaultList({
                                 <TableCell sx={{ maxWidth: 260, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {fault.description || 'No description provided'}
                                 </TableCell>
-                                <TableCell>
+                                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                                     {fault.createdAt ? new Date(fault.createdAt).toLocaleDateString('en-GB') : 'N/A'}
                                 </TableCell>
                                 {isUserAuthorized() && (
