@@ -1,5 +1,6 @@
 // models/User.js
 const mongoose = require('mongoose');
+const { ALL_ROLES, DEFAULT_ROLE } = require('../constants/roles');
 
 const formatUserName = (name) => {
     if (!name || typeof name !== 'string') return '';
@@ -19,7 +20,7 @@ const formatUserName = (name) => {
 const UserSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true, set: formatUserName },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    role: { type: String, enum: ['operator', 'mechanic', 'admin'], default: 'operator' },
+    role: { type: String, enum: ALL_ROLES, default: DEFAULT_ROLE },
     avatar: { type: String, trim: true, default: null },
     password: { type: String, required: true },
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'Company', required: true, index: true },

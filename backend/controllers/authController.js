@@ -5,11 +5,14 @@ const Company = require('../models/Company');
 const RefreshToken = require('../models/RefreshToken');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-
-const ACCESS_TOKEN_EXPIRY = '15m';
-const REFRESH_TOKEN_EXPIRY = '7d';
-const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000; // 15 minutes
-const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
+const { ROLES } = require('../constants/roles');
+const {
+    ACCESS_TOKEN_EXPIRY,
+    REFRESH_TOKEN_EXPIRY,
+    ACCESS_COOKIE_MAX_AGE,
+    REFRESH_COOKIE_MAX_AGE,
+    BCRYPT_SALT_ROUNDS,
+} = require('../constants/auth');
 
 const getRefreshSecret = () => process.env.JWT_REFRESH_SECRET || `${process.env.JWT_SECRET}_refresh`;
 
@@ -126,12 +129,12 @@ exports.register = async (req, res, next) => {
         });
 
         try {
-            const hashedPassword = await bcrypt.hash(password, 10);
+            const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
             // Critical #1 Fix: Role is strictly admin for company creator, never from req.body
             const user = await User.create({
                 name: name.trim(),
                 email: normalizedEmail,
-                role: 'admin',
+                role: ROLES.ADMIN,
                 password: hashedPassword,
                 companyId: company._id,
                 termsAccepted: true,
@@ -451,7 +454,7 @@ exports.changePassword = async (req, res, next) => {
             }
         }
 
-        user.password = await bcrypt.hash(newPassword, 10);
+        user.password = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
         user.mustChangePassword = false;
         if (agreeToTerms === true || termsAccepted === true || !user.termsAccepted) {
             user.termsAccepted = true;

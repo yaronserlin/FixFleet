@@ -9,8 +9,24 @@ process.env.MONGOMS_DOWNLOAD_DIR = path.join(__dirname, '../../.mongo-binaries')
 
 let mongoServer;
 
+// mongodb-memory-server occasionally picks a free port that loses a race
+// with another process/instance binding it first ("Port already in use").
+// Retry once before giving up so this rare, external timing issue doesn't
+// flake out an otherwise-healthy test run.
+async function createMongoMemoryServerWithRetry(attempts = 2) {
+    let lastErr;
+    for (let i = 0; i < attempts; i += 1) {
+        try {
+            return await MongoMemoryServer.create();
+        } catch (err) {
+            lastErr = err;
+        }
+    }
+    throw lastErr;
+}
+
 async function connectTestDB() {
-    mongoServer = await MongoMemoryServer.create();
+    mongoServer = await createMongoMemoryServerWithRetry();
     await mongoose.connect(mongoServer.getUri());
 }
 

@@ -14,8 +14,24 @@ jest.setTimeout(90000);
 
 let mongoServer;
 
+// mongodb-memory-server occasionally picks a free port that loses a race
+// with another process/instance binding it first ("Port already in use").
+// Retry once before giving up so this rare, external timing issue doesn't
+// flake out an otherwise-healthy test run.
+async function createMongoMemoryServerWithRetry(attempts = 2) {
+    let lastErr;
+    for (let i = 0; i < attempts; i += 1) {
+        try {
+            return await MongoMemoryServer.create();
+        } catch (err) {
+            lastErr = err;
+        }
+    }
+    throw lastErr;
+}
+
 beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
+    mongoServer = await createMongoMemoryServerWithRetry();
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
     server = app.listen(0);

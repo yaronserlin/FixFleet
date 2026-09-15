@@ -1,5 +1,6 @@
 // controllers/maintenanceController.js
 const Maintenance = require('../models/Maintenance');
+const { DEFAULT_PAGE, DEFAULT_LIMIT, MAX_LIMIT } = require('../constants/pagination');
 const Tool = require('../models/Tool');
 const { syncEquipmentEngineHours } = require('../utils/equipmentEngineHours');
 
@@ -12,8 +13,8 @@ exports.getAllMaintenance = async (req, res, next) => {
         }
 
         if (page || limit) {
-            const pageNum = Math.max(1, parseInt(page, 10) || 1);
-            const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 20));
+            const pageNum = Math.max(1, parseInt(page, 10) || DEFAULT_PAGE);
+            const limitNum = Math.max(1, Math.min(MAX_LIMIT, parseInt(limit, 10) || DEFAULT_LIMIT));
             const skip = (pageNum - 1) * limitNum;
 
             const [logs, total] = await Promise.all([

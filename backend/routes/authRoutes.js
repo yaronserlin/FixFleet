@@ -14,10 +14,10 @@ const {
 } = require('../controllers/authController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
+const { AUTH_RATE_LIMIT } = require('../constants/rateLimits');
 
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 20,
+    ...AUTH_RATE_LIMIT,
     message: { message: 'Too many attempts from this IP, please try again after 15 minutes' },
     standardHeaders: true,
     legacyHeaders: false,

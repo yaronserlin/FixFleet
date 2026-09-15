@@ -1,6 +1,7 @@
 // middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { ROLES, MECHANIC_OR_ADMIN_ROLES } = require('../constants/roles');
 
 exports.verifyToken = async (req, res, next) => {
     let token = null;
@@ -67,14 +68,14 @@ exports.verifyToken = async (req, res, next) => {
 };
 
 exports.ensureAdmin = (req, res, next) => {
-    if (!req.user || req.user.role !== 'admin') {
+    if (!req.user || req.user.role !== ROLES.ADMIN) {
         return res.status(403).json({ message: 'Forbidden: Admins only' });
     }
     next();
 };
 
 exports.ensureMechanicOrAdmin = (req, res, next) => {
-    if (!req.user || !['admin', 'mechanic'].includes(req.user.role)) {
+    if (!req.user || !MECHANIC_OR_ADMIN_ROLES.includes(req.user.role)) {
         return res.status(403).json({ message: 'Forbidden: Mechanics or Admins only' });
     }
     next();

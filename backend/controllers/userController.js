@@ -1,8 +1,10 @@
 // controllers/userController.js
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
+const { ROLES, ALL_ROLES, DEFAULT_ROLE } = require('../constants/roles');
+const { BCRYPT_SALT_ROUNDS } = require('../constants/auth');
 
-const ALLOWED_ROLES = ['operator', 'mechanic', 'admin'];
+const ALLOWED_ROLES = ALL_ROLES;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 exports.getAllUsers = async (req, res, next) => {
@@ -41,12 +43,12 @@ exports.createUser = async (req, res, next) => {
             return res.status(400).json({ message: 'User with this email already exists' });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
         const user = await User.create({
             name: name.trim(),
             email: normalizedEmail,
             password: hashedPassword,
-            role: 'operator', // Created by default as operator; can be updated later
+            role: DEFAULT_ROLE, // Created by default as operator; can be updated later
             companyId: req.user.companyId,
             mustChangePassword: true, // Force password change after first login
         });
@@ -86,10 +88,10 @@ exports.updateUserRole = async (req, res, next) => {
         }
 
         // 4. Protection: If demoting an existing admin, ensure they are not the only admin in the company
-        if (targetUser.role === 'admin' && targetRole !== 'admin') {
+        if (targetUser.role === ROLES.ADMIN && targetRole !== ROLES.ADMIN) {
             const adminCount = await User.countDocuments({
                 companyId: req.user.companyId,
-                role: 'admin',
+                role: ROLES.ADMIN,
             });
             if (adminCount <= 1) {
                 return res.status(400).json({ message: 'Cannot demote the only administrator of the company' });
@@ -126,10 +128,10 @@ exports.deleteUser = async (req, res, next) => {
         }
 
         // 3. Protection: Cannot delete the only remaining admin in the company
-        if (targetUser.role === 'admin') {
+        if (targetUser.role === ROLES.ADMIN) {
             const adminCount = await User.countDocuments({
                 companyId: req.user.companyId,
-                role: 'admin',
+                role: ROLES.ADMIN,
             });
             if (adminCount <= 1) {
                 return res.status(400).json({ message: 'Cannot delete the only administrator of the company' });
