@@ -10,6 +10,7 @@ const mongoose = require('mongoose');
 const connectDB = require('./config/db');
 const { verifyToken } = require('./middleware/authMiddleware');
 const { errorHandler } = require('./middleware/errorMiddleware');
+const { sanitizeRequest } = require('./middleware/sanitizeMiddleware');
 
 // Model imports for tenant-aware media access
 const Equipment = require('./models/Equipment');
@@ -78,6 +79,10 @@ app.use(cors({
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// NoSQL injection defense-in-depth: strip any `$`-prefixed or dotted key
+// from user-controlled input before it reaches route handlers.
+app.use(sanitizeRequest);
 
 // HTTP Request Logger
 app.use((req, res, next) => {
