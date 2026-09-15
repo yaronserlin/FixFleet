@@ -9,7 +9,6 @@ import { Chip, Stack } from '@mui/material';
 import SpeedIcon from '@mui/icons-material/Speed';
 import ReplayIcon from '@mui/icons-material/Replay';
 import CloseIcon from '@mui/icons-material/Close';
-import DeleteIcon from '@mui/icons-material/Delete';
 import { getMediaUrl } from '../../../utils/mediaUtils';
 import { formatUserName } from '../../../utils/formatUtils';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -38,7 +37,6 @@ export default function FaultModal({
     open,
     onCloseFault,
     onReopenFault,
-    onDeleteFault,
 }) {
     const { user } = useAuth();
     const [viewerIndex, setViewerIndex] = React.useState(null);
@@ -197,20 +195,6 @@ export default function FaultModal({
                                         sx={{ fontWeight: 700 }}
                                     >
                                         Resolve Fault
-                                    </Button>
-                                )}
-                                {canManage && onDeleteFault && (
-                                    <Button
-                                        variant="text"
-                                        color="error"
-                                        startIcon={<DeleteIcon />}
-                                        onClick={() => {
-                                            onDeleteFault(fault);
-                                            handleClose();
-                                        }}
-                                        sx={{ fontWeight: 600 }}
-                                    >
-                                        Delete
                                     </Button>
                                 )}
                                 <Button

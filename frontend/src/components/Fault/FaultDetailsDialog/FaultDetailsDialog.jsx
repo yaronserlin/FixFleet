@@ -16,7 +16,6 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import SpeedIcon from '@mui/icons-material/Speed';
 import ReplayIcon from '@mui/icons-material/Replay';
-import DeleteIcon from '@mui/icons-material/Delete';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { getMediaUrl } from '../../../utils/mediaUtils';
@@ -30,7 +29,6 @@ export default function FaultDetailsDialog({
     open,
     onClose,
     fault,
-    onDeleteFault,
     onCloseFault,
     onReopenFault,
 }) {
@@ -247,20 +245,6 @@ export default function FaultDetailsDialog({
                                 sx={{ fontWeight: 700 }}
                             >
                                 Resolve Fault
-                            </Button>
-                        )}
-                        {canManage && onDeleteFault && (
-                            <Button
-                                variant="text"
-                                color="error"
-                                startIcon={<DeleteIcon />}
-                                onClick={() => {
-                                    onClose();
-                                    onDeleteFault(fault);
-                                }}
-                                sx={{ fontWeight: 600 }}
-                            >
-                                Delete
                             </Button>
                         )}
                         <Button

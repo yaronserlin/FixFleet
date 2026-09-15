@@ -1,9 +1,12 @@
 // src/components/Fault/FaultDetailsDialog/FaultDetailsDialog.test.jsx
 //
-// Regression coverage for a real bug fixed this session: the `onDeleteFault`
-// prop used to be silently dropped by this component (no Delete button was
-// ever wired to it). It is now gated behind `canManage && onDeleteFault`,
-// same as the Resolve/Reopen actions. These tests pin that gating down.
+// Regression coverage: an earlier session's testing pass had added a
+// Delete button here (wired to `onDeleteFault`). Product direction is that
+// deleting a fault should only be available from the fault cards
+// (FaultCard/FaultList), not from this dialog. These tests pin down that
+// the Delete button never renders here, regardless of role or whether
+// `onDeleteFault` is supplied, while `onDeleteFault` itself may still be
+// accepted as a prop (harmless if unused).
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import FaultDetailsDialog from './FaultDetailsDialog';
@@ -48,37 +51,30 @@ describe('FaultDetailsDialog', () => {
         expect(screen.getByText('Jane Doe')).toBeInTheDocument();
     });
 
-    describe('Delete button gating (regression: onDeleteFault used to be dropped)', () => {
-        it('shows Delete for a mechanic when onDeleteFault is provided', () => {
+    describe('Delete button removed from this dialog (delete only lives on FaultCard/FaultList)', () => {
+        it('never shows Delete for a mechanic, even when onDeleteFault is provided', () => {
             setup({}, 'mechanic');
-            expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
         });
 
-        it('shows Delete for an admin when onDeleteFault is provided', () => {
+        it('never shows Delete for an admin, even when onDeleteFault is provided', () => {
             setup({}, 'admin');
-            expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
         });
 
-        it('hides Delete for an operator even when onDeleteFault is provided', () => {
+        it('never shows Delete for an operator', () => {
             setup({}, 'operator');
             expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
         });
 
-        it('hides Delete when there is no logged-in user', () => {
+        it('never shows Delete when there is no logged-in user', () => {
             setup({}, null);
             expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
         });
 
-        it('hides Delete when onDeleteFault is not supplied, even for a mechanic', () => {
+        it('never shows Delete when onDeleteFault is not supplied', () => {
             setup({ onDeleteFault: undefined }, 'mechanic');
             expect(screen.queryByRole('button', { name: /delete/i })).not.toBeInTheDocument();
-        });
-
-        it('closes the dialog and fires onDeleteFault with the fault when clicked', () => {
-            const props = setup({}, 'mechanic');
-            fireEvent.click(screen.getByRole('button', { name: /delete/i }));
-            expect(props.onClose).toHaveBeenCalledTimes(1);
-            expect(props.onDeleteFault).toHaveBeenCalledWith(baseFault);
         });
     });
 
