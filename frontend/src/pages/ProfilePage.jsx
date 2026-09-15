@@ -26,6 +26,9 @@ import faultService from '../services/faultsService';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../utils/formatUtils';
 import LoadingComponent from '../components/LoadingComponent/LoadingComponent';
+import { ROUTES, equipmentDetailRoute } from '../constants/routes';
+import { DEFAULT_ROLE } from '../constants/roles';
+import { FAULT_STATUS } from '../constants/faultStatus';
 
 const ROLE_COLOR = { admin: 'error', mechanic: 'primary', operator: 'success' };
 const ROLE_BORDER = { admin: '#DC2626', mechanic: '#2563EB', operator: '#16A34A' };
@@ -79,10 +82,10 @@ export default function ProfilePage() {
         );
     }
 
-    const openCount = faults.filter(f => f.status === 'open').length;
-    const closedCount = faults.filter(f => f.status === 'closed').length;
+    const openCount = faults.filter(f => f.status === FAULT_STATUS.OPEN).length;
+    const closedCount = faults.filter(f => f.status === FAULT_STATUS.CLOSED).length;
     const avatarSrc = getMediaUrl(user?.avatar || user?.avatarUrl);
-    const userRole = user?.role || 'operator';
+    const userRole = user?.role || DEFAULT_ROLE;
     const roleThemeColor = ROLE_COLOR[userRole] || 'primary';
     const roleBorderColor = ROLE_BORDER[userRole] || '#2563EB';
 
@@ -136,7 +139,7 @@ export default function ProfilePage() {
                         variant="outlined"
                         color="primary"
                         startIcon={<ManageAccountsIcon />}
-                        onClick={() => navigate('/account')}
+                        onClick={() => navigate(ROUTES.ACCOUNT)}
                         sx={{ minHeight: 40 }}
                     >
                         Edit Account Details
@@ -189,17 +192,17 @@ export default function ProfilePage() {
                     <Chip
                         label={`Open (${openCount})`}
                         size="small"
-                        variant={statusFilter === 'open' ? 'filled' : 'outlined'}
-                        color={statusFilter === 'open' ? 'error' : 'default'}
-                        onClick={() => setStatusFilter('open')}
+                        variant={statusFilter === FAULT_STATUS.OPEN ? 'filled' : 'outlined'}
+                        color={statusFilter === FAULT_STATUS.OPEN ? 'error' : 'default'}
+                        onClick={() => setStatusFilter(FAULT_STATUS.OPEN)}
                         sx={{ fontWeight: 600, cursor: 'pointer' }}
                     />
                     <Chip
                         label={`Closed (${closedCount})`}
                         size="small"
-                        variant={statusFilter === 'closed' ? 'filled' : 'outlined'}
-                        color={statusFilter === 'closed' ? 'success' : 'default'}
-                        onClick={() => setStatusFilter('closed')}
+                        variant={statusFilter === FAULT_STATUS.CLOSED ? 'filled' : 'outlined'}
+                        color={statusFilter === FAULT_STATUS.CLOSED ? 'success' : 'default'}
+                        onClick={() => setStatusFilter(FAULT_STATUS.CLOSED)}
                         sx={{ fontWeight: 600, cursor: 'pointer' }}
                     />
                 </Box>
@@ -225,7 +228,7 @@ export default function ProfilePage() {
                     {filteredFaults.map(fault => {
                         const toolId = fault.tool?._id || fault.tool;
                         const toolName = fault.tool?.name;
-                        const isOpen = fault.status === 'open';
+                        const isOpen = fault.status === FAULT_STATUS.OPEN;
 
                         return (
                             <Grid size={{ xs: 12, sm: 6 }} key={fault._id}>
@@ -304,7 +307,7 @@ export default function ProfilePage() {
                                                         variant="text"
                                                         color="primary"
                                                         endIcon={<ChevronRightIcon />}
-                                                        onClick={() => navigate(`/equipment/${toolId}`)}
+                                                        onClick={() => navigate(equipmentDetailRoute(toolId))}
                                                         sx={{ fontWeight: 700, p: '2px 6px', minHeight: 28 }}
                                                     >
                                                         Details

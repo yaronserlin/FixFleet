@@ -34,11 +34,12 @@ import { formatUserName } from '../../../utils/formatUtils';
 import LoadingComponent from '../../LoadingComponent/LoadingComponent';
 import ErrorComponent from '../../ErrorComponent/ErrorComponent';
 import DialogComponent from '../../DialogComponent';
+import { DEFAULT_ROLE, ROLES } from '../../../constants/roles';
 
 const ROLE_COLOR_MAP = {
-    admin: 'error',
-    mechanic: 'primary',
-    operator: 'default',
+    [ROLES.ADMIN]: 'error',
+    [ROLES.MECHANIC]: 'primary',
+    [ROLES.OPERATOR]: 'default',
 };
 
 export default function UserPanel({
@@ -206,7 +207,7 @@ export default function UserPanel({
                         filteredUsers.map((u) => {
                             const isSelf = Boolean(currentUserId && String(u._id) === String(currentUserId));
                             const isSaving = savingUserId === u._id;
-                            const currentRole = u.role || 'operator';
+                            const currentRole = u.role || DEFAULT_ROLE;
                             const selectedRole = pendingRoles[u._id] !== undefined ? pendingRoles[u._id] : currentRole;
                             const hasChanged = selectedRole !== currentRole;
 
@@ -309,9 +310,9 @@ export default function UserPanel({
                                                             onChange={(e) => handleRoleSelectChange(u._id, e.target.value)}
                                                             sx={{ fontSize: '0.8rem', height: 32, borderRadius: 1 }}
                                                         >
-                                                            <MenuItem value="operator">Operator</MenuItem>
-                                                            <MenuItem value="mechanic">Mechanic</MenuItem>
-                                                            <MenuItem value="admin">Admin</MenuItem>
+                                                            <MenuItem value={ROLES.OPERATOR}>Operator</MenuItem>
+                                                            <MenuItem value={ROLES.MECHANIC}>Mechanic</MenuItem>
+                                                            <MenuItem value={ROLES.ADMIN}>Admin</MenuItem>
                                                         </Select>
                                                     </FormControl>
                                                 </span>
@@ -364,7 +365,7 @@ export default function UserPanel({
                             {filteredUsers.map((u) => {
                                 const isSelf = Boolean(currentUserId && String(u._id) === String(currentUserId));
                                 const isSaving = savingUserId === u._id;
-                                const currentRole = u.role || 'operator';
+                                const currentRole = u.role || DEFAULT_ROLE;
                                 const selectedRole = pendingRoles[u._id] !== undefined ? pendingRoles[u._id] : currentRole;
                                 const hasChanged = selectedRole !== currentRole;
 
@@ -419,9 +420,9 @@ export default function UserPanel({
                                                                     borderColor: hasChanged ? 'primary.main' : undefined,
                                                                 }}
                                                             >
-                                                                <MenuItem value="operator">Operator</MenuItem>
-                                                                <MenuItem value="mechanic">Mechanic</MenuItem>
-                                                                <MenuItem value="admin">Admin</MenuItem>
+                                                                <MenuItem value={ROLES.OPERATOR}>Operator</MenuItem>
+                                                                <MenuItem value={ROLES.MECHANIC}>Mechanic</MenuItem>
+                                                                <MenuItem value={ROLES.ADMIN}>Admin</MenuItem>
                                                             </Select>
                                                         </FormControl>
                                                     </span>

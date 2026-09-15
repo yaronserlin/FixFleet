@@ -29,6 +29,8 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
 import { useAuth } from '../contexts/AuthContext';
+import { isMechanicOrAdmin } from '../constants/roles';
+import { equipmentDetailTabRoute } from '../constants/routes';
 import { useNotify } from '../contexts/NotificationContext';
 import equipmentService from '../services/equipmentService';
 import LoadingComponent from '../components/LoadingComponent/LoadingComponent';
@@ -55,7 +57,7 @@ export default function EquipmentSchedulePage() {
     const [inProgressNotes, setInProgressNotes] = useState('');
     const [savingNotes, setSavingNotes] = useState(false);
 
-    const canManage = user?.role === 'admin' || user?.role === 'mechanic';
+    const canManage = isMechanicOrAdmin(user?.role);
 
     const loadData = useCallback(async () => {
         try {
@@ -149,7 +151,7 @@ export default function EquipmentSchedulePage() {
             });
             notify.success('Service logged and schedule updated');
             setCompleteDialogOpen(false);
-            navigate(`/equipment/${id}?tab=maintenance`, { state: { tab: 1, refreshedAt: Date.now() }, replace: true });
+            navigate(equipmentDetailTabRoute(id, 'maintenance'), { state: { tab: 1, refreshedAt: Date.now() }, replace: true });
         } catch (err) {
             console.error('Complete schedule error:', err);
             notify.error('Failed to log completed maintenance');
@@ -171,7 +173,7 @@ export default function EquipmentSchedulePage() {
             <Box mb={2}>
                 <Button
                     startIcon={<ArrowBackIcon />}
-                    onClick={() => navigate(`/equipment/${id}?tab=maintenance`, { state: { tab: 1, refreshedAt: Date.now() } })}
+                    onClick={() => navigate(equipmentDetailTabRoute(id, 'maintenance'), { state: { tab: 1, refreshedAt: Date.now() } })}
                     color="inherit"
                 >
                     Back to Maintenance

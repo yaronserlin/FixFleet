@@ -1,4 +1,5 @@
 // src/utils/validate.js
+import { ALL_ROLES } from '../constants/roles';
 
 /**
  * Check that a value is not empty.
@@ -67,10 +68,9 @@ export function validateRole(role) {
     let err = isRequired(role, 'Role');
     if (err) return err;
 
-    const validRoles = ['admin', 'operator', 'mechanic'];
-    return validRoles.includes(role)
+    return ALL_ROLES.includes(role)
         ? ''
-        : `Role must be one of: ${validRoles.join(', ')}.`;
+        : `Role must be one of: ${ALL_ROLES.join(', ')}.`;
 }
 
 /**

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { formatUserName } from '../utils/formatUtils';
+import { ROUTES } from '../constants/routes';
 
 const sanitizeUser = (userData) => {
     if (!userData || typeof userData !== 'object') return userData;
@@ -72,9 +73,9 @@ export const AuthProvider = ({ children }) => {
             setUser(formattedUser);
             setUserId(formattedUser?.id || formattedUser?._id);
             if (formattedUser?.mustChangePassword) {
-                navigate('/force-password-change', { replace: true });
+                navigate(ROUTES.FORCE_PASSWORD_CHANGE, { replace: true });
             } else {
-                navigate('/dashboard');
+                navigate(ROUTES.DASHBOARD);
             }
             return formattedUser;
         } catch (error) {
@@ -108,9 +109,9 @@ export const AuthProvider = ({ children }) => {
             setUser(formattedUser);
             setUserId(formattedUser?.id || formattedUser?._id);
             if (formattedUser?.mustChangePassword) {
-                navigate('/force-password-change', { replace: true });
+                navigate(ROUTES.FORCE_PASSWORD_CHANGE, { replace: true });
             } else {
-                navigate('/dashboard');
+                navigate(ROUTES.DASHBOARD);
             }
             return formattedUser;
         } catch (error) {
@@ -135,7 +136,7 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
             setUserId(null);
             setLoginPassword('');
-            navigate('/login');
+            navigate(ROUTES.LOGIN);
         }
     }, [navigate]);
 

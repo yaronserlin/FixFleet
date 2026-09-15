@@ -6,14 +6,16 @@ import Typography from '@mui/material/Typography';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 import Logo from '../Logo/Logo';
+import { ROUTES } from '../../constants/routes';
+import { ROLES } from '../../constants/roles';
 
 const PAGE_TO_PATH = (page) => {
     const lower = page.toLowerCase();
-    if (lower === 'dashboard') return '/dashboard';
-    if (lower === 'my reports' || lower === 'reports' || lower === 'my faults' || lower === 'faults') return '/my-reports';
-    if (lower === 'manuals' || lower === 'equipment manuals' || lower === 'books') return '/manuals';
-    if (lower === 'equipment' || lower === 'tools') return '/equipment';
-    if (lower === 'admin') return '/admin';
+    if (lower === 'dashboard') return ROUTES.DASHBOARD;
+    if (lower === 'my reports' || lower === 'reports' || lower === 'my faults' || lower === 'faults') return ROUTES.MY_REPORTS;
+    if (lower === 'manuals' || lower === 'equipment manuals' || lower === 'books') return ROUTES.MANUALS;
+    if (lower === 'equipment' || lower === 'tools') return ROUTES.EQUIPMENT;
+    if (lower === 'admin') return ROUTES.ADMIN;
     return `/${lower}`;
 };
 
@@ -27,8 +29,8 @@ export default function DesktopNav({ display, user, pages }) {
             <Box sx={{ display: { xs: 'none', sm: 'flex' }, mr: 4, flexShrink: 0 }}>
                 <Logo
                     size={36}
-                    subtitle={user?.role === 'operator' ? 'Operator Portal' : 'Ops Manager'}
-                    to="/dashboard"
+                    subtitle={user?.role === ROLES.OPERATOR ? 'Operator Portal' : 'Ops Manager'}
+                    to={ROUTES.DASHBOARD}
                 />
             </Box>
 
@@ -38,7 +40,7 @@ export default function DesktopNav({ display, user, pages }) {
                     const targetPath = PAGE_TO_PATH(page);
                     const isActive =
                         location.pathname === targetPath ||
-                        (targetPath !== '/dashboard' && location.pathname.startsWith(targetPath));
+                        (targetPath !== ROUTES.DASHBOARD && location.pathname.startsWith(targetPath));
 
                     return (
                         <Button

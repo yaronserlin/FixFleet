@@ -14,6 +14,8 @@ import { getMediaUrl } from '../../../utils/mediaUtils';
 import { formatUserName } from '../../../utils/formatUtils';
 import { useAuth } from '../../../contexts/AuthContext';
 import ImageViewerDialog from '../../ImageViewer/ImageViewerDialog';
+import { isMechanicOrAdmin } from '../../../constants/roles';
+import { FAULT_STATUS } from '../../../constants/faultStatus';
 
 const style = {
     position: 'absolute',
@@ -43,7 +45,7 @@ export default function FaultModal({
 
     if (!fault) return null;
 
-    const canManage = user && (user.role === 'admin' || user.role === 'mechanic');
+    const canManage = user && isMechanicOrAdmin(user.role);
     const photos = fault.photos || [];
 
     return (
@@ -70,7 +72,7 @@ export default function FaultModal({
                             {fault.status && (
                                 <Chip
                                     label={fault.status.toUpperCase()}
-                                    color={fault.status === 'open' ? 'error' : 'success'}
+                                    color={fault.status === FAULT_STATUS.OPEN ? 'error' : 'success'}
                                     size="small"
                                 />
                             )}
@@ -170,7 +172,7 @@ export default function FaultModal({
 
                         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
                             <Box display="flex" gap={1.5}>
-                                {canManage && fault.status === 'closed' && onReopenFault && (
+                                {canManage && fault.status === FAULT_STATUS.CLOSED && onReopenFault && (
                                     <Button
                                         variant="contained"
                                         color="warning"
@@ -184,7 +186,7 @@ export default function FaultModal({
                                         Reopen Fault
                                     </Button>
                                 )}
-                                {canManage && fault.status !== 'closed' && onCloseFault && (
+                                {canManage && fault.status !== FAULT_STATUS.CLOSED && onCloseFault && (
                                     <Button
                                         variant="contained"
                                         color="primary"

@@ -23,6 +23,8 @@ import SpeedIcon from '@mui/icons-material/Speed';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getMediaUrl } from '../../../utils/mediaUtils';
 import ImageViewerDialog from '../../ImageViewer/ImageViewerDialog';
+import { isMechanicOrAdmin } from '../../../constants/roles';
+import { FAULT_STATUS } from '../../../constants/faultStatus';
 
 export default function FaultList({
     faults,
@@ -36,7 +38,7 @@ export default function FaultList({
 
     const isUserAuthorized = () => {
         if (!user) return false;
-        return user.role === 'admin' || user.role === 'mechanic';
+        return isMechanicOrAdmin(user.role);
     };
 
     if (!faults || faults.length === 0) {
@@ -49,7 +51,7 @@ export default function FaultList({
             <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
                 <Stack spacing={2}>
                     {faults.map((fault) => {
-                        const hours = fault.status === 'closed' && fault.closingEngineHours !== undefined
+                        const hours = fault.status === FAULT_STATUS.CLOSED && fault.closingEngineHours !== undefined
                             ? fault.closingEngineHours
                             : fault.engineHours;
 
@@ -63,8 +65,8 @@ export default function FaultList({
                                             </Typography>
                                             <Chip
                                                 size="small"
-                                                label={fault.status === 'closed' ? 'Closed' : 'Open'}
-                                                color={fault.status === 'closed' ? 'success' : 'error'}
+                                                label={fault.status === FAULT_STATUS.CLOSED ? 'Closed' : 'Open'}
+                                                color={fault.status === FAULT_STATUS.CLOSED ? 'success' : 'error'}
                                             />
                                         </Box>
                                         <Box display="flex" gap={1.5} alignItems="center" mb={1}>
@@ -114,7 +116,7 @@ export default function FaultList({
                                 {isUserAuthorized() && (
                                     <CardActions sx={{ justifyContent: 'space-between', px: 2, pt: 0, pb: 1.5 }}>
                                         <div>
-                                            {fault.status === 'closed' ? (
+                                            {fault.status === FAULT_STATUS.CLOSED ? (
                                                 <Button
                                                     size="small"
                                                     variant="outlined"
@@ -206,8 +208,8 @@ export default function FaultList({
                                 <TableCell>
                                     <Chip
                                         size="small"
-                                        label={fault.status === 'closed' ? 'Closed' : 'Open'}
-                                        color={fault.status === 'closed' ? 'success' : 'error'}
+                                        label={fault.status === FAULT_STATUS.CLOSED ? 'Closed' : 'Open'}
+                                        color={fault.status === FAULT_STATUS.CLOSED ? 'success' : 'error'}
                                     />
                                 </TableCell>
                                 <TableCell>{fault.code || 'N/A'}</TableCell>
@@ -250,7 +252,7 @@ export default function FaultList({
                                 {isUserAuthorized() && (
                                     <TableCell align="right" onClick={(e) => e.stopPropagation()}>
                                         <Box display="flex" justifyContent="flex-end" gap={1}>
-                                            {fault.status === 'closed' ? (
+                                            {fault.status === FAULT_STATUS.CLOSED ? (
                                                 <Button
                                                     size="small"
                                                     variant="outlined"

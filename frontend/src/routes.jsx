@@ -11,6 +11,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import RequireAdmin from './components/RequireAdmin';
 import Navbar from './components/Navbar';
 import LoadingComponent from './components/LoadingComponent/LoadingComponent';
+import { ROUTES } from './constants/routes';
+import { ROLES } from './constants/roles';
 
 const Dashboard            = lazy(() => import('./pages/Dashboard'));
 const ToolPage             = lazy(() => import('./pages/ToolPage'));
@@ -54,20 +56,20 @@ function RouteFallback() {
 }
 
 // Pages that use a full-screen layout (no Navbar)
-const HIDE_NAVBAR_PATHS = ['/login', '/force-password-change'];
+const HIDE_NAVBAR_PATHS = [ROUTES.LOGIN, ROUTES.FORCE_PASSWORD_CHANGE];
 
 function RequirePasswordChange({ children }) {
     const { user, loading } = useAuth();
     if (loading) return <LoadingComponent />;
-    if (!user) return <Navigate to="/login" replace />;
-    if (!user.mustChangePassword) return <Navigate to="/dashboard" replace />;
+    if (!user) return <Navigate to={ROUTES.LOGIN} replace />;
+    if (!user.mustChangePassword) return <Navigate to={ROUTES.DASHBOARD} replace />;
     return children;
 }
 
 function RequireStaff({ children }) {
     const { user } = useAuth();
-    if (user?.role === 'operator') {
-        return <Navigate to="/dashboard" replace />;
+    if (user?.role === ROLES.OPERATOR) {
+        return <Navigate to={ROUTES.DASHBOARD} replace />;
     }
     return children;
 }
@@ -101,15 +103,15 @@ function AppLayout() {
                 <Suspense fallback={<RouteFallback />}>
                     <Routes>
                         {/* Default redirect */}
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                        <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
 
                         {/* Public routes */}
-                        <Route path="/login" element={<Login />} />
-                        <Route path="/terms" element={<LegalPage />} />
-                        <Route path="/privacy" element={<LegalPage />} />
-                        <Route path="/legal" element={<LegalPage />} />
+                        <Route path={ROUTES.LOGIN} element={<Login />} />
+                        <Route path={ROUTES.TERMS} element={<LegalPage />} />
+                        <Route path={ROUTES.PRIVACY} element={<LegalPage />} />
+                        <Route path={ROUTES.LEGAL} element={<LegalPage />} />
                         <Route
-                            path="/force-password-change"
+                            path={ROUTES.FORCE_PASSWORD_CHANGE}
                             element={
                                 <RequirePasswordChange>
                                     <ForcePasswordChangePage />
@@ -119,7 +121,7 @@ function AppLayout() {
 
                         {/* Protected routes */}
                         <Route
-                            path="/dashboard"
+                            path={ROUTES.DASHBOARD}
                             element={
                                 <ProtectedRoute>
                                     <Dashboard />
@@ -127,7 +129,7 @@ function AppLayout() {
                             }
                         />
                         <Route
-                            path="/equipment"
+                            path={ROUTES.EQUIPMENT}
                             element={
                                 <ProtectedRoute>
                                     <RequireStaff>
@@ -157,7 +159,7 @@ function AppLayout() {
                             }
                         />
                         {/* Backward-compatible aliases for /tools */}
-                        <Route path="/tools" element={<Navigate to="/equipment" replace />} />
+                        <Route path={ROUTES.TOOLS} element={<Navigate to={ROUTES.EQUIPMENT} replace />} />
                         <Route
                             path="/tools/:id"
                             element={
@@ -179,7 +181,7 @@ function AppLayout() {
                             }
                         />
                         <Route
-                            path="/logout"
+                            path={ROUTES.LOGOUT}
                             element={
                                 <ProtectedRoute>
                                     <Logout />
@@ -187,7 +189,7 @@ function AppLayout() {
                             }
                         />
                         <Route
-                            path="/profile"
+                            path={ROUTES.PROFILE}
                             element={
                                 <ProtectedRoute>
                                     <ProfilePage />
@@ -195,7 +197,7 @@ function AppLayout() {
                             }
                         />
                         <Route
-                            path="/account"
+                            path={ROUTES.ACCOUNT}
                             element={
                                 <ProtectedRoute>
                                     <AccountPage />
@@ -203,7 +205,7 @@ function AppLayout() {
                             }
                         />
                         <Route
-                            path="/admin"
+                            path={ROUTES.ADMIN}
                             element={
                                 <ProtectedRoute>
                                     <RequireAdmin>
@@ -213,7 +215,7 @@ function AppLayout() {
                             }
                         />
                         <Route
-                            path="/my-reports"
+                            path={ROUTES.MY_REPORTS}
                             element={
                                 <ProtectedRoute>
                                     <OperatorReportsPage />
@@ -221,14 +223,14 @@ function AppLayout() {
                             }
                         />
                         <Route
-                            path="/manuals"
+                            path={ROUTES.MANUALS}
                             element={
                                 <ProtectedRoute>
                                     <EquipmentBooksPage />
                                 </ProtectedRoute>
                             }
                         />
-                        <Route path="/books" element={<Navigate to="/manuals" replace />} />
+                        <Route path={ROUTES.BOOKS} element={<Navigate to={ROUTES.MANUALS} replace />} />
 
                         {/* Fallback */}
                         <Route path="*" element={<NotFound />} />

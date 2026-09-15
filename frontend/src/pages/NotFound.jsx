@@ -3,6 +3,7 @@ import { Typography, Container, Button, Box } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import BuildCircleIcon from '@mui/icons-material/BuildCircle';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import { ROUTES } from '../constants/routes';
 
 function NotFound() {
     return (
@@ -59,7 +60,7 @@ function NotFound() {
 
             <Button
                 component={RouterLink}
-                to="/dashboard"
+                to={ROUTES.DASHBOARD}
                 variant="contained"
                 color="primary"
                 size="large"

@@ -16,19 +16,21 @@ import BuildIcon from '@mui/icons-material/Build';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getMediaUrl } from '../../../utils/mediaUtils';
 import ImageViewerDialog from '../../ImageViewer/ImageViewerDialog';
+import { isMechanicOrAdmin } from '../../../constants/roles';
+import { FAULT_STATUS } from '../../../constants/faultStatus';
 
 export default function FaultCard({ fault, onClick, onCloseFault, onReopenFault, onDeleteFault }) {
     const { user } = useAuth();
     const [viewerOpen, setViewerOpen] = React.useState(false);
 
-    const isOpen   = fault.status !== 'closed';
+    const isOpen   = fault.status !== FAULT_STATUS.CLOSED;
     const hasPhoto = fault.photos && fault.photos.length > 0;
-    const hours    = fault.status === 'closed' && fault.closingEngineHours !== undefined
+    const hours    = fault.status === FAULT_STATUS.CLOSED && fault.closingEngineHours !== undefined
         ? fault.closingEngineHours
         : fault.engineHours;
     const equipmentName = fault.tool?.name || '';
 
-    const isMechOrAdmin = user && (user.role === 'admin' || user.role === 'mechanic');
+    const isMechOrAdmin = user && isMechanicOrAdmin(user.role);
 
     // Status color tokens
     const statusColor  = isOpen ? 'error' : 'success';

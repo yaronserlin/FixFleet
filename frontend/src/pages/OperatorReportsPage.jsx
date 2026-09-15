@@ -22,6 +22,8 @@ import { useNotify } from '../contexts/NotificationContext';
 import { useEquipment } from '../contexts/EquipmentContext';
 import { useFault } from '../contexts/FaultContext';
 import faultService from '../services/faultsService';
+import { ROLES } from '../constants/roles';
+import { FAULT_STATUS } from '../constants/faultStatus';
 import FaultCard from '../components/Fault/FaultCard/FaultCard';
 import FaultDetailsDialog from '../components/Fault/FaultDetailsDialog/FaultDetailsDialog';
 import CreateFaultDialog from '../components/Fault/CreateFaultDialog/CreateFaultDialog';
@@ -48,7 +50,7 @@ export default function OperatorReportsPage() {
             // Filter to current user's reported faults if user is operator
             const myFaults = (data || []).filter(f => {
                 const opId = f.operator?._id || f.operator;
-                return user?.role === 'operator' ? opId === uid : true;
+                return user?.role === ROLES.OPERATOR ? opId === uid : true;
             });
             setFaults(myFaults);
         } catch (err) {
@@ -94,8 +96,8 @@ export default function OperatorReportsPage() {
         });
     }, [faults, statusFilter, searchQuery]);
 
-    const openCount = useMemo(() => faults.filter(f => f.status === 'open').length, [faults]);
-    const resolvedCount = useMemo(() => faults.filter(f => f.status === 'closed').length, [faults]);
+    const openCount = useMemo(() => faults.filter(f => f.status === FAULT_STATUS.OPEN).length, [faults]);
+    const resolvedCount = useMemo(() => faults.filter(f => f.status === FAULT_STATUS.CLOSED).length, [faults]);
 
     return (
         <Container maxWidth="lg" sx={{ mt: 3, mb: 6 }}>
@@ -151,16 +153,16 @@ export default function OperatorReportsPage() {
                     />
                     <Chip
                         label={`Open (${openCount})`}
-                        onClick={() => setStatusFilter('open')}
+                        onClick={() => setStatusFilter(FAULT_STATUS.OPEN)}
                         color="error"
-                        variant={statusFilter === 'open' ? 'filled' : 'outlined'}
+                        variant={statusFilter === FAULT_STATUS.OPEN ? 'filled' : 'outlined'}
                         sx={{ fontWeight: 700 }}
                     />
                     <Chip
                         label={`Resolved (${resolvedCount})`}
-                        onClick={() => setStatusFilter('closed')}
+                        onClick={() => setStatusFilter(FAULT_STATUS.CLOSED)}
                         color="success"
-                        variant={statusFilter === 'closed' ? 'filled' : 'outlined'}
+                        variant={statusFilter === FAULT_STATUS.CLOSED ? 'filled' : 'outlined'}
                         sx={{ fontWeight: 700 }}
                     />
                 </Box>

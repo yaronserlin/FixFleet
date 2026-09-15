@@ -11,6 +11,7 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { alpha, useScrollTrigger } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useThemeMode } from '../../contexts/ThemeContext';
+import { ROLES } from '../../constants/roles';
 import MobileNav from './MobileNav';
 import DesktopNav from './DesktopNav';
 import UserMenu from './UserMenu';
@@ -24,11 +25,11 @@ export default function Navbar() {
     const scrolled = useScrollTrigger({ disableHysteresis: true, threshold: 10 });
 
     const navPages = useMemo(() => {
-        if (user?.role === 'operator') {
+        if (user?.role === ROLES.OPERATOR) {
             return ['Dashboard', 'My Reports', 'Manuals'];
         }
         const result = ['Dashboard', 'Equipment', 'Manuals'];
-        if (user?.role === 'admin') {
+        if (user?.role === ROLES.ADMIN) {
             result.push('Admin');
         }
         return result;

@@ -19,6 +19,8 @@ import { useEquipment } from '../contexts/EquipmentContext';
 import { useFault } from '../contexts/FaultContext';
 import { useAuth } from '../contexts/AuthContext';
 import equipmentService from '../services/equipmentService';
+import { ROUTES } from '../constants/routes';
+import { FAULT_STATUS } from '../constants/faultStatus';
 
 function a11yProps(index) {
     return {
@@ -189,7 +191,7 @@ export default function EquipmentPage() {
 
     const booksCount = tool.books?.length || 0;
     const maintenanceCount = tool.maintenanceSchedule?.length || 0;
-    const openFaultsCount = (faults || []).filter(f => f.status === 'open').length;
+    const openFaultsCount = (faults || []).filter(f => f.status === FAULT_STATUS.OPEN).length;
 
     return (
         <Container sx={{ mt: 3, mb: 6 }}>
@@ -198,7 +200,7 @@ export default function EquipmentPage() {
                 <Button
                     size="small"
                     startIcon={<ArrowBackIcon />}
-                    onClick={() => navigate('/equipment')}
+                    onClick={() => navigate(ROUTES.EQUIPMENT)}
                     color="primary"
                 >
                     Back to Fleet Directory

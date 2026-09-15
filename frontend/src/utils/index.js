@@ -1,3 +1,5 @@
+import { FAULT_STATUS } from '../constants/faultStatus';
+
 /**
  * Sorts an array of tools by their local serial number, then by name as a tiebreaker.
  * Returns a new sorted array without mutating the original.
@@ -28,7 +30,7 @@ export function sortFaultsByOpenAndCreateDate(arr) {
     return [...arr].sort((a, b) => {
         // If one fault is open and the other isn't, put the open one first
         if (a.status !== b.status) {
-            return a.status === 'open' ? -1 : 1;
+            return a.status === FAULT_STATUS.OPEN ? -1 : 1;
         }
         // When statuses match, compare creation timestamps
         return new Date(a.createdAt) - new Date(b.createdAt);

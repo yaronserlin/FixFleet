@@ -20,6 +20,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import LockIcon from '@mui/icons-material/Lock';
 import { useTool } from '../../../contexts/ToolContext';
+import { FAULT_STATUS } from '../../../constants/faultStatus';
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -317,16 +318,16 @@ function FaultFormFields({
                             labelId="status-select-label"
                             label="Status"
                             name="status"
-                            value={values.status || 'open'}
+                            value={values.status || FAULT_STATUS.OPEN}
                             onChange={onChange}
                         >
-                            <MenuItem value="open">Open</MenuItem>
-                            <MenuItem value="closed">Closed</MenuItem>
+                            <MenuItem value={FAULT_STATUS.OPEN}>Open</MenuItem>
+                            <MenuItem value={FAULT_STATUS.CLOSED}>Closed</MenuItem>
                         </Select>
                     </FormControl>
 
                     {/* Closed date, if status is closed */}
-                    {values.status === 'closed' && (
+                    {values.status === FAULT_STATUS.CLOSED && (
                         <TextField
                             label="Closed At"
                             name="closedAt"
@@ -362,7 +363,7 @@ export function CreateFaultForm({
         engineHours: '',
         description: '',
         files: [],
-        status: 'open',
+        status: FAULT_STATUS.OPEN,
         closedAt: '',
     });
     const [toolError, setToolError] = useState('');
@@ -449,7 +450,7 @@ export function EditFaultForm({ initialValues, onSubmit, formId = 'edit-fault-fo
         engineHours: initialValues?.engineHours ?? '',
         description: initialValues?.description || '',
         files: [],
-        status: initialValues?.status || 'open',
+        status: initialValues?.status || FAULT_STATUS.OPEN,
         closedAt: initialValues?.closedAt ? initialValues.closedAt.slice(0, 10) : '',
     });
 

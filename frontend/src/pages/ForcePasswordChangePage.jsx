@@ -25,6 +25,7 @@ import { useAuth } from '../contexts/AuthContext';
 import userService from '../services/userService';
 import { formatUserName } from '../utils/formatUtils';
 import LegalModal from '../components/Legal/LegalModal';
+import { ROUTES } from '../constants/routes';
 
 export default function ForcePasswordChangePage() {
     const { user, setUser, logout, loginPassword, clearLoginPassword } = useAuth();
@@ -70,7 +71,7 @@ export default function ForcePasswordChangePage() {
                 mustChangePassword: false,
                 termsAccepted: true,
             }));
-            navigate('/dashboard', { replace: true });
+            navigate(ROUTES.DASHBOARD, { replace: true });
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update password. Please check your credentials.');
         } finally {

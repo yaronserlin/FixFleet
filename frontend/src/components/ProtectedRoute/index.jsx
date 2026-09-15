@@ -2,6 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingComponent from '../LoadingComponent/LoadingComponent';
+import { ROUTES } from '../../constants/routes';
 
 /**
  * Wraps protected routes, redirecting unauthenticated users to login
@@ -15,11 +16,11 @@ const ProtectedRoute = ({ children }) => {
     }
 
     if (!user) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to={ROUTES.LOGIN} replace />;
     }
 
     if (user.mustChangePassword) {
-        return <Navigate to="/force-password-change" replace />;
+        return <Navigate to={ROUTES.FORCE_PASSWORD_CHANGE} replace />;
     }
 
     return children;

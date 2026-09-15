@@ -28,6 +28,8 @@ import { CreateToolForm } from '../components/Tool/ToolForms/ToolForms';
 import { useEquipment } from '../contexts/EquipmentContext';
 import { useAuth } from '../contexts/AuthContext';
 import faultService from '../services/faultsService';
+import { ROLES } from '../constants/roles';
+import { FAULT_STATUS } from '../constants/faultStatus';
 
 /**
  * Displays an interactive directory of equipment with search, status filtering, and view mode toggle.
@@ -35,7 +37,7 @@ import faultService from '../services/faultsService';
 export default function EquipmentsPage() {
     const { equipment, loading, error, createEquipment } = useEquipment();
     const { user } = useAuth();
-    const isAdmin = user?.role === 'admin';
+    const isAdmin = user?.role === ROLES.ADMIN;
 
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'faults' | 'operational'
@@ -51,7 +53,7 @@ export default function EquipmentsPage() {
             .then(list => {
                 if (!isMounted) return;
                 const counts = {};
-                list.filter(f => f.status === 'open').forEach(f => {
+                list.filter(f => f.status === FAULT_STATUS.OPEN).forEach(f => {
                     const toolId = f.tool?._id || f.tool;
                     if (toolId) {
                         counts[toolId] = (counts[toolId] || 0) + 1;

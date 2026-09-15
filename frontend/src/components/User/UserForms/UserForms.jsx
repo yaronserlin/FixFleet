@@ -9,12 +9,13 @@ import {
     validatePassword,
     validateRole,
 } from '../../../utils/validate';
+import { DEFAULT_ROLE } from '../../../constants/roles';
 
 const CREATE_USER_INITIAL = Object.freeze({
     name: '',
     email: '',
     password: '',
-    role: 'operator',
+    role: DEFAULT_ROLE,
 });
 
 /**

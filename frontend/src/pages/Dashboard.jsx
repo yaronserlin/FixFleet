@@ -41,6 +41,9 @@ import { useNotify } from '../contexts/NotificationContext';
 import { useEquipment } from '../contexts/EquipmentContext';
 import { useFault } from '../contexts/FaultContext';
 import { formatUserName } from '../utils/formatUtils';
+import { ROUTES } from '../constants/routes';
+import { ROLES } from '../constants/roles';
+import { FAULT_STATUS } from '../constants/faultStatus';
 import equipmentService from '../services/equipmentService';
 import faultService from '../services/faultsService';
 import FaultModal from '../components/Fault/FaultModal/FaultModal';
@@ -141,8 +144,8 @@ function FilterBar({ total, openCount, closedCount, statusFilter, setStatusFilte
             <Box display="flex" gap={0.75} flexWrap="wrap">
                 {[
                     { value: 'all',    label: `All (${total})`,         color: 'default' },
-                    { value: 'open',   label: `Open (${openCount})`,    color: 'error'   },
-                    { value: 'closed', label: `Closed (${closedCount})`,color: 'success' },
+                    { value: FAULT_STATUS.OPEN,   label: `Open (${openCount})`,    color: 'error'   },
+                    { value: FAULT_STATUS.CLOSED, label: `Closed (${closedCount})`,color: 'success' },
                 ].map(opt => (
                     <Chip
                         key={opt.value}
@@ -230,11 +233,11 @@ export default function Dashboard() {
             const equipmentData = Array.isArray(equipmentRes) ? equipmentRes : [];
 
             const total  = faultsData.length;
-            const open   = faultsData.filter(f => f.status === 'open').length;
-            const closed = faultsData.filter(f => f.status === 'closed').length;
+            const open   = faultsData.filter(f => f.status === FAULT_STATUS.OPEN).length;
+            const closed = faultsData.filter(f => f.status === FAULT_STATUS.CLOSED).length;
 
             const equipmentWithFaults = new Set(
-                faultsData.filter(f => f.status === 'open').map(f => f.tool?._id || f.tool).filter(Boolean)
+                faultsData.filter(f => f.status === FAULT_STATUS.OPEN).map(f => f.tool?._id || f.tool).filter(Boolean)
             );
             const fleetTotal       = equipmentData.length;
             const fleetOperational = Math.max(0, fleetTotal - equipmentWithFaults.size);
@@ -264,13 +267,13 @@ export default function Dashboard() {
             result.push({
                 date:     label,
                 Reported: allFaultsList.filter(f => f.createdAt?.slice(0, 10) === dateStr).length,
-                Resolved: allFaultsList.filter(f => f.status === 'closed' && f.closedAt?.slice(0, 10) === dateStr).length,
+                Resolved: allFaultsList.filter(f => f.status === FAULT_STATUS.CLOSED && f.closedAt?.slice(0, 10) === dateStr).length,
             });
         }
         return result;
     }, [allFaultsList]);
 
-    const isOperator = user?.role === 'operator';
+    const isOperator = user?.role === ROLES.OPERATOR;
 
     const operatorFaults = useMemo(() => {
         const uid = user?.id || user?._id;
@@ -460,7 +463,7 @@ export default function Dashboard() {
                             <Button
                                 variant="text"
                                 color="primary"
-                                onClick={() => navigate('/my-reports')}
+                                onClick={() => navigate(ROUTES.MY_REPORTS)}
                                 sx={{ fontWeight: 700 }}
                             >
                                 View All ({operatorFaults.length}) →
@@ -518,7 +521,7 @@ export default function Dashboard() {
                             <Button
                                 variant="outlined"
                                 color="primary"
-                                onClick={() => navigate('/manuals')}
+                                onClick={() => navigate(ROUTES.MANUALS)}
                                 sx={{ alignSelf: 'flex-start', fontWeight: 600 }}
                             >
                                 Browse Manuals →
@@ -549,7 +552,7 @@ export default function Dashboard() {
                             </Box>
                             <Button
                                 variant="outlined"
-                                onClick={() => navigate('/account')}
+                                onClick={() => navigate(ROUTES.ACCOUNT)}
                                 sx={{ alignSelf: 'flex-start', fontWeight: 600 }}
                             >
                                 Manage Account →
@@ -594,7 +597,7 @@ export default function Dashboard() {
                     <Button
                         variant="outlined"
                         startIcon={<PrecisionManufacturingIcon />}
-                        onClick={() => navigate('/equipment')}
+                        onClick={() => navigate(ROUTES.EQUIPMENT)}
                         sx={{ minHeight: 44 }}
                     >
                         Browse Equipment

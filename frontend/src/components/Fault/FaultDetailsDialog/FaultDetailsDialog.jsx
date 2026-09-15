@@ -23,6 +23,8 @@ import { getMediaUrl } from '../../../utils/mediaUtils';
 import { formatUserName } from '../../../utils/formatUtils';
 import { useAuth } from '../../../contexts/AuthContext';
 import ImageViewerDialog from '../../ImageViewer/ImageViewerDialog';
+import { isMechanicOrAdmin } from '../../../constants/roles';
+import { FAULT_STATUS } from '../../../constants/faultStatus';
 
 export default function FaultDetailsDialog({
     open,
@@ -34,7 +36,7 @@ export default function FaultDetailsDialog({
 }) {
     const { user } = useAuth();
     const [viewerIndex, setViewerIndex] = useState(null);
-    const canManage = user && (user.role === 'admin' || user.role === 'mechanic');
+    const canManage = user && isMechanicOrAdmin(user.role);
 
     return (
         <>
@@ -59,9 +61,9 @@ export default function FaultDetailsDialog({
                         <Typography variant="h6" component="div" fontWeight="bold">Fault Details</Typography>
                         {fault?.status && (
                             <Chip
-                                icon={fault.status === 'open' ? <WarningAmberIcon /> : <CheckCircleIcon />}
-                                label={fault.status === 'open' ? 'Open Fault' : 'Resolved'}
-                                color={fault.status === 'open' ? 'error' : 'success'}
+                                icon={fault.status === FAULT_STATUS.OPEN ? <WarningAmberIcon /> : <CheckCircleIcon />}
+                                label={fault.status === FAULT_STATUS.OPEN ? 'Open Fault' : 'Resolved'}
+                                color={fault.status === FAULT_STATUS.OPEN ? 'error' : 'success'}
                                 size="small"
                             />
                         )}
@@ -131,7 +133,7 @@ export default function FaultDetailsDialog({
                                 />
                             </ListItem>
 
-                            {fault.status === 'closed' && (
+                            {fault.status === FAULT_STATUS.CLOSED && (
                                 <>
                                     <ListItem disableGutters>
                                         <ListItemText
@@ -220,7 +222,7 @@ export default function FaultDetailsDialog({
                 </DialogContent>
                 <DialogActions sx={{ justifyContent: 'flex-end', px: 3, py: 1.5 }}>
                     <Box display="flex" gap={1}>
-                        {canManage && fault?.status === 'closed' && onReopenFault && (
+                        {canManage && fault?.status === FAULT_STATUS.CLOSED && onReopenFault && (
                             <Button
                                 variant="contained"
                                 color="warning"
@@ -234,7 +236,7 @@ export default function FaultDetailsDialog({
                                 Reopen Fault
                             </Button>
                         )}
-                        {canManage && fault?.status === 'open' && onCloseFault && (
+                        {canManage && fault?.status === FAULT_STATUS.OPEN && onCloseFault && (
                             <Button
                                 variant="contained"
                                 color="primary"

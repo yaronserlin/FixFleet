@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingComponent from '../components/LoadingComponent/LoadingComponent';
+import { ROUTES } from '../constants/routes';
 
 export default function Logout() {
     const { logout } = useAuth();
@@ -11,7 +12,7 @@ export default function Logout() {
     useEffect(() => {
         logout();
         // after logout, send the user to /login (or wherever)
-        navigate('/login', { replace: true });
+        navigate(ROUTES.LOGIN, { replace: true });
     }, [logout, navigate]);
 
     return <LoadingComponent />;

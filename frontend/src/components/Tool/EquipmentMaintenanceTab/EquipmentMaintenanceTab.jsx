@@ -32,6 +32,8 @@ import HistoryIcon from '@mui/icons-material/History';
 import PersonIcon from '@mui/icons-material/Person';
 import EngineeringIcon from '@mui/icons-material/Engineering';
 import { useAuth } from '../../../contexts/AuthContext';
+import { isMechanicOrAdmin } from '../../../constants/roles';
+import { equipmentScheduleRoute } from '../../../constants/routes';
 import { useNotify } from '../../../contexts/NotificationContext';
 import equipmentService from '../../../services/equipmentService';
 import maintenanceService from '../../../services/maintenanceService';
@@ -43,7 +45,7 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
     const navigate = useNavigate();
     const { user } = useAuth();
     const notify = useNotify();
-    const canManage = user?.role === 'admin' || user?.role === 'mechanic';
+    const canManage = isMechanicOrAdmin(user?.role);
 
     const [addDialogOpen, setAddDialogOpen] = useState(false);
     const [completeDialogOpen, setCompleteDialogOpen] = useState(false);
@@ -297,7 +299,7 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
                         <Grid size={{ xs: 12, md: 6 }} key={task._id}>
                             <Card variant="outlined" sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                                 <CardActionArea
-                                    onClick={() => navigate(`/equipment/${eq._id}/schedules/${task._id}`)}
+                                    onClick={() => navigate(equipmentScheduleRoute(eq._id, task._id))}
                                     sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', textAlign: 'left' }}
                                 >
                                     <CardContent sx={{ flexGrow: 1, width: '100%' }}>

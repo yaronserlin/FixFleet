@@ -16,11 +16,13 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import { useNavigate } from 'react-router-dom';
 import { getMediaUrl } from '../../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../../utils/formatUtils';
+import { ROUTES } from '../../constants/routes';
+import { ROLES } from '../../constants/roles';
 
 const ROLE_CONFIG = {
-    admin:    { color: 'error',   label: 'Admin',    bgToken: 'error.main'   },
-    mechanic: { color: 'primary', label: 'Mechanic', bgToken: 'primary.main' },
-    operator: { color: 'success', label: 'Operator', bgToken: 'success.main' },
+    [ROLES.ADMIN]:    { color: 'error',   label: 'Admin',    bgToken: 'error.main'   },
+    [ROLES.MECHANIC]: { color: 'primary', label: 'Mechanic', bgToken: 'primary.main' },
+    [ROLES.OPERATOR]: { color: 'success', label: 'Operator', bgToken: 'success.main' },
 };
 
 export default function UserMenu({ user }) {
@@ -33,7 +35,7 @@ export default function UserMenu({ user }) {
     if (!user) return null;
 
     const avatarSrc   = getMediaUrl(user.avatar || user.avatarUrl);
-    const role        = ROLE_CONFIG[user.role] || ROLE_CONFIG.operator;
+    const role        = ROLE_CONFIG[user.role] || ROLE_CONFIG[ROLES.OPERATOR];
     const displayName = formatUserName(user.name) || 'User';
     const initials    = getUserInitials(user.name);
 
@@ -127,14 +129,14 @@ export default function UserMenu({ user }) {
 
                 <Divider sx={{ my: 0.5 }} />
 
-                <MenuItem onClick={() => goTo('/account')}>
+                <MenuItem onClick={() => goTo(ROUTES.ACCOUNT)}>
                     <ListItemIcon>
                         <ManageAccountsIcon fontSize="small" />
                     </ListItemIcon>
                     <Typography variant="body2" fontWeight={500}>Account Settings</Typography>
                 </MenuItem>
 
-                <MenuItem onClick={() => goTo('/profile')}>
+                <MenuItem onClick={() => goTo(ROUTES.PROFILE)}>
                     <ListItemIcon>
                         <HistoryIcon fontSize="small" />
                     </ListItemIcon>
@@ -144,7 +146,7 @@ export default function UserMenu({ user }) {
                 <Divider sx={{ my: 0.5 }} />
 
                 <MenuItem
-                    onClick={() => goTo('/logout')}
+                    onClick={() => goTo(ROUTES.LOGOUT)}
                     sx={{
                         color: 'error.main',
                         '&:hover': {

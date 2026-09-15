@@ -27,6 +27,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import BookIcon from '@mui/icons-material/Book';
 import BuildIcon from '@mui/icons-material/Build';
 import { useNavigate } from 'react-router-dom';
+import { equipmentDetailRoute } from '../../../constants/routes';
 
 /**
  * Displays a list of equipment in either responsive Card Grid or Table layout.
@@ -84,7 +85,7 @@ export default function ToolsList({ tools = [], viewMode = 'grid', openFaultsByT
                                         cursor: 'pointer',
                                         '&:hover': { bgcolor: (theme) => alpha(theme.palette.primary.main, 0.04) },
                                     }}
-                                    onClick={() => navigate(`/equipment/${tool._id}`)}
+                                    onClick={() => navigate(equipmentDetailRoute(tool._id))}
                                 >
                                     <TableCell>
                                         <Typography variant="subtitle2" fontWeight={700}>
@@ -127,7 +128,7 @@ export default function ToolsList({ tools = [], viewMode = 'grid', openFaultsByT
                                             endIcon={<ChevronRightIcon />}
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                navigate(`/equipment/${tool._id}`);
+                                                navigate(equipmentDetailRoute(tool._id));
                                             }}
                                             sx={{ fontWeight: 700 }}
                                         >
@@ -171,7 +172,7 @@ export default function ToolsList({ tools = [], viewMode = 'grid', openFaultsByT
                             }}
                         >
                             <CardActionArea
-                                onClick={() => navigate(`/equipment/${tool._id}`)}
+                                onClick={() => navigate(equipmentDetailRoute(tool._id))}
                                 sx={{ flexGrow: 1, p: 0.5 }}
                             >
                                 <CardContent sx={{ pb: 1 }}>
@@ -296,7 +297,7 @@ export default function ToolsList({ tools = [], viewMode = 'grid', openFaultsByT
                                     variant="text"
                                     color="primary"
                                     endIcon={<ChevronRightIcon />}
-                                    onClick={() => navigate(`/equipment/${tool._id}`)}
+                                    onClick={() => navigate(equipmentDetailRoute(tool._id))}
                                     sx={{ fontWeight: 700 }}
                                 >
                                     Manage

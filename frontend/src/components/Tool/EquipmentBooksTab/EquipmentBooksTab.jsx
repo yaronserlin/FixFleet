@@ -23,6 +23,7 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import AddIcon from '@mui/icons-material/Add';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../../../contexts/AuthContext';
+import { isMechanicOrAdmin } from '../../../constants/roles';
 import { useNotify } from '../../../contexts/NotificationContext';
 import equipmentService from '../../../services/equipmentService';
 import { getMediaUrl } from '../../../utils/mediaUtils';
@@ -45,7 +46,7 @@ export default function EquipmentBooksTab({ equipment, tool, onRefresh }) {
     const eq = equipment || tool;
     const { user } = useAuth();
     const notify = useNotify();
-    const canManageBooks = user?.role === 'admin' || user?.role === 'mechanic';
+    const canManageBooks = isMechanicOrAdmin(user?.role);
 
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [bookTitle, setBookTitle] = useState('');
