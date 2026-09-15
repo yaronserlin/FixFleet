@@ -10,6 +10,13 @@ const logger = require('../utils/logger');
  * non-production environments) for anything unrecognized. All branches log
  * via `utils/logger` so nothing fails silently.
  *
+ * The fallback branch also handles errors thrown by the service layer via
+ * `utils/httpError.js`: an expected, client-facing error (`err.status` in
+ * the 4xx range) is logged at `warn` level and echoes `err.code` in the
+ * response body when the throwing service set one (e.g.
+ * `TOKEN_REUSE_DETECTED`); anything else is treated as a genuine
+ * server-side fault and logged at `error` level as before.
+ *
  * @param {Error} err - The error passed to `next(err)`.
  * @param {import('express').Request} req - Express request object.
  * @param {import('express').Response} res - Express response object.
@@ -48,12 +55,23 @@ function errorHandler(err, req, res, next) {
         return res.status(403).json({ message: 'CORS forbidden' });
     }
 
-    // Server-side logging of unexpected errors
-    logger.error('Unhandled server error:', err);
+    const status = err.status || 500;
+    const isExpectedClientError = status >= 400 && status < 500;
+
+    if (isExpectedClientError) {
+        // A service threw via utils/httpError.js to signal an expected,
+        // user-facing failure (validation, not-found, forbidden, etc.) --
+        // this is normal control flow, not a bug, so it's only a warning.
+        logger.warn(`Request error (${status}): ${err.message}`);
+    } else {
+        // Server-side logging of unexpected errors
+        logger.error('Unhandled server error:', err);
+    }
 
     const isProduction = process.env.NODE_ENV === 'production';
-    res.status(err.status || 500).json({
-        message: isProduction ? 'Server error' : (err.message || 'Server error'),
+    res.status(status).json({
+        message: isProduction && !isExpectedClientError ? 'Server error' : (err.message || 'Server error'),
+        ...(err.code ? { code: err.code } : {}),
     });
 }
 
