@@ -54,7 +54,7 @@ export default function Navbar({ onOpenCreateFault }) {
                 pages={navPages}
             />
             <BottomNav
-                display={{ xs: 'flex', sm: 'none' }}
+                display={{ xs: 'block', sm: 'none' }}
                 user={user}
                 pages={navPages}
                 onOpenCreateFault={onOpenCreateFault}

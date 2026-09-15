@@ -101,7 +101,7 @@ export default function BottomNav({ display, user, pages, onOpenCreateFault }) {
                     pb: 'env(safe-area-inset-bottom)',
                 }}
             >
-                <Box sx={{ display: 'flex', alignItems: 'stretch', height: BOTTOM_NAV_HEIGHT }}>
+                <Box sx={{ display: 'flex', alignItems: 'stretch', width: '100%', height: BOTTOM_NAV_HEIGHT }}>
                     {leftPages.map(renderTab)}
 
                     {/* Raised center FAB: quick fault creation, reachable from any page */}
