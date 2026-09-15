@@ -25,6 +25,7 @@ const CREATE_USER_INITIAL = Object.freeze({
  */
 function UserForm({ initialValues, onSubmit, submitLabel = 'Submit' }) {
     const [serverError, setServerError] = useState('');
+    const isCreate = submitLabel.toLowerCase() === 'create';
 
     const {
         values,
@@ -36,7 +37,7 @@ function UserForm({ initialValues, onSubmit, submitLabel = 'Submit' }) {
         setValues,
     } = useForm({
         initialValues,
-        validate: validateUser,
+        validate: (vals) => validateUser(vals, { requirePassword: isCreate }),
         onSubmit: async (vals) => {
             setServerError('');
             try {
@@ -118,8 +119,15 @@ function UserForm({ initialValues, onSubmit, submitLabel = 'Submit' }) {
     );
 }
 
-/** field‐level validation for all user fields */
-function validateUser(vals) {
+/**
+ * Field-level validation for all user fields.
+ * @param {object} vals
+ * @param {{ requirePassword?: boolean }} [opts] - Pass `requirePassword: true`
+ *   for the create-user form, where a password is mandatory. Update forms
+ *   leave it false so a blank password means "leave unchanged" — but it is
+ *   still validated for strength if one is entered.
+ */
+function validateUser(vals, { requirePassword = false } = {}) {
     const errs = {};
     const nameErr = validateName(vals.name);
     if (nameErr) errs.name = nameErr;
@@ -127,7 +135,7 @@ function validateUser(vals) {
     const emailErr = validateEmail(vals.email);
     if (emailErr) errs.email = emailErr;
 
-    if (vals.password) {
+    if (requirePassword || vals.password) {
         const pwdErr = validatePassword(vals.password);
         if (pwdErr) errs.password = pwdErr;
     }
