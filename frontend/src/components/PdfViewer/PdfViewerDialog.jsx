@@ -8,6 +8,8 @@ import {
     IconButton,
     Box,
     Typography,
+    CircularProgress,
+    Alert,
     useTheme,
     useMediaQuery,
 } from '@mui/material';
@@ -15,18 +17,28 @@ import CloseIcon from '@mui/icons-material/Close';
 import DownloadIcon from '@mui/icons-material/Download';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import { useAuthenticatedBlobUrl } from '../../hooks/useAuthenticatedBlobUrl';
 
 /**
  * Mobile-responsive PDF document viewer dialog with native viewer fallback.
+ *
+ * `fileUrl` points at an auth-protected `/uploads/:filename` route, so the
+ * PDF is fetched via `useAuthenticatedBlobUrl` (through `apiClient`, which
+ * attaches a fresh Bearer token and auto-refreshes on 401) rather than
+ * bound directly to `<object data>`/`<iframe src>` -- those can't attach
+ * an Authorization header, so they'd otherwise depend on a short-lived
+ * cookie that can expire between API calls and show a raw 401 JSON body
+ * in place of the document.
  */
 export default function PdfViewerDialog({ open, onClose, title, fileUrl }) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const { blobUrl, loading, error } = useAuthenticatedBlobUrl(open ? fileUrl : null);
 
     if (!fileUrl) return null;
 
     const handleOpenExternal = () => {
-        window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        if (blobUrl) window.open(blobUrl, '_blank', 'noopener,noreferrer');
     };
 
     return (
@@ -70,6 +82,7 @@ export default function PdfViewerDialog({ open, onClose, title, fileUrl }) {
                         color="primary"
                         startIcon={<OpenInNewIcon fontSize="small" />}
                         onClick={handleOpenExternal}
+                        disabled={!blobUrl}
                         sx={{ fontSize: { xs: '0.75rem', sm: '0.8125rem' }, px: { xs: 1, sm: 1.5 } }}
                     >
                         {isMobile ? 'Full View' : 'Open in Tab'}
@@ -77,9 +90,10 @@ export default function PdfViewerDialog({ open, onClose, title, fileUrl }) {
                     <IconButton
                         size="small"
                         component="a"
-                        href={fileUrl}
+                        href={blobUrl || undefined}
                         download
                         title="Download manual"
+                        disabled={!blobUrl}
                         sx={{ color: 'text.secondary' }}
                     >
                         <DownloadIcon fontSize="small" />
@@ -104,38 +118,55 @@ export default function PdfViewerDialog({ open, onClose, title, fileUrl }) {
                     bgcolor: 'background.default',
                 }}
             >
-                <Box
-                    component="object"
-                    data={fileUrl}
-                    type="application/pdf"
-                    sx={{
-                        width: '100%',
-                        flexGrow: 1,
-                        border: 'none',
-                        WebkitOverflowScrolling: 'touch',
-                    }}
-                >
+                {loading && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1, gap: 1.5, flexDirection: 'column' }}>
+                        <CircularProgress size={32} />
+                        <Typography variant="body2" color="text.secondary">Loading document&hellip;</Typography>
+                    </Box>
+                )}
+
+                {!loading && error && (
+                    <Box sx={{ p: 3, flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Alert severity="error" sx={{ maxWidth: 420 }}>
+                            Couldn&apos;t load this document{error.response?.status === 404 ? ' (not found)' : ''}. It may have been removed, or your session may need refreshing.
+                        </Alert>
+                    </Box>
+                )}
+
+                {!loading && !error && blobUrl && (
                     <Box
-                        component="iframe"
-                        src={fileUrl}
-                        title={title || 'PDF Document'}
+                        component="object"
+                        data={blobUrl}
+                        type="application/pdf"
                         sx={{
                             width: '100%',
-                            height: '100%',
+                            flexGrow: 1,
                             border: 'none',
                             WebkitOverflowScrolling: 'touch',
                         }}
                     >
-                        <Box sx={{ p: 3, textAlign: 'center' }}>
-                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                                Your browser cannot display this PDF directly.
-                            </Typography>
-                            <Button variant="contained" onClick={handleOpenExternal}>
-                                Open PDF in Browser
-                            </Button>
+                        <Box
+                            component="iframe"
+                            src={blobUrl}
+                            title={title || 'PDF Document'}
+                            sx={{
+                                width: '100%',
+                                height: '100%',
+                                border: 'none',
+                                WebkitOverflowScrolling: 'touch',
+                            }}
+                        >
+                            <Box sx={{ p: 3, textAlign: 'center' }}>
+                                <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    Your browser cannot display this PDF directly.
+                                </Typography>
+                                <Button variant="contained" onClick={handleOpenExternal}>
+                                    Open PDF in Browser
+                                </Button>
+                            </Box>
                         </Box>
                     </Box>
-                </Box>
+                )}
             </DialogContent>
 
             <DialogActions sx={{ px: 3, py: 1, borderTop: '1px solid', borderColor: 'divider' }}>

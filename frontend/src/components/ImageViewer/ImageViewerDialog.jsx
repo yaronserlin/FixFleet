@@ -9,16 +9,27 @@ import {
     IconButton,
     Box,
     Typography,
+    CircularProgress,
+    Alert,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import DownloadIcon from '@mui/icons-material/Download';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { getMediaUrl } from '../../utils/mediaUtils';
+import { useAuthenticatedBlobUrl } from '../../hooks/useAuthenticatedBlobUrl';
 
 /**
  * In-app Image Viewer dialog so users never have to leave the application to inspect photos.
  * Supports multiple images with arrow navigation, downloads, and keyboard shortcuts.
+ *
+ * Each image lives behind an auth-protected `/uploads/:filename` route, so
+ * the currently-viewed image is fetched via `useAuthenticatedBlobUrl`
+ * (through `apiClient`, which attaches a fresh Bearer token and
+ * auto-refreshes on 401) rather than bound directly to `<img src>` -- that
+ * can't attach an Authorization header, so it'd otherwise depend on a
+ * short-lived cookie that can expire between API calls and show a raw 401
+ * JSON body in place of the photo.
  */
 export default function ImageViewerDialog({
     open,
@@ -74,9 +85,11 @@ export default function ImageViewerDialog({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [open, imageList.length, handlePrev, handleNext]);
 
+    const currentImage = imageList[currentIndex];
+    const { blobUrl, loading, error } = useAuthenticatedBlobUrl(open ? currentImage : null);
+
     if (!open || imageList.length === 0) return null;
 
-    const currentImage = imageList[currentIndex];
     const displayTitle = imageList.length > 1
         ? `${title} (${currentIndex + 1} of ${imageList.length})`
         : title;
@@ -108,7 +121,8 @@ export default function ImageViewerDialog({
                         size="small"
                         variant="outlined"
                         startIcon={<DownloadIcon />}
-                        href={currentImage}
+                        href={blobUrl || undefined}
+                        disabled={!blobUrl}
                         download
                         target="_blank"
                         rel="noopener noreferrer"
@@ -158,18 +172,28 @@ export default function ImageViewerDialog({
                 )}
 
                 {/* Main Image */}
-                <Box
-                    component="img"
-                    src={currentImage}
-                    alt={displayTitle}
-                    sx={{
-                        maxWidth: '100%',
-                        maxHeight: '70vh',
-                        objectFit: 'contain',
-                        display: 'block',
-                        userSelect: 'none',
-                    }}
-                />
+                {loading && <CircularProgress size={32} sx={{ color: '#fff' }} />}
+
+                {!loading && error && (
+                    <Alert severity="error" sx={{ maxWidth: 360, mx: 2 }}>
+                        Couldn&apos;t load this photo{error.response?.status === 404 ? ' (not found)' : ''}. It may have been removed, or your session may need refreshing.
+                    </Alert>
+                )}
+
+                {!loading && !error && blobUrl && (
+                    <Box
+                        component="img"
+                        src={blobUrl}
+                        alt={displayTitle}
+                        sx={{
+                            maxWidth: '100%',
+                            maxHeight: '70vh',
+                            objectFit: 'contain',
+                            display: 'block',
+                            userSelect: 'none',
+                        }}
+                    />
+                )}
 
                 {/* Next button if multiple photos */}
                 {imageList.length > 1 && (
