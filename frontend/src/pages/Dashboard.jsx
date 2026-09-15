@@ -54,7 +54,7 @@ import CreateFaultDialog from '../components/Fault/CreateFaultDialog/CreateFault
 // ─── Skeleton loading state ──────────────────────────────────────────────────
 function DashboardSkeleton() {
     return (
-        <Container sx={{ mt: 3, mb: 6 }}>
+        <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             <Box sx={{ mb: 3.5 }}>
                 <Skeleton variant="text" width={280} height={44} />
                 <Skeleton variant="text" width={200} height={22} />
@@ -572,7 +572,7 @@ export default function Dashboard() {
 
     // ─── TECHNICIAN / ADMIN VIEW ─────────────────────────────────────────────
     return (
-        <Container sx={{ mt: 3, mb: 6 }}>
+        <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Welcome Header */}
             <Box
                 sx={{

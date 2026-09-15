@@ -76,7 +76,7 @@ export default function ProfilePage() {
 
     if (error) {
         return (
-            <Container sx={{ mt: 4 }}>
+            <Container maxWidth="xl" sx={{ mt: 4 }}>
                 <Alert severity="error">{error}</Alert>
             </Container>
         );
@@ -90,7 +90,7 @@ export default function ProfilePage() {
     const roleBorderColor = ROLE_BORDER[userRole] || '#2563EB';
 
     return (
-        <Container sx={{ mt: 3, mb: 6 }}>
+        <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* User Profile Summary Header */}
             <Paper
                 variant="outlined"

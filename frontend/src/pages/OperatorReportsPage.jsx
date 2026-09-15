@@ -100,7 +100,7 @@ export default function OperatorReportsPage() {
     const resolvedCount = useMemo(() => faults.filter(f => f.status === FAULT_STATUS.CLOSED).length, [faults]);
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 3, mb: 6 }}>
+        <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Header */}
             <Box
                 sx={{

@@ -99,7 +99,7 @@ export default function EquipmentsPage() {
 
     if (loading && (!equipment || equipment.length === 0)) {
         return (
-            <Container sx={{ mt: 4, mb: 6 }}>
+            <Container maxWidth="xl" sx={{ mt: 4, mb: 6 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
                     <LoadingComponent message="Loading equipment fleet..." />
                 </Box>
@@ -111,7 +111,7 @@ export default function EquipmentsPage() {
     const operationalCount = Math.max(0, (equipment?.length || 0) - faultyCount);
 
     return (
-        <Container sx={{ mt: 3, mb: 6 }}>
+        <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Header with Title and Add Action */}
             <Box
                 sx={{

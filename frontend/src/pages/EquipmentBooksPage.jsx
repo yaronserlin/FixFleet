@@ -86,7 +86,7 @@ export default function EquipmentBooksPage() {
     }, [toolsWithBooks]);
 
     return (
-        <Container maxWidth="lg" sx={{ mt: 3, mb: 6 }}>
+        <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Header */}
             <Box
                 sx={{

@@ -121,7 +121,7 @@ export default function AdminDashboard() {
 
     if (loadingUsers && users.length === 0) {
         return (
-            <Container sx={{ mt: 4, mb: 6 }}>
+            <Container maxWidth="xl" sx={{ mt: 4, mb: 6 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
                     <LoadingComponent message="Loading system administration..." />
                 </Box>
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
     }
 
     return (
-        <Container sx={{ mt: 3, mb: 6 }}>
+        <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Header with Title & Stat overview */}
             <Box sx={{ mb: 4 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>

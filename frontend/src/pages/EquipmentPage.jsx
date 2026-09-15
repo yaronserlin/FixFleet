@@ -185,7 +185,7 @@ export default function EquipmentPage() {
 
     if (!tool) {
         return (
-            <Container sx={{ mt: 4 }}>
+            <Container maxWidth="xl" sx={{ mt: 4 }}>
                 <Typography>No equipment found.</Typography>
             </Container>
         );
@@ -196,7 +196,7 @@ export default function EquipmentPage() {
     const openFaultsCount = (faults || []).filter(f => f.status === FAULT_STATUS.OPEN).length;
 
     return (
-        <Container sx={{ mt: 3, mb: 6 }}>
+        <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Back button */}
             <Box sx={{ mb: 2 }}>
                 <Button
