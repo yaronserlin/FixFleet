@@ -21,6 +21,21 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import LockIcon from '@mui/icons-material/Lock';
 import { useTool } from '../../../contexts/ToolContext';
 import { FAULT_STATUS } from '../../../constants/faultStatus';
+import { isRequired } from '../../../utils/validate';
+
+/**
+ * Shared validation for fault create/edit forms: equipment selection,
+ * fault code, and description are all required.
+ */
+function validateFaultValues(values) {
+    const errs = {};
+    if (!values.tool) errs.tool = 'Please select an equipment';
+    const codeErr = isRequired(values.code, 'Fault code');
+    if (codeErr) errs.code = codeErr;
+    const descriptionErr = isRequired(values.description, 'Description');
+    if (descriptionErr) errs.description = descriptionErr;
+    return errs;
+}
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -110,7 +125,7 @@ function FaultFormFields({
     tools = [],
     equipment,
     isEdit = false,
-    toolError = '',
+    errors = {},
     lockEquipment = false,
 }) {
     const [isDragging, setIsDragging] = useState(false);
@@ -139,7 +154,7 @@ function FaultFormFields({
     return (
         <Box display="flex" flexDirection="column" gap={2.5}>
             {/* Equipment selector */}
-            <FormControl fullWidth required error={Boolean(toolError)}>
+            <FormControl fullWidth required error={Boolean(errors.tool)}>
                 <Select
                     name="tool"
                     value={values.tool || ''}
@@ -196,7 +211,7 @@ function FaultFormFields({
                         <LockIcon sx={{ fontSize: 14 }} /> Equipment is locked for this machine report
                     </FormHelperText>
                 )}
-                {toolError && <FormHelperText error>{toolError}</FormHelperText>}
+                {errors.tool && <FormHelperText error>{errors.tool}</FormHelperText>}
             </FormControl>
 
             {/* Fault code & Engine Hours in one responsive row */}
@@ -209,6 +224,8 @@ function FaultFormFields({
                     value={values.code}
                     onChange={onChange}
                     placeholder="e.g. HYD-01 or ENG-104"
+                    error={Boolean(errors.code)}
+                    helperText={errors.code}
                 />
 
                 <TextField
@@ -233,6 +250,8 @@ function FaultFormFields({
                 value={values.description}
                 onChange={onChange}
                 placeholder="Describe the issue, symptoms, and urgency..."
+                error={Boolean(errors.description)}
+                helperText={errors.description}
             />
 
             {/* Drag & Drop / File Upload Area */}
@@ -354,6 +373,7 @@ export function CreateFaultForm({
     lockEquipment = Boolean(equipmentId || toolId || equipment),
     formId = 'create-fault-form',
     hideSubmitButton = false,
+    onSubmittingChange,
 }) {
     const activeEquipmentId = equipment?._id || equipment?.id || equipmentId || toolId;
     const { tools = [] } = useTool();
@@ -366,12 +386,13 @@ export function CreateFaultForm({
         status: FAULT_STATUS.OPEN,
         closedAt: '',
     });
-    const [toolError, setToolError] = useState('');
+    const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         if (activeEquipmentId) {
             setValues(prev => ({ ...prev, tool: activeEquipmentId }));
-            setToolError('');
+            setErrors(prev => ({ ...prev, tool: undefined }));
         }
     }, [activeEquipmentId]);
 
@@ -384,8 +405,8 @@ export function CreateFaultForm({
             }));
         } else {
             const { name, value } = e.target;
-            if (name === 'tool' && value) {
-                setToolError('');
+            if (errors[name]) {
+                setErrors(prev => ({ ...prev, [name]: undefined }));
             }
             setValues(prev => ({ ...prev, [name]: value }));
         }
@@ -405,14 +426,22 @@ export function CreateFaultForm({
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!values.tool) {
-            setToolError('Please select an equipment');
-            return;
+        if (isSubmitting) return;
+
+        const validationErrors = validateFaultValues(values);
+        setErrors(validationErrors);
+        if (Object.keys(validationErrors).length > 0) return;
+
+        setIsSubmitting(true);
+        onSubmittingChange?.(true);
+        try {
+            await onSubmit(values);
+        } finally {
+            setIsSubmitting(false);
+            onSubmittingChange?.(false);
         }
-        setToolError('');
-        onSubmit(values);
     };
 
     return (
@@ -424,14 +453,14 @@ export function CreateFaultForm({
                 onRemoveFile={handleRemoveFile}
                 tools={tools}
                 equipment={equipment}
-                toolError={toolError}
+                errors={errors}
                 lockEquipment={lockEquipment}
             />
 
             {!hideSubmitButton && (
                 <Box mt={3} display="flex" justifyContent="flex-end">
-                    <Button type="submit" variant="contained" color="primary">
-                        Create Fault
+                    <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
+                        {isSubmitting ? 'Creating…' : 'Create Fault'}
                     </Button>
                 </Box>
             )}
@@ -453,6 +482,8 @@ export function EditFaultForm({ initialValues, onSubmit, formId = 'edit-fault-fo
         status: initialValues?.status || FAULT_STATUS.OPEN,
         closedAt: initialValues?.closedAt ? initialValues.closedAt.slice(0, 10) : '',
     });
+    const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleChange = (e) => {
         if (e.target.type === 'file') {
@@ -463,6 +494,9 @@ export function EditFaultForm({ initialValues, onSubmit, formId = 'edit-fault-fo
             }));
         } else {
             const { name, value } = e.target;
+            if (errors[name]) {
+                setErrors(prev => ({ ...prev, [name]: undefined }));
+            }
             setValues(prev => ({ ...prev, [name]: value }));
         }
     };
@@ -481,9 +515,20 @@ export function EditFaultForm({ initialValues, onSubmit, formId = 'edit-fault-fo
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSubmit(values);
+        if (isSubmitting) return;
+
+        const validationErrors = validateFaultValues(values);
+        setErrors(validationErrors);
+        if (Object.keys(validationErrors).length > 0) return;
+
+        setIsSubmitting(true);
+        try {
+            await onSubmit(values);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -494,11 +539,12 @@ export function EditFaultForm({ initialValues, onSubmit, formId = 'edit-fault-fo
                 onFilesAdded={handleFilesAdded}
                 onRemoveFile={handleRemoveFile}
                 tools={tools}
+                errors={errors}
                 isEdit
             />
             <Box mt={3} display="flex" justifyContent="flex-end">
-                <Button type="submit" variant="contained" color="primary">
-                    Update Fault
+                <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
+                    {isSubmitting ? 'Updating…' : 'Update Fault'}
                 </Button>
             </Box>
         </form>

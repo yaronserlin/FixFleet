@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import userService from '../services/userService';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../utils/formatUtils';
+import { validateEmail, validatePassword } from '../utils/validate';
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -47,6 +48,10 @@ export default function AccountPage() {
     const [pwdMsg, setPwdMsg] = useState(null);
     const [pwdError, setPwdError] = useState(null);
 
+    // Field-level validation errors, shown inline on the relevant TextField
+    const [profileFieldErrors, setProfileFieldErrors] = useState({});
+    const [pwdFieldErrors, setPwdFieldErrors] = useState({});
+
     const [loadingProfile, setLoadingProfile] = useState(false);
     const [loadingPwd, setLoadingPwd] = useState(false);
     const [avatarLoading, setAvatarLoading] = useState(false);
@@ -62,8 +67,20 @@ export default function AccountPage() {
         if (user) setForm({ name: formatUserName(user.name) || '', email: user.email || '' });
     }, [user]);
 
-    const handleChange = e => setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    const handlePwdChange = e => setPwd(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const handleChange = e => {
+        const { name, value } = e.target;
+        if (profileFieldErrors[name]) {
+            setProfileFieldErrors(prev => ({ ...prev, [name]: undefined }));
+        }
+        setForm(prev => ({ ...prev, [name]: value }));
+    };
+    const handlePwdChange = e => {
+        const { name, value } = e.target;
+        if (pwdFieldErrors[name]) {
+            setPwdFieldErrors(prev => ({ ...prev, [name]: undefined }));
+        }
+        setPwd(prev => ({ ...prev, [name]: value }));
+    };
 
     const handleAvatarChange = async (e) => {
         const file = e.target.files?.[0];
@@ -94,6 +111,14 @@ export default function AccountPage() {
 
     const handleUpdateProfile = async (e) => {
         if (e) e.preventDefault();
+
+        const emailErr = validateEmail(form.email);
+        if (emailErr) {
+            setProfileFieldErrors({ email: emailErr });
+            return;
+        }
+        setProfileFieldErrors({});
+
         if (isEmailChanged && !emailPassword) {
             setProfileError('Current password is required to confirm your email address change');
             return;
@@ -122,10 +147,15 @@ export default function AccountPage() {
 
     const handleChangePassword = async (e) => {
         if (e) e.preventDefault();
-        if (pwd.newPassword !== pwd.confirm) {
-            setPwdError('New passwords do not match');
+
+        const newPwdErr = validatePassword(pwd.newPassword);
+        const confirmErr = pwd.newPassword !== pwd.confirm ? 'Passwords do not match' : '';
+        if (newPwdErr || confirmErr) {
+            setPwdFieldErrors({ newPassword: newPwdErr, confirm: confirmErr });
             return;
         }
+        setPwdFieldErrors({});
+
         setLoadingPwd(true);
         setPwdMsg(null);
         setPwdError(null);
@@ -294,6 +324,8 @@ export default function AccountPage() {
                         onChange={handleChange}
                         sx={{ mb: isEmailChanged ? 2 : 2.5 }}
                         required
+                        error={Boolean(profileFieldErrors.email)}
+                        helperText={profileFieldErrors.email}
                     />
 
                     {isEmailChanged && (
@@ -393,6 +425,8 @@ export default function AccountPage() {
                         onChange={handlePwdChange}
                         sx={{ mb: strength > 0 ? 1 : 2 }}
                         required
+                        error={Boolean(pwdFieldErrors.newPassword)}
+                        helperText={pwdFieldErrors.newPassword}
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">
@@ -441,6 +475,8 @@ export default function AccountPage() {
                         onChange={handlePwdChange}
                         sx={{ mb: 2.5 }}
                         required
+                        error={Boolean(pwdFieldErrors.confirm)}
+                        helperText={pwdFieldErrors.confirm}
                         InputProps={{
                             endAdornment: (
                                 <InputAdornment position="end">

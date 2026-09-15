@@ -1,5 +1,5 @@
 // src/components/CreateFaultDialog.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -28,6 +28,7 @@ export default function CreateFaultDialog({
     const isLocked = lockEquipment !== undefined ? lockEquipment : Boolean(activeEquipmentId);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    const [submitting, setSubmitting] = useState(false);
 
     return (
         <Dialog
@@ -60,11 +61,12 @@ export default function CreateFaultDialog({
                         lockEquipment={isLocked}
                         formId="create-fault-modal-form"
                         hideSubmitButton={true}
+                        onSubmittingChange={setSubmitting}
                     />
                 )}
             </DialogContent>
             <DialogActions sx={{ p: 2, gap: 1 }}>
-                <Button onClick={onClose} color="inherit" variant="outlined">
+                <Button onClick={onClose} color="inherit" variant="outlined" disabled={submitting}>
                     Cancel
                 </Button>
                 <Button
@@ -72,8 +74,9 @@ export default function CreateFaultDialog({
                     form="create-fault-modal-form"
                     variant="contained"
                     color="primary"
+                    disabled={submitting}
                 >
-                    Submit Fault Report
+                    {submitting ? 'Submitting…' : 'Submit Fault Report'}
                 </Button>
             </DialogActions>
         </Dialog>
