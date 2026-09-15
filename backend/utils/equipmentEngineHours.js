@@ -1,6 +1,7 @@
 // backend/utils/equipmentEngineHours.js
 const mongoose = require('mongoose');
 const { SCHEDULE_STATUS, DUE_SOON_THRESHOLD_HOURS } = require('../constants/scheduleStatus');
+const { FAULT_STATUS } = require('../constants/faultStatus');
 
 /**
  * Synchronizes an equipment's currentEngineHours to the highest recorded value among:
@@ -30,7 +31,7 @@ async function syncEquipmentEngineHours(toolId, companyId, additionalCandidate =
     const closedFaults = await Fault.find({
         tool: toolId,
         companyId,
-        status: 'closed',
+        status: FAULT_STATUS.CLOSED,
     }).select('closingEngineHours').lean();
 
     // Fetch maintenance service logs for this equipment

@@ -3,6 +3,23 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { ROLES, MECHANIC_OR_ADMIN_ROLES } = require('../constants/roles');
 
+/**
+ * Authenticates the request: extracts a JWT access token from the `token`
+ * or `accessToken` cookie (or an `Authorization: Bearer <token>` header),
+ * verifies it, loads the corresponding user (with their company
+ * populated), and attaches a plain `req.user` summary for downstream
+ * middleware/controllers.
+ *
+ * Also enforces the first-login forced-password-change gate: if
+ * `user.mustChangePassword` is true, every route is blocked with a 403
+ * except `POST /auth/me/change-password`, `POST /auth/logout`, and
+ * `GET /auth/me`.
+ *
+ * @param {import('express').Request} req - Express request. On success, sets `req.user = { userId, _id, name, email, role, companyId, company, mustChangePassword }`.
+ * @param {import('express').Response} res - Express response. Responds directly (401/403) on any authentication failure rather than calling `next(err)`.
+ * @param {import('express').NextFunction} next - Called only once the token is verified, the user/company are valid and active, and the password-change gate (if any) is satisfied.
+ * @returns {Promise<void>}
+ */
 exports.verifyToken = async (req, res, next) => {
     let token = null;
 
@@ -67,6 +84,15 @@ exports.verifyToken = async (req, res, next) => {
     }
 };
 
+/**
+ * Route guard: only allows requests from a user whose role is `admin`.
+ * Must run after {@link exports.verifyToken} (reads `req.user`).
+ *
+ * @param {import('express').Request} req - Express request; reads `req.user.role`.
+ * @param {import('express').Response} res - Express response; responds 403 directly if the check fails.
+ * @param {import('express').NextFunction} next - Called if the user is an admin.
+ * @returns {void}
+ */
 exports.ensureAdmin = (req, res, next) => {
     if (!req.user || req.user.role !== ROLES.ADMIN) {
         return res.status(403).json({ message: 'Forbidden: Admins only' });
@@ -74,6 +100,15 @@ exports.ensureAdmin = (req, res, next) => {
     next();
 };
 
+/**
+ * Route guard: only allows requests from a user whose role is `mechanic`
+ * or `admin`. Must run after {@link exports.verifyToken} (reads `req.user`).
+ *
+ * @param {import('express').Request} req - Express request; reads `req.user.role`.
+ * @param {import('express').Response} res - Express response; responds 403 directly if the check fails.
+ * @param {import('express').NextFunction} next - Called if the user is a mechanic or admin.
+ * @returns {void}
+ */
 exports.ensureMechanicOrAdmin = (req, res, next) => {
     if (!req.user || !MECHANIC_OR_ADMIN_ROLES.includes(req.user.role)) {
         return res.status(403).json({ message: 'Forbidden: Mechanics or Admins only' });
