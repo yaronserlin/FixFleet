@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { formatUserName } from '../utils/formatUtils';
@@ -50,7 +50,7 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     // Login function (supports both login(email, password) and login({ email, password }))
-    const login = async (emailOrCredentials, maybePassword) => {
+    const login = useCallback(async (emailOrCredentials, maybePassword) => {
         setLoading(true);
         try {
             const email = (typeof emailOrCredentials === 'object' && emailOrCredentials !== null)
@@ -87,10 +87,10 @@ export const AuthProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [navigate]);
 
     // Company self-service signup function
-    const signup = async ({ companyName, name, email, password, agreeToTerms }) => {
+    const signup = useCallback(async ({ companyName, name, email, password, agreeToTerms }) => {
         setLoading(true);
         try {
             const { data } = await apiClient.post('/auth/register', {
@@ -122,10 +122,10 @@ export const AuthProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [navigate]);
 
     // Logout function
-    const logout = async () => {
+    const logout = useCallback(async () => {
         try {
             await apiClient.post('/auth/logout');
         } catch (err) {
@@ -137,10 +137,10 @@ export const AuthProvider = ({ children }) => {
             setLoginPassword('');
             navigate('/login');
         }
-    };
+    }, [navigate]);
 
     // Upload avatar function
-    const updateAvatar = async (file) => {
+    const updateAvatar = useCallback(async (file) => {
         const formData = new FormData();
         formData.append('avatar', file);
         const { data } = await apiClient.post('/auth/me/avatar', formData, {
@@ -149,32 +149,36 @@ export const AuthProvider = ({ children }) => {
         const formattedUser = sanitizeUser(data);
         setUser(formattedUser);
         return formattedUser;
-    };
+    }, []);
 
-    const handleSetUser = (newUserData) => {
+    const handleSetUser = useCallback((newUserData) => {
         setUser(prev => {
             const nextVal = typeof newUserData === 'function' ? newUserData(prev) : newUserData;
             return sanitizeUser(nextVal);
         });
-    };
+    }, []);
 
-    const clearLoginPassword = () => {
+    const clearLoginPassword = useCallback(() => {
         setLoginPassword('');
-    };
+    }, []);
+
+    // Memoize the provider value so consumers only re-render when something
+    // they actually depend on changes, not on every AuthProvider render.
+    const value = useMemo(() => ({
+        user,
+        setUser: handleSetUser,
+        userId,
+        loading,
+        login,
+        signup,
+        logout,
+        updateAvatar,
+        loginPassword,
+        clearLoginPassword,
+    }), [user, userId, loading, loginPassword, handleSetUser, login, signup, logout, updateAvatar, clearLoginPassword]);
 
     return (
-        <AuthContext.Provider value={{
-            user,
-            setUser: handleSetUser,
-            userId,
-            loading,
-            login,
-            signup,
-            logout,
-            updateAvatar,
-            loginPassword,
-            clearLoginPassword,
-        }}>
+        <AuthContext.Provider value={value}>
             {children}
         </AuthContext.Provider>
     );
