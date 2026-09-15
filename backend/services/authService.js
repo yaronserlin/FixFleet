@@ -11,6 +11,7 @@ const {
     REFRESH_TOKEN_EXPIRY,
     REFRESH_COOKIE_MAX_AGE,
     BCRYPT_SALT_ROUNDS,
+    REFRESH_REUSE_GRACE_MS,
 } = require('../constants/auth');
 const { httpError } = require('../utils/httpError');
 
@@ -249,16 +250,38 @@ async function rotateRefreshToken(rawRefreshToken) {
         throw httpError(401, 'Refresh token not recognized');
     }
 
-    // Reuse detection: if this token was already revoked, someone is reusing an old token!
+    // Reuse detection: if this token was already revoked, someone is reusing
+    // an old token! ...unless it was rotated (not revoked for a security
+    // reason) moments ago, which is more likely two near-simultaneous
+    // requests (e.g. several open browser tabs whose access tokens happen
+    // to expire at the same time) racing to refresh than an actual stolen
+    // token resurfacing. Tolerate *that specific case* within a short grace
+    // window -- by falling through to the normal rotation path below, which
+    // mints this racing request its own fresh pair under the same family --
+    // and only treat it as compromised once that window has passed.
+    //
+    // Crucially, `wasRotated` must be checked, not just `isRevoked`: a token
+    // revoked by logout or a password-change security sweep must stay
+    // immediately, unconditionally final -- it would defeat the point of
+    // "log out this session" if a stale tab could still use it for another
+    // 30 seconds.
     if (existingTokenDoc.isRevoked) {
-        // Revoke all tokens in this family lineage
-        await RefreshToken.updateMany(
-            { familyId: existingTokenDoc.familyId },
-            { isRevoked: true }
-        );
-        throw httpError(403, 'Compromised token detected: all sessions in this family have been revoked', {
-            code: 'TOKEN_REUSE_DETECTED',
-        });
+        const revokedMsAgo = existingTokenDoc.updatedAt
+            ? Date.now() - existingTokenDoc.updatedAt.getTime()
+            : Infinity;
+
+        const isTolerableRotationRace = existingTokenDoc.wasRotated && revokedMsAgo <= REFRESH_REUSE_GRACE_MS;
+
+        if (!isTolerableRotationRace) {
+            // Revoke all tokens in this family lineage
+            await RefreshToken.updateMany(
+                { familyId: existingTokenDoc.familyId },
+                { isRevoked: true }
+            );
+            throw httpError(403, 'Compromised token detected: all sessions in this family have been revoked', {
+                code: 'TOKEN_REUSE_DETECTED',
+            });
+        }
     }
 
     // Verify user and company are still valid and active
@@ -272,6 +295,7 @@ async function rotateRefreshToken(rawRefreshToken) {
 
     // Invalidate current refresh token (RTR rotation)
     existingTokenDoc.isRevoked = true;
+    existingTokenDoc.wasRotated = true;
     await existingTokenDoc.save();
 
     // Issue new access token + new rotated refresh token under the same familyId

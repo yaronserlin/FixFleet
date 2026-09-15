@@ -15,6 +15,7 @@ const mongoose = require('mongoose');
  * @property {string} tokenHash - SHA-256 hex digest of the raw refresh token JWT. Required, indexed.
  * @property {string} familyId - Groups all tokens descended from one login (rotation lineage), for reuse detection. Required, indexed.
  * @property {boolean} [isRevoked=false] - Set true once this token has been rotated (exchanged for a new one) or explicitly revoked (logout, password change, detected reuse).
+ * @property {boolean} [wasRotated=false] - True only when `isRevoked` was set by the normal single-use rotation exchange (as opposed to logout, password-change revocation, or reuse-triggered family kill). Lets `rotateRefreshToken` grant a short reuse-tolerance grace window *only* to this case -- a security-motivated revocation (e.g. explicit logout) must stay immediately, unconditionally final.
  * @property {Date} expiresAt - When this token expires. Required; also drives the collection's TTL index (documents are auto-deleted after this time).
  * @property {Date} createdAt - Set automatically (`timestamps: true`).
  * @property {Date} updatedAt - Set automatically (`timestamps: true`).
@@ -43,6 +44,10 @@ const RefreshTokenSchema = new mongoose.Schema({
         index: true,
     },
     isRevoked: {
+        type: Boolean,
+        default: false,
+    },
+    wasRotated: {
         type: Boolean,
         default: false,
     },

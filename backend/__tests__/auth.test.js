@@ -1,5 +1,7 @@
 const request = require('supertest');
 const { connectTestDB, closeTestDB, registerCompanyAdmin, uniqueEmail } = require('./helpers/setup');
+const RefreshToken = require('../models/RefreshToken');
+const crypto = require('crypto');
 
 const app = require('../app');
 let server;
@@ -468,23 +470,74 @@ describe('Auth Controller', () => {
             expect(refreshRes.body.refreshToken).toBeDefined();
         });
 
-        it('enforces rotation: cannot reuse an already rotated refresh token', async () => {
+        it('tolerates near-simultaneous reuse of a just-rotated refresh token (concurrent-tab race)', async () => {
+            // Regression test: multiple open browser tabs each independently
+            // hold the app open, and each tab's access token expires at
+            // roughly the same wall-clock moment (they were all minted at
+            // login/registration together), so it's common for two tabs to
+            // race to POST /auth/refresh within milliseconds of each other.
+            // Refresh tokens are single-use, so the loser of that race
+            // presents an already-rotated token -- this must NOT be treated
+            // as a stolen/replayed token and must NOT log the user out of
+            // every tab, or a real user hits this within a few hours of
+            // normal multi-tab use (15-minute access token lifetime).
             const { refreshToken: initialRefreshToken } = await registerCompanyAdmin(server);
 
-            // First refresh succeeds and rotates
             const firstRefresh = await request(server)
                 .post('/api/auth/refresh')
                 .send({ refreshToken: initialRefreshToken });
             expect(firstRefresh.status).toBe(200);
 
-            // Second attempt to use initialRefreshToken triggers reuse detection
-            const reuseAttempt = await request(server)
+            // A second, losing-the-race tab presents the same now-rotated
+            // token moments later -- tolerated, not flagged as compromised.
+            const racingReuse = await request(server)
                 .post('/api/auth/refresh')
                 .send({ refreshToken: initialRefreshToken });
-            expect(reuseAttempt.status).toBe(403);
-            expect(reuseAttempt.body.code).toBe('TOKEN_REUSE_DETECTED');
+            expect(racingReuse.status).toBe(200);
+            expect(racingReuse.body.accessToken).toBeDefined();
+            expect(racingReuse.body.refreshToken).toBeDefined();
 
-            // Even the rotated token from the first refresh should now be revoked due to family invalidation
+            // Both tabs end up with independently valid, usable sessions --
+            // neither the original refresh's nor the racing refresh's new
+            // token was punished by family-wide revocation.
+            const afterFirst = await request(server)
+                .post('/api/auth/refresh')
+                .send({ refreshToken: firstRefresh.body.refreshToken });
+            expect(afterFirst.status).toBe(200);
+
+            const afterRacing = await request(server)
+                .post('/api/auth/refresh')
+                .send({ refreshToken: racingReuse.body.refreshToken });
+            expect(afterRacing.status).toBe(200);
+        });
+
+        it('still detects genuine reuse of a token rotated well outside the grace window', async () => {
+            const { refreshToken: initialRefreshToken } = await registerCompanyAdmin(server);
+
+            const firstRefresh = await request(server)
+                .post('/api/auth/refresh')
+                .send({ refreshToken: initialRefreshToken });
+            expect(firstRefresh.status).toBe(200);
+
+            // Simulate the rotation having happened well outside the grace
+            // window (rather than sleeping in the test), by directly
+            // backdating the revoked document's updatedAt.
+            const hashed = crypto.createHash('sha256').update(initialRefreshToken).digest('hex');
+            await RefreshToken.updateOne(
+                { tokenHash: hashed },
+                { updatedAt: new Date(Date.now() - 5 * 60 * 1000) },
+                { timestamps: false } // otherwise Mongoose overwrites updatedAt with "now"
+            );
+
+            const staleReuseAttempt = await request(server)
+                .post('/api/auth/refresh')
+                .send({ refreshToken: initialRefreshToken });
+            expect(staleReuseAttempt.status).toBe(403);
+            expect(staleReuseAttempt.body.code).toBe('TOKEN_REUSE_DETECTED');
+
+            // The whole family -- including the still-fresh rotated token
+            // from the legitimate first refresh -- is revoked in response
+            // to the genuine (stale) reuse.
             const attemptWithRotated = await request(server)
                 .post('/api/auth/refresh')
                 .send({ refreshToken: firstRefresh.body.refreshToken });
