@@ -25,6 +25,7 @@ const faultRoutes = require('./routes/faultRoutes');
 const maintenanceRoutes = require('./routes/maintenanceRoutes');
 const partRoutes = require('./routes/partRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const logger = require('./utils/logger');
 
 const app = express();
@@ -157,6 +158,7 @@ app.use('/api/faults', faultRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
 app.use('/api/parts', partRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Global error handler (Finding #7 Fix: log error, proper 500 response, no swallowed errors)
 app.use(errorHandler);

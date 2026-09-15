@@ -26,6 +26,7 @@ import { getMediaUrl } from '../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../utils/formatUtils';
 import { validateEmail, validatePassword } from '../utils/validate';
 import { usePageRefresh } from '../contexts/PageRefreshContext';
+import PushNotificationSettings from '../components/Notifications/PushNotificationSettings';
 import { FormSkeleton } from '../components/Skeletons/Skeletons';
 import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 
@@ -236,8 +237,14 @@ export default function AccountPage() {
                     Account Settings
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    Manage your personal profile, photo, and login security credentials
+                    Manage your personal profile, photo, login security credentials, and alerts
                 </Typography>
+            </Box>
+
+            {/* Per-device push opt-in. Renders nothing when this browser or
+                this deployment can't do push, so it never shows a dead toggle. */}
+            <Box sx={{ mb: 3.5 }}>
+                <PushNotificationSettings />
             </Box>
 
             {/* Profile Avatar Card */}

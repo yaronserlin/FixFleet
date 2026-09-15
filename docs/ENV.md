@@ -17,6 +17,9 @@ This document outlines all environment variables utilized across the Maintenance
 | `FRONTEND_URL` | Yes (in production) | Comma-separated list of allowed origins permitted by CORS and CSP frame-ancestors | `http://localhost:5173` | Fully qualified URL(s) without trailing slash (e.g. `http://localhost:5173,https://app.example.com`) |
 | `COOKIE_DOMAIN` | No | Shares auth cookies across subdomains of the same registrable domain (e.g. `app.example.com` + `api.example.com`) by setting the cookie's `Domain` attribute, instead of the default host-only scope. Only needed when the frontend and API are on different subdomains -- see `docs/RUNBOOK.md` issue #6. | unset (host-only cookie) | A leading-dot domain, e.g. `.example.com` |
 | `LOG_LEVEL` | No | Minimum severity level `utils/logger.js` emits | `warn` in production, `debug` otherwise | `error`, `warn`, `info`, `http`, `debug` |
+| `VAPID_PUBLIC_KEY` | No | Web Push (VAPID) public key. Together with `VAPID_PRIVATE_KEY`, enables PWA push notifications for new fault reports and admin announcements. With either unset, push is disabled and notifications are delivered to the in-app feed only | unset (push disabled) | Base64url key from `npx web-push generate-vapid-keys`; the same value is served to browsers via `GET /api/notifications/push/public-key` |
+| `VAPID_PRIVATE_KEY` | No | Web Push (VAPID) private key, paired with `VAPID_PUBLIC_KEY`. Never sent to clients | unset (push disabled) | Base64url key from `npx web-push generate-vapid-keys`; treat as a secret |
+| `VAPID_SUBJECT` | No | Contact URI the push service can reach the operator at, as required by the Web Push spec | `mailto:admin@example.com` | A `mailto:` or `https:` URI |
 | `TEST_LOGS` | No | When set (any value), re-enables log output while `NODE_ENV=test` (normally suppressed to keep test runs quiet) | unset | Set to any truthy value to see application logs during `npm test` |
 
 ---

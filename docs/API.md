@@ -82,7 +82,34 @@ This document provides the complete API specification for the MaintenanceSystemA
 
 ---
 
-### 5. Maintenance History (`/api/maintenance`)
+### 5. Notifications (`/api/notifications`)
+
+*Every endpoint here reads or writes only the requesting user's own notifications, except the admin broadcast.*
+
+| Method | Path | Auth Required | Minimum Role | Description |
+|--------|------|---------------|--------------|-------------|
+| `GET` | `/api/notifications` | Yes | Any | List own notifications, newest first (`page`, `limit`, `unreadOnly`) |
+| `GET` | `/api/notifications/unread-count` | Yes | Any | Unread badge count (cheap; polled by the client) |
+| `PATCH` | `/api/notifications/:id/read` | Yes | Any | Mark one own notification read (idempotent) |
+| `POST` | `/api/notifications/read-all` | Yes | Any | Mark every own unread notification read |
+| `GET` | `/api/notifications/push/public-key` | Yes | Any | VAPID public key, plus whether push is configured server-side |
+| `POST` | `/api/notifications/push/subscriptions` | Yes | Any | Register this browser's push endpoint (upsert, keyed on endpoint) |
+| `DELETE` | `/api/notifications/push/subscriptions` | Yes | Any | Forget this browser's push endpoint (body: `endpoint`) |
+| `POST` | `/api/notifications/announcements` | Yes | Admin | Broadcast to users in the admin's own company (`title`, `body`, optional `roles`) |
+
+**Automatic notifications.** `POST /api/faults` fans out a `fault_reported`
+notification to every `mechanic` and `admin` in the reporting user's company,
+excluding the reporter. A notification is stored per recipient and is also
+delivered as a Web Push message to each of that user's registered browsers.
+
+**Push is optional.** With no `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`
+configured (see [ENV.md](ENV.md)), push is disabled and
+`GET /api/notifications/push/public-key` reports `enabled: false`; the in-app
+feed continues to work unchanged.
+
+---
+
+### 6. Maintenance History (`/api/maintenance`)
 
 | Method | Path | Auth Required | Minimum Role | Description |
 |--------|------|---------------|--------------|-------------|
@@ -93,7 +120,7 @@ This document provides the complete API specification for the MaintenanceSystemA
 
 ---
 
-### 6. Spare Parts Inventory (`/api/parts`)
+### 7. Spare Parts Inventory (`/api/parts`)
 
 | Method | Path | Auth Required | Minimum Role | Description |
 |--------|------|---------------|--------------|-------------|
@@ -104,7 +131,7 @@ This document provides the complete API specification for the MaintenanceSystemA
 
 ---
 
-### 7. Administration (`/api/admin`)
+### 8. Administration (`/api/admin`)
 
 *All admin endpoints require an authenticated user with `admin` role.*
 

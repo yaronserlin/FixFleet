@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Container, Typography, Grid, Box, Chip, Paper, Skeleton } from '@mui/material';
+import { Container, Typography, Grid, Box, Button, Chip, Paper, Skeleton } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
+import CampaignIcon from '@mui/icons-material/Campaign';
 
 import adminService from '../services/adminService';
 import UserPanel from '../components/User/UserPanel/UserPanel';
 import ToolsPanel from '../components/Tool/ToolsPanel/ToolsPanel';
 import { usePageRefresh } from '../contexts/PageRefreshContext';
+import SendAnnouncementDialog from '../components/Notifications/SendAnnouncementDialog';
 import { PageHeaderSkeleton, TableSkeleton } from '../components/Skeletons/Skeletons';
 import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 import { useTool } from '../contexts/ToolContext';
@@ -37,6 +39,7 @@ export default function AdminDashboard() {
     const [users, setUsers] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(true);
     const [errorUsers, setErrorUsers] = useState(null);
+    const [announcementOpen, setAnnouncementOpen] = useState(false);
 
     // fetch users once
     useEffect(() => {
@@ -189,7 +192,24 @@ export default function AdminDashboard() {
                     Manage user access privileges, company staff accounts, and equipment records
                 </Typography>
 
-                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 2, ml: { xs: 0, sm: 6.5 } }}>
+                <Box
+                    sx={{
+                        display: 'flex',
+                        gap: 1.5,
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        mt: 2,
+                        ml: { xs: 0, sm: 6.5 },
+                    }}
+                >
+                    <Button
+                        variant="contained"
+                        startIcon={<CampaignIcon />}
+                        onClick={() => setAnnouncementOpen(true)}
+                        sx={{ fontWeight: 700, minHeight: 40 }}
+                    >
+                        Send Announcement
+                    </Button>
                     <Chip
                         icon={<PeopleIcon sx={{ fontSize: '1rem !important' }} />}
                         label={`${users.length} Active User${users.length !== 1 ? 's' : ''}`}
@@ -226,6 +246,11 @@ export default function AdminDashboard() {
                     onDelete={handleDeleteTool}
                 />
             </Grid>
+
+            <SendAnnouncementDialog
+                open={announcementOpen}
+                onClose={() => setAnnouncementOpen(false)}
+            />
         </Container>
     );
 }

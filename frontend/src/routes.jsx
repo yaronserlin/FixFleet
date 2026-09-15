@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToolProvider, useTool } from './contexts/ToolContext';
 import { FaultProvider, useFault } from './contexts/FaultContext';
 import { PageRefreshProvider, usePageRefreshTrigger } from './contexts/PageRefreshContext';
+import { NotificationFeedProvider } from './contexts/NotificationFeedContext';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import RequireAdmin from './components/RequireAdmin';
@@ -33,6 +34,7 @@ const OperatorReportsPage  = lazy(() => import('./pages/OperatorReportsPage'));
 const EquipmentBooksPage   = lazy(() => import('./pages/EquipmentBooksPage'));
 const ForcePasswordChangePage = lazy(() => import('./pages/ForcePasswordChangePage'));
 const LegalPage               = lazy(() => import('./pages/LegalPage'));
+const NotificationsPage       = lazy(() => import('./pages/NotificationsPage'));
 import ForcePasswordChangeDialog from './components/Auth/ForcePasswordChangeDialog';
 
 // Preload route chunks in the background to avoid page transition freezes
@@ -46,6 +48,7 @@ const preloadRouteChunks = () => {
     import('./pages/AdminDashboard');
     import('./pages/OperatorReportsPage');
     import('./pages/EquipmentBooksPage');
+    import('./pages/NotificationsPage');
 };
 
 // Top-level route fallback: a thin progress bar for immediate feedback,
@@ -257,6 +260,14 @@ function AppLayout() {
                     }
                 />
                 <Route
+                    path={ROUTES.NOTIFICATIONS}
+                    element={
+                        <ProtectedRoute>
+                            <NotificationsPage />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
                     path={ROUTES.MANUALS}
                     element={
                         <ProtectedRoute>
@@ -319,7 +330,9 @@ export default function AppRoutes() {
                 <ToolProvider>
                     <FaultProvider>
                         <PageRefreshProvider>
-                            <AppLayout />
+                            <NotificationFeedProvider>
+                                <AppLayout />
+                            </NotificationFeedProvider>
                         </PageRefreshProvider>
                     </FaultProvider>
                 </ToolProvider>

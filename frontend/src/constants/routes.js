@@ -20,6 +20,7 @@ export const ROUTES = Object.freeze({
     ACCOUNT: '/account',
     ADMIN: '/admin',
     MY_REPORTS: '/my-reports',
+    NOTIFICATIONS: '/notifications',
     MANUALS: '/manuals',
     BOOKS: '/books',
 });

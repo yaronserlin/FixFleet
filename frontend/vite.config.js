@@ -50,6 +50,12 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // Web push needs `push`/`notificationclick` handlers inside the
+        // service worker, but generateSW builds that file for us. Importing
+        // our handlers into it keeps Workbox's precaching as-is instead of
+        // switching the whole PWA over to injectManifest and hand-rolling
+        // the caching strategy. See public/push-sw.js.
+        importScripts: ['push-sw.js'],
       },
     }),
   ],

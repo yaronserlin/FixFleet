@@ -15,6 +15,7 @@ import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 import Logo, { LogoMark } from '../Logo/Logo';
 import UserMenu from './UserMenu';
+import NotificationBell from '../Notifications/NotificationBell';
 import { useThemeMode } from '../../contexts/ThemeContext';
 import { pageToPath, pageIcon, isPageActive } from './navItems';
 import { SIDEBAR_FULL_WIDTH, SIDEBAR_RAIL_WIDTH } from './navConstants';
@@ -190,6 +191,8 @@ export default function SidebarNav({ variant = 'full', display, user, pages }) {
                         {isDark ? <LightModeIcon sx={{ fontSize: 18 }} /> : <DarkModeIcon sx={{ fontSize: 18 }} />}
                     </IconButton>
                 </Tooltip>
+
+                <NotificationBell tooltipPlacement={collapsed ? 'right' : 'top'} />
 
                 <UserMenu user={user} />
             </Box>

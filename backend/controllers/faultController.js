@@ -1,5 +1,7 @@
 // controllers/faultController.js
 const faultService = require('../services/faultService');
+const notificationService = require('../services/notificationService');
+const logger = require('../utils/logger');
 
 /**
  * GET /api/faults - Lists faults for the requesting user's company.
@@ -43,6 +45,17 @@ exports.getFaultById = async (req, res, next) => {
 exports.createFault = async (req, res, next) => {
     try {
         const fault = await faultService.createFault(req.user.companyId, req.user.userId, req.body, req.files);
+
+        // Tell the company's mechanics and admins. Deliberately awaited but
+        // guarded: the fault is already persisted and is what the caller
+        // asked for, so a notification failure must never turn a successful
+        // report into an error the reporter has to retry.
+        try {
+            await notificationService.notifyFaultReported(fault, req.user);
+        } catch (notifyErr) {
+            logger.error(`Failed to notify staff of new fault ${fault?._id}: ${notifyErr.message}`);
+        }
+
         res.status(201).json(fault);
     } catch (err) {
         next(err);

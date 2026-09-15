@@ -12,16 +12,19 @@ import ListItemText from '@mui/material/ListItemText';
 import Avatar from '@mui/material/Avatar';
 import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
+import Badge from '@mui/material/Badge';
 import AddIcon from '@mui/icons-material/Add';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { getMediaUrl } from '../../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../../utils/formatUtils';
 import { useThemeMode } from '../../contexts/ThemeContext';
+import { useNotificationFeed } from '../../contexts/NotificationFeedContext';
 import { pageToPath, pageIcon, pageMenuLabel, isPageActive } from './navItems';
 import { BOTTOM_NAV_HEIGHT } from './navConstants';
 import { ROUTES } from '../../constants/routes';
@@ -47,6 +50,7 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
     const navigate = useNavigate();
     const location = useLocation();
     const { mode, toggleColorMode } = useThemeMode();
+    const { unreadCount } = useNotificationFeed();
     const isDark = mode === 'dark';
 
     if (!user) return null;
@@ -150,7 +154,11 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
 
                         <ButtonBase
                             onClick={() => setAccountOpen(true)}
-                            aria-label="Open account menu"
+                            aria-label={
+                                unreadCount > 0
+                                    ? `Open account menu (${unreadCount} unread notifications)`
+                                    : 'Open account menu'
+                            }
                             sx={{
                                 flex: 1,
                                 display: 'flex',
@@ -160,12 +168,23 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
                                 color: 'text.secondary',
                             }}
                         >
-                            <Avatar
-                                src={avatarSrc}
-                                sx={{ width: 26, height: 26, fontSize: '0.7rem', bgcolor: `${ROLE_COLOR[user.role] || 'primary'}.main` }}
+                            {/* The phone bar has no room for a bell of its own, so
+                                notifications live in the sheet behind this tab --
+                                which means the unread count has to surface here. */}
+                            <Badge
+                                badgeContent={unreadCount}
+                                color="error"
+                                max={99}
+                                overlap="circular"
+                                anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
                             >
-                                {getUserInitials(user.name)}
-                            </Avatar>
+                                <Avatar
+                                    src={avatarSrc}
+                                    sx={{ width: 26, height: 26, fontSize: '0.7rem', bgcolor: `${ROLE_COLOR[user.role] || 'primary'}.main` }}
+                                >
+                                    {getUserInitials(user.name)}
+                                </Avatar>
+                            </Badge>
                         </ButtonBase>
                     </Box>
                 </Box>
@@ -221,6 +240,14 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
                     ))}
                     {menuPages.length > 0 && <Divider sx={{ my: 0.5 }} />}
 
+                    <ListItemButton onClick={() => goTo(ROUTES.NOTIFICATIONS)} sx={{ minHeight: 48 }}>
+                        <ListItemIcon>
+                            <Badge badgeContent={unreadCount} color="error" max={99}>
+                                <NotificationsIcon fontSize="small" />
+                            </Badge>
+                        </ListItemIcon>
+                        <ListItemText primary="Notifications" />
+                    </ListItemButton>
                     <ListItemButton onClick={() => goTo(ROUTES.ACCOUNT)} sx={{ minHeight: 48 }}>
                         <ListItemIcon><ManageAccountsIcon fontSize="small" /></ListItemIcon>
                         <ListItemText primary="Account Settings" />

@@ -26,7 +26,8 @@ A modern, multi-tenant web application designed for comprehensive industrial and
   - `admin`: Organization setup, user management, and equipment catalog configuration.
   - `mechanic`: Equipment maintenance, schedule execution, checklist management, fault resolution, and parts tracking.
   - `operator`: Equipment status view, fault reporting with photo uploads, and task visibility.
-- **Progressive Web App (PWA)**: Built with `vite-plugin-pwa` for offline capability and mobile-friendly field operations.
+- **Notifications & Web Push**: Mechanics and admins are alerted the moment a fault is reported, and admins can broadcast announcements to their organization (optionally targeting a single role). Every notification lands in an in-app feed with an unread badge, and is also delivered as a PWA push notification to each device the user has opted in on. Push is optional -- without VAPID keys configured, the in-app feed works unchanged.
+- **Progressive Web App (PWA)**: Built with `vite-plugin-pwa` for offline capability, pull-to-refresh on every screen, and mobile-friendly field operations.
 - **Robust Security**: Rate-limited authentication, HTTP-only JWT cookies, Helmet HTTP headers, strict CORS origin controls, tenant-scoped media delivery, and recursive NoSQL-operator sanitization on every request body/query/params.
 
 ---
