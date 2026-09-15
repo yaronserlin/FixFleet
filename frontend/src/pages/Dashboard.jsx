@@ -51,6 +51,7 @@ import FaultCard from '../components/Fault/FaultCard/FaultCard';
 import CloseFaultDialog from '../components/Fault/CloseFaultDialog/CloseFaultDialog';
 import CreateFaultDialog from '../components/Fault/CreateFaultDialog/CreateFaultDialog';
 import ConfirmDialog from '../components/ConfirmDialog/ConfirmDialog';
+import PullToRefresh from '../components/PullToRefresh/PullToRefresh';
 
 // ─── Skeleton loading state ──────────────────────────────────────────────────
 function DashboardSkeleton() {
@@ -390,6 +391,7 @@ export default function Dashboard() {
             .slice(0, 4);
 
         return (
+            <PullToRefresh onRefresh={fetchData}>
             <Container maxWidth="md" sx={{ mt: 3, mb: 6 }}>
                 {/* Centered Hero CTA */}
                 <Paper
@@ -577,11 +579,13 @@ export default function Dashboard() {
                 )}
                 <CreateFaultDialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} onSubmit={handleCreateFault} />
             </Container>
+            </PullToRefresh>
         );
     }
 
     // ─── TECHNICIAN / ADMIN VIEW ─────────────────────────────────────────────
     return (
+        <PullToRefresh onRefresh={fetchData}>
         <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Welcome Header */}
             <Box
@@ -840,5 +844,6 @@ export default function Dashboard() {
                 onCancel={() => setFaultToDelete(null)}
             />
         </Container>
+        </PullToRefresh>
     );
 }

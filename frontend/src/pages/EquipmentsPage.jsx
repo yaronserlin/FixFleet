@@ -1,5 +1,5 @@
 // src/pages/EquipmentsPage.jsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
     Container,
     Typography,
@@ -24,6 +24,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ToolsList from '../components/Tool/ToolsList/ToolsList';
 import LoadingComponent from '../components/LoadingComponent/LoadingComponent';
 import ErrorComponent from '../components/ErrorComponent/ErrorComponent';
+import PullToRefresh from '../components/PullToRefresh/PullToRefresh';
 import { CreateToolForm } from '../components/Tool/ToolForms/ToolForms';
 import { useEquipment } from '../contexts/EquipmentContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,7 +36,7 @@ import { FAULT_STATUS } from '../constants/faultStatus';
  * Displays an interactive directory of equipment with search, status filtering, and view mode toggle.
  */
 export default function EquipmentsPage() {
-    const { equipment, loading, error, createEquipment } = useEquipment();
+    const { equipment, loading, error, createEquipment, fetchEquipment } = useEquipment();
     const { user } = useAuth();
     const isAdmin = user?.role === ROLES.ADMIN;
 
@@ -46,28 +47,37 @@ export default function EquipmentsPage() {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
     // Fetch open faults to mark equipment statuses
-    useEffect(() => {
+    const fetchOpenFaultCounts = useCallback(async () => {
         if (!user || user.mustChangePassword) return;
-        let isMounted = true;
-        faultService.getAll()
-            .then(list => {
-                if (!isMounted) return;
-                const counts = {};
-                list.filter(f => f.status === FAULT_STATUS.OPEN).forEach(f => {
-                    const toolId = f.tool?._id || f.tool;
-                    if (toolId) {
-                        counts[toolId] = (counts[toolId] || 0) + 1;
-                    }
-                });
-                setOpenFaultsByTool(counts);
-            })
-            .catch((err) => {
-                // Best-effort enhancement: equipment list still renders without
-                // open-fault badges if this fails, so just log for diagnostics.
-                console.error('Failed to load fault counts for equipment list:', err);
+        try {
+            const list = await faultService.getAll();
+            const counts = {};
+            list.filter(f => f.status === FAULT_STATUS.OPEN).forEach(f => {
+                const toolId = f.tool?._id || f.tool;
+                if (toolId) {
+                    counts[toolId] = (counts[toolId] || 0) + 1;
+                }
             });
-        return () => { isMounted = false; };
+            setOpenFaultsByTool(counts);
+        } catch (err) {
+            // Best-effort enhancement: equipment list still renders without
+            // open-fault badges if this fails, so just log for diagnostics.
+            console.error('Failed to load fault counts for equipment list:', err);
+        }
     }, [user]);
+
+    useEffect(() => {
+        fetchOpenFaultCounts();
+    }, [fetchOpenFaultCounts]);
+
+    // Pull-to-refresh: re-fetch both the equipment list (context) and the
+    // open-fault counts (local) that drive this page's status badges.
+    const handleRefresh = useCallback(async () => {
+        await Promise.all([
+            fetchEquipment ? fetchEquipment() : Promise.resolve(),
+            fetchOpenFaultCounts(),
+        ]);
+    }, [fetchEquipment, fetchOpenFaultCounts]);
 
     // Filter equipment by search query and status filter
     const filteredEquipment = useMemo(() => {
@@ -111,6 +121,7 @@ export default function EquipmentsPage() {
     const operationalCount = Math.max(0, (equipment?.length || 0) - faultyCount);
 
     return (
+        <PullToRefresh onRefresh={handleRefresh}>
         <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Header with Title and Add Action */}
             <Box
@@ -241,5 +252,6 @@ export default function EquipmentsPage() {
                 </DialogContent>
             </Dialog>
         </Container>
+        </PullToRefresh>
     );
 }

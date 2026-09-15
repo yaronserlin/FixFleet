@@ -27,6 +27,7 @@ import { FAULT_STATUS } from '../constants/faultStatus';
 import FaultCard from '../components/Fault/FaultCard/FaultCard';
 import FaultDetailsDialog from '../components/Fault/FaultDetailsDialog/FaultDetailsDialog';
 import CreateFaultDialog from '../components/Fault/CreateFaultDialog/CreateFaultDialog';
+import PullToRefresh from '../components/PullToRefresh/PullToRefresh';
 
 export default function OperatorReportsPage() {
     const { user } = useAuth();
@@ -100,6 +101,7 @@ export default function OperatorReportsPage() {
     const resolvedCount = useMemo(() => faults.filter(f => f.status === FAULT_STATUS.CLOSED).length, [faults]);
 
     return (
+        <PullToRefresh onRefresh={fetchReports}>
         <Container maxWidth="xl" sx={{ mt: 3, mb: 6 }}>
             {/* Header */}
             <Box
@@ -276,5 +278,6 @@ export default function OperatorReportsPage() {
                 onSubmit={handleCreateFault}
             />
         </Container>
+        </PullToRefresh>
     );
 }
