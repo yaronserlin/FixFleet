@@ -1,5 +1,5 @@
 // src/components/Logo/Logo.jsx
-import React from 'react';
+import React, { useId } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
@@ -8,6 +8,12 @@ import { Link as RouterLink } from 'react-router-dom';
  * Modern SVG brand icon mark for the Maintenance system
  */
 export function LogoMark({ size = 36, sx = {} }) {
+    const uid = useId();
+    const bgGradId = `logoMarkBgGrad-${uid}`;
+    const gearGradId = `logoMarkGearGrad-${uid}`;
+    const wrenchGradId = `logoMarkWrenchGrad-${uid}`;
+    const shadowId = `logoMarkShadow-${uid}`;
+
     return (
         <Box
             component="svg"
@@ -24,20 +30,20 @@ export function LogoMark({ size = 36, sx = {} }) {
             aria-hidden="true"
         >
             <defs>
-                <linearGradient id="logoMarkBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id={bgGradId} x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#1D4ED8" />
                     <stop offset="50%" stopColor="#2563EB" />
                     <stop offset="100%" stopColor="#0284C7" />
                 </linearGradient>
-                <linearGradient id="logoMarkGearGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id={gearGradId} x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#FFFFFF" />
                     <stop offset="100%" stopColor="#E2E8F0" />
                 </linearGradient>
-                <linearGradient id="logoMarkWrenchGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id={wrenchGradId} x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#38BDF8" />
                     <stop offset="100%" stopColor="#60A5FA" />
                 </linearGradient>
-                <filter id="logoMarkShadow" x="-10%" y="-10%" width="120%" height="120%">
+                <filter id={shadowId} x="-10%" y="-10%" width="120%" height="120%">
                     <feDropShadow dx="0" dy="1.5" stdDeviation="2" floodColor="#0F172A" floodOpacity="0.3" />
                 </filter>
             </defs>
@@ -49,8 +55,8 @@ export function LogoMark({ size = 36, sx = {} }) {
                 width="56"
                 height="56"
                 rx="14"
-                fill="url(#logoMarkBgGrad)"
-                filter="url(#logoMarkShadow)"
+                fill={`url(#${bgGradId})`}
+                filter={`url(#${shadowId})`}
             />
             <rect
                 x="5"
@@ -65,7 +71,7 @@ export function LogoMark({ size = 36, sx = {} }) {
 
             {/* Precision Gear Cog */}
             <path
-                fill="url(#logoMarkGearGrad)"
+                fill={`url(#${gearGradId})`}
                 fillRule="evenodd"
                 clipRule="evenodd"
                 d="
@@ -77,7 +83,7 @@ export function LogoMark({ size = 36, sx = {} }) {
             {/* Stylized Angled Precision Tool Wrench */}
             <g transform="rotate(-45 32 32)">
                 <path
-                    fill="url(#logoMarkWrenchGrad)"
+                    fill={`url(#${wrenchGradId})`}
                     d="
                         M30.5 18.5
                         C30.5 16.5 32.5 15 34.5 15
@@ -94,8 +100,8 @@ export function LogoMark({ size = 36, sx = {} }) {
                         C32 23 30.5 21 30.5 18.5Z
                     "
                 />
-                <rect x="29" y="27" width="4.5" height="18" rx="2.25" fill="url(#logoMarkWrenchGrad)" />
-                <circle cx="31.25" cy="45" r="4.5" fill="none" stroke="url(#logoMarkWrenchGrad)" strokeWidth="3" />
+                <rect x="29" y="27" width="4.5" height="18" rx="2.25" fill={`url(#${wrenchGradId})`} />
+                <circle cx="31.25" cy="45" r="4.5" fill="none" stroke={`url(#${wrenchGradId})`} strokeWidth="3" />
             </g>
         </Box>
     );
