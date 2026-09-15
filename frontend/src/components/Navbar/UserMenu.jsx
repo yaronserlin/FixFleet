@@ -95,7 +95,7 @@ export default function UserMenu({ user }) {
             >
                 {/* User info header */}
                 <Box sx={{ px: 2, py: 1.5 }}>
-                    <Box display="flex" alignItems="center" gap={1.25} mb={0.75}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.75 }}>
                         <Avatar
                             src={avatarSrc}
                             alt={displayName}

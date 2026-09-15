@@ -66,7 +66,7 @@ export default function CloseFaultDialog({ open, onClose, onConfirm, fault, tool
                 </IconButton>
             </DialogTitle>
             <DialogContent dividers>
-                <Box mb={2}>
+                <Box sx={{ mb: 2 }}>
                     <Typography variant="subtitle1" fontWeight="bold">
                         {fault.code || 'Fault'} — {fault.description}
                     </Typography>
@@ -79,7 +79,7 @@ export default function CloseFaultDialog({ open, onClose, onConfirm, fault, tool
                     Closing this fault requires recording the current engine operating hours to update equipment maintenance schedules.
                 </Alert>
 
-                <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                     <TextField
                         label="Closing Engine Hours"
                         type="number"

@@ -103,12 +103,14 @@ export default function OperatorReportsPage() {
         <Container maxWidth="lg" sx={{ mt: 3, mb: 6 }}>
             {/* Header */}
             <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems={{ xs: 'flex-start', sm: 'center' }}
-                flexDirection={{ xs: 'column', sm: 'row' }}
-                gap={2}
-                mb={3.5}
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2,
+                    mb: 3.5,
+                }}
             >
                 <Box>
                     <Typography variant="h4" fontWeight={800} letterSpacing="-0.02em">
@@ -143,7 +145,7 @@ export default function OperatorReportsPage() {
                     gap: 2,
                 }}
             >
-                <Box display="flex" gap={1} flexWrap="wrap">
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                     <Chip
                         label={`All (${faults.length})`}
                         onClick={() => setStatusFilter('all')}

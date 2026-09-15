@@ -198,7 +198,7 @@ export default function EquipmentPage() {
     return (
         <Container sx={{ mt: 3, mb: 6 }}>
             {/* Back button */}
-            <Box mb={2}>
+            <Box sx={{ mb: 2 }}>
                 <Button
                     size="small"
                     startIcon={<ArrowBackIcon />}
@@ -220,9 +220,9 @@ export default function EquipmentPage() {
                     borderLeft: openFaultsCount > 0 ? '4px solid #DC2626' : '4px solid #16A34A',
                 }}
             >
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
                     <Box sx={{ minWidth: 0, flex: '1 1 auto' }}>
-                        <Box display="flex" alignItems="center" flexWrap="wrap" gap={1.5} mb={1}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 1 }}>
                             <Typography
                                 variant="h4"
                                 fontWeight={800}
@@ -251,7 +251,7 @@ export default function EquipmentPage() {
                             />
                         </Box>
 
-                        <Box display="flex" flexWrap="wrap" gap={2} alignItems="center">
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
                             {tool.model && (
                                 <Typography variant="body2" color="text.secondary">
                                     <strong>Model:</strong> {tool.model}
@@ -297,7 +297,7 @@ export default function EquipmentPage() {
                     >
                         <Tab
                             label={
-                                <Box display="flex" alignItems="center" gap={1}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <span>Reported Faults</span>
                                     <Chip
                                         label={faults?.length || 0}
@@ -311,7 +311,7 @@ export default function EquipmentPage() {
                         />
                         <Tab
                             label={
-                                <Box display="flex" alignItems="center" gap={1}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <span>Maintenance</span>
                                     <Chip
                                         label={maintenanceCount}
@@ -324,7 +324,7 @@ export default function EquipmentPage() {
                         />
                         <Tab
                             label={
-                                <Box display="flex" alignItems="center" gap={1}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                     <span>Manuals &amp; Books</span>
                                     <Chip
                                         label={booksCount}
@@ -339,7 +339,7 @@ export default function EquipmentPage() {
                 </Box>
 
                 <TabPanel value={value} index={0}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={3}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
                         <Typography variant="h6">Reported Faults</Typography>
                         <Button
                             variant="contained"

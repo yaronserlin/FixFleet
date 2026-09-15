@@ -18,7 +18,7 @@ export default function LoginCard() {
     return (
         <Box>
             {/* Heading */}
-            <Box mb={4}>
+            <Box sx={{ mb: 4 }}>
                 <Typography
                     variant="h4"
                     fontWeight={800}
@@ -41,7 +41,7 @@ export default function LoginCard() {
 
             {/* Toggle */}
             <Divider sx={{ my: 3 }} />
-            <Box display="flex" alignItems="center" justifyContent="center" gap={0.75}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75 }}>
                 <Typography variant="body2" color="text.secondary">
                     {isLogin ? "Don't have an account?" : 'Already have an account?'}
                 </Typography>
@@ -64,7 +64,7 @@ export default function LoginCard() {
             </Box>
 
             {/* Legal Links */}
-            <Box display="flex" alignItems="center" justifyContent="center" gap={1.5} mt={2.5}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mt: 2.5 }}>
                 <Link
                     component="button"
                     type="button"

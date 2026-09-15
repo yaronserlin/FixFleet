@@ -188,7 +188,7 @@ export default function AccountPage() {
 
     return (
         <Container maxWidth="sm" sx={{ mt: 3, mb: 6 }}>
-            <Box mb={3.5}>
+            <Box sx={{ mb: 3.5 }}>
                 <Typography variant="h4" fontWeight={800} letterSpacing="-0.02em">
                     Account Settings
                 </Typography>
@@ -210,7 +210,7 @@ export default function AccountPage() {
                     borderLeft: '4px solid #2563EB',
                 }}
             >
-                <Box position="relative">
+                <Box sx={{ position: 'relative' }}>
                     <Avatar
                         src={getMediaUrl(user?.avatar)}
                         alt={formatUserName(user?.name) || 'User'}
@@ -245,7 +245,7 @@ export default function AccountPage() {
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
                         JPG, PNG, GIF up to 5MB
                     </Typography>
-                    <Box display="flex" gap={1.25} flexWrap="wrap">
+                    <Box sx={{ display: 'flex', gap: 1.25, flexWrap: 'wrap' }}>
                         <Button
                             component="label"
                             variant="contained"
@@ -293,7 +293,7 @@ export default function AccountPage() {
                 }}
             >
                 <Box component="form" onSubmit={handleUpdateProfile}>
-                    <Box display="flex" alignItems="center" gap={1.25} mb={0.5}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5 }}>
                         <PersonIcon color="primary" />
                         <Typography variant="h6" fontWeight={700}>
                             Personal Information
@@ -377,7 +377,7 @@ export default function AccountPage() {
                 }}
             >
                 <Box component="form" onSubmit={handleChangePassword}>
-                    <Box display="flex" alignItems="center" gap={1.25} mb={0.5}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5 }}>
                         <SecurityIcon sx={{ color: '#F59E0B' }} />
                         <Typography variant="h6" fontWeight={700}>
                             Security & Password
@@ -445,7 +445,7 @@ export default function AccountPage() {
                     {/* Password Strength Indicator */}
                     {strength > 0 && (
                         <Box sx={{ mb: 2 }}>
-                            <Box display="flex" gap={0.5} mb={0.5}>
+                            <Box sx={{ display: 'flex', gap: 0.5, mb: 0.5 }}>
                                 {[1, 2, 3, 4].map(idx => (
                                     <Box
                                         key={idx}

@@ -33,7 +33,7 @@ export default function DialogComponent({
             sx={{ '& .MuiDialog-paper': { m: { xs: 2, sm: 3 }, borderRadius: 3 } }}
         >
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1, pr: 1.5 }}>
-                <Box component="span" fontWeight={700}>
+                <Box component="span" sx={{ fontWeight: 700 }}>
                     {title}
                 </Box>
                 <IconButton onClick={onClose} size="small" aria-label="close">
@@ -50,7 +50,7 @@ export default function DialogComponent({
                             {deleteButtonText}
                         </Button>
                     )}
-                    <Box display="flex" gap={1}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
                         <Button onClick={onClose} variant="outlined">{cancelButtonText}</Button>
                         {onSubmit && (
                             <Button onClick={onSubmit} variant="contained" color="primary">

@@ -100,7 +100,7 @@ export default function EquipmentsPage() {
     if (loading && (!equipment || equipment.length === 0)) {
         return (
             <Container sx={{ mt: 4, mb: 6 }}>
-                <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
                     <LoadingComponent message="Loading equipment fleet..." />
                 </Box>
             </Container>
@@ -114,12 +114,14 @@ export default function EquipmentsPage() {
         <Container sx={{ mt: 3, mb: 6 }}>
             {/* Header with Title and Add Action */}
             <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems={{ xs: 'flex-start', sm: 'center' }}
-                flexDirection={{ xs: 'column', sm: 'row' }}
-                gap={2}
-                mb={3.5}
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2,
+                    mb: 3.5,
+                }}
             >
                 <Box>
                     <Typography variant="h4" fontWeight={800} letterSpacing="-0.02em">
@@ -145,14 +147,16 @@ export default function EquipmentsPage() {
 
             {/* Filter and View Controls Bar */}
             <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                flexWrap="wrap"
-                gap={2}
-                mb={3}
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: 2,
+                    mb: 3,
+                }}
             >
-                <Box display="flex" gap={1.5} alignItems="center" flexWrap="wrap" sx={{ width: { xs: '100%', md: 'auto' } }}>
+                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap', width: { xs: '100%', md: 'auto' } }}>
                     <TextField
                         size="small"
                         placeholder="Search equipment, serial, model..."
@@ -168,7 +172,7 @@ export default function EquipmentsPage() {
                         sx={{ width: { xs: '100%', sm: 260 } }}
                     />
 
-                    <Box display="flex" gap={0.75} flexWrap="wrap">
+                    <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
                         <Chip
                             label={`All (${equipment?.length || 0})`}
                             size="small"

@@ -101,8 +101,8 @@ export default function ProfilePage() {
                     borderLeft: `4px solid ${roleBorderColor}`,
                 }}
             >
-                <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2}>
-                    <Box display="flex" alignItems="center" gap={2.5}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5 }}>
                         <Avatar
                             src={avatarSrc}
                             alt={formatUserName(user?.name) || 'User'}
@@ -118,7 +118,7 @@ export default function ProfilePage() {
                             {getUserInitials(user?.name)}
                         </Avatar>
                         <Box>
-                            <Box display="flex" alignItems="center" gap={1.25} mb={0.5}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5 }}>
                                 <Typography variant="h5" fontWeight={800} letterSpacing="-0.02em">
                                     {formatUserName(user?.name) || 'User'}
                                 </Typography>
@@ -147,7 +147,7 @@ export default function ProfilePage() {
                 </Box>
 
                 {/* Stat pills */}
-                <Box display="flex" gap={1} mt={2.5} pt={2} borderTop="1px solid" borderColor="divider" flexWrap="wrap">
+                <Box sx={{ display: 'flex', gap: 1, mt: 2.5, pt: 2, borderTop: '1px solid', borderColor: 'divider', flexWrap: 'wrap' }}>
                     <Chip
                         size="small"
                         label={`${faults.length} Reported`}
@@ -172,15 +172,15 @@ export default function ProfilePage() {
             </Paper>
 
             {/* Reported Faults Section Header & Stats */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={2.5}>
-                <Box display="flex" alignItems="center" gap={1}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <HistoryIcon color="primary" />
                     <Typography variant="h5" fontWeight={800} letterSpacing="-0.01em">
                         My Reported Activity
                     </Typography>
                 </Box>
 
-                <Box display="flex" gap={0.75} flexWrap="wrap">
+                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
                     <Chip
                         label={`All (${faults.length})`}
                         size="small"
@@ -249,7 +249,7 @@ export default function ProfilePage() {
                                     }}
                                 >
                                     <CardContent sx={{ p: 2.5, flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={1.5} mb={1}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1.5, mb: 1 }}>
                                             <Box>
                                                 <Typography variant="h6" fontWeight={700} lineHeight={1.2}>
                                                     {fault.code || 'Fault'}
@@ -285,7 +285,7 @@ export default function ProfilePage() {
                                             {fault.description}
                                         </Typography>
 
-                                        <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} pt={1} borderTop="1px solid" borderColor="divider">
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1, pt: 1, borderTop: '1px solid', borderColor: 'divider' }}>
                                             {fault.engineHours !== undefined ? (
                                                 <Chip
                                                     icon={<SpeedIcon sx={{ fontSize: '0.9rem !important' }} />}
@@ -297,7 +297,7 @@ export default function ProfilePage() {
                                                 />
                                             ) : <Box />}
 
-                                            <Box display="flex" alignItems="center" gap={1}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <Typography variant="caption" color="text.secondary">
                                                     {new Date(fault.createdAt).toLocaleDateString('en-GB')}
                                                 </Typography>

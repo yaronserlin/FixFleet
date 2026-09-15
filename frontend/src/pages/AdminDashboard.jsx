@@ -122,7 +122,7 @@ export default function AdminDashboard() {
     if (loadingUsers && users.length === 0) {
         return (
             <Container sx={{ mt: 4, mb: 6 }}>
-                <Box display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
                     <LoadingComponent message="Loading system administration..." />
                 </Box>
             </Container>
@@ -132,8 +132,8 @@ export default function AdminDashboard() {
     return (
         <Container sx={{ mt: 3, mb: 6 }}>
             {/* Header with Title & Stat overview */}
-            <Box mb={4}>
-                <Box display="flex" alignItems="center" gap={1.5} mb={1}>
+            <Box sx={{ mb: 4 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
                     <Box
                         sx={{
                             display: 'flex',
@@ -156,7 +156,7 @@ export default function AdminDashboard() {
                     Manage user access privileges, company staff accounts, and equipment records
                 </Typography>
 
-                <Box display="flex" gap={1.5} flexWrap="wrap" sx={{ mt: 2, ml: { xs: 0, sm: 6.5 } }}>
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 2, ml: { xs: 0, sm: 6.5 } }}>
                     <Chip
                         icon={<PeopleIcon sx={{ fontSize: '1rem !important' }} />}
                         label={`${users.length} Active User${users.length !== 1 ? 's' : ''}`}

@@ -267,8 +267,8 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
 
     return (
         <Box sx={{ py: 2 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={3}>
-                <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                     <Typography variant="h6">Maintenance Schedules</Typography>
                     <Chip
                         icon={<SpeedIcon />}
@@ -303,7 +303,7 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
                                     sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'flex-start', textAlign: 'left' }}
                                 >
                                     <CardContent sx={{ flexGrow: 1, width: '100%' }}>
-                                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1} mb={1}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                                             <Typography
                                                 variant="subtitle1"
                                                 fontWeight="bold"
@@ -340,7 +340,7 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
                                             </Typography>
                                         )}
                                         {task.checklist && task.checklist.length > 0 && (
-                                            <Box mt={1.5}>
+                                            <Box sx={{ mt: 1.5 }}>
                                                 <Chip
                                                     size="small"
                                                     icon={<ChecklistIcon fontSize="small" />}
@@ -355,7 +355,7 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
                                                     color={task.checklist.every(c => c.done) ? 'success' : (task.checklist.some(c => c.done) ? 'warning' : 'default')}
                                                     sx={{ fontWeight: task.checklist.some(c => c.done) ? 600 : 400 }}
                                                 />
-                                                <Box mt={1} sx={{ pl: 0.5 }}>
+                                                <Box sx={{ mt: 1, pl: 0.5 }}>
                                                     {task.checklist.slice(0, 3).map((item, idx) => (
                                                         <Typography
                                                             key={item._id || idx}
@@ -416,8 +416,8 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
             <Divider sx={{ my: 4 }} />
 
             {/* Service & Maintenance History Section */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={2.5}>
-                <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                     <HistoryIcon color="primary" sx={{ fontSize: 26 }} />
                     <Typography variant="h6">Service & Maintenance History</Typography>
                     <Chip
@@ -431,7 +431,7 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
             </Box>
 
             {loadingLogs ? (
-                <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4 }}>
                     <CircularProgress size={32} />
                 </Box>
             ) : maintenanceLogs.length === 0 ? (
@@ -462,7 +462,7 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
                                 }}
                             >
                                 <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-                                    <Box display="flex" alignItems="center" gap={1.5} flexWrap="wrap" mb={0.75}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 0.75 }}>
                                         <Typography variant="subtitle2" fontWeight={700}>
                                             {new Date(log.date).toLocaleDateString('en-GB')}
                                         </Typography>
@@ -503,7 +503,7 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
                                             >
                                                 Checklist Tasks:
                                             </Typography>
-                                            <Box display="flex" flexWrap="wrap" gap={0.75}>
+                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
                                                 {log.checklist.map((item, idx) => (
                                                     <Chip
                                                         key={idx}
@@ -625,7 +625,7 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
                             Add the specific inspection and service tasks for this routine. Mechanics will check them off when performing maintenance.
                         </Typography>
 
-                        <Box display="flex" gap={1} mb={1.5}>
+                        <Box sx={{ display: 'flex', gap: 1, mb: 1.5 }}>
                             <TextField
                                 size="small"
                                 fullWidth

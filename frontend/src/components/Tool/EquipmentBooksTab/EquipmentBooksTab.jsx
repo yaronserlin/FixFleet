@@ -134,7 +134,7 @@ export default function EquipmentBooksTab({ equipment, tool, onRefresh }) {
 
     return (
         <Box sx={{ py: 2 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={3}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 3 }}>
                 <Typography variant="h6">Equipment Manuals & Books</Typography>
                 {canManageBooks && (
                     <Button
@@ -158,7 +158,7 @@ export default function EquipmentBooksTab({ equipment, tool, onRefresh }) {
                         <Grid size={{ xs: 12, sm: 6, md: 4 }} key={book._id}>
                             <Card variant="outlined" sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                 <CardContent sx={{ flexGrow: 1 }}>
-                                    <Box display="flex" alignItems="center" gap={1.5} mb={1.5}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
                                         <PictureAsPdfIcon color="error" sx={{ fontSize: 36 }} />
                                         <Box>
                                             <Typography variant="subtitle1" fontWeight="bold" noWrap sx={{ maxWidth: 220 }}>

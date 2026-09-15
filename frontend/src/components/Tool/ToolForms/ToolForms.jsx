@@ -21,7 +21,7 @@ function validateTool(vals) {
 // Generic form fields component (used by both create and update forms)
 function ToolFormFields({ values, errors, onChange }) {
     return (
-        <Box display="flex" flexDirection="column" gap={2}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <TextField
                 label="Name"
                 name="name"
@@ -96,14 +96,14 @@ function ToolForm({ initialValues, onSubmit, onCancel, submitLabel }) {
     const isNameBlank = !values.name || !values.name.trim();
 
     return (
-        <Box component="form" onSubmit={handleSubmit} noValidate p={1} maxWidth={600}>
+        <Box component="form" onSubmit={handleSubmit} noValidate sx={{ p: 1, maxWidth: 600 }}>
             {serverError && (
                 <Alert severity="error" onClose={() => setServerError('')} sx={{ mb: 2 }}>
                     {serverError}
                 </Alert>
             )}
             <ToolFormFields values={values} errors={errors} onChange={handleFieldChange} />
-            <Box mt={3} display="flex" justifyContent="flex-end" alignItems="center" gap={1.5}>
+            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1.5 }}>
                 {onCancel && (
                     <Button variant="outlined" onClick={onCancel} disabled={isSubmitting}>
                         Cancel

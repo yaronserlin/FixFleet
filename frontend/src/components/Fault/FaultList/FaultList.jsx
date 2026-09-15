@@ -59,7 +59,7 @@ export default function FaultList({
                             <Card key={fault._id} variant="outlined" sx={{ borderRadius: 2 }}>
                                 <CardActionArea onClick={() => onFaultClick?.(fault)}>
                                     <CardContent sx={{ pb: 1 }}>
-                                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                                             <Typography variant="subtitle1" fontWeight="bold">
                                                 {fault.code || 'Fault'}
                                             </Typography>
@@ -69,7 +69,7 @@ export default function FaultList({
                                                 color={fault.status === FAULT_STATUS.CLOSED ? 'success' : 'error'}
                                             />
                                         </Box>
-                                        <Box display="flex" gap={1.5} alignItems="center" mb={1}>
+                                        <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', mb: 1 }}>
                                              {fault.photos && fault.photos.length > 0 ? (
                                                  <Box
                                                      component="img"
@@ -251,7 +251,7 @@ export default function FaultList({
                                 </TableCell>
                                 {isUserAuthorized() && (
                                     <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                                        <Box display="flex" justifyContent="flex-end" gap={1}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                                             {fault.status === FAULT_STATUS.CLOSED ? (
                                                 <Button
                                                     size="small"

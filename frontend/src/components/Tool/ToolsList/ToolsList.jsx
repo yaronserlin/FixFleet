@@ -177,8 +177,8 @@ export default function ToolsList({ tools = [], viewMode = 'grid', openFaultsByT
                             >
                                 <CardContent sx={{ pb: 1 }}>
                                     {/* Header with Unit Badge & Status */}
-                                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1} mb={1.5}>
-                                        <Box display="flex" alignItems="center" gap={1.25} sx={{ minWidth: 0, flex: '1 1 auto' }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0, flex: '1 1 auto' }}>
                                             <Box
                                                 sx={{
                                                     display: 'flex',
@@ -218,7 +218,7 @@ export default function ToolsList({ tools = [], viewMode = 'grid', openFaultsByT
                                     </Box>
 
                                     {/* Specs & Info */}
-                                    <Box display="flex" flexWrap="wrap" gap={0.75} mb={1.5}>
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1.5 }}>
                                         {tool.model && (
                                             <Chip
                                                 label={`Model: ${tool.model}`}
@@ -277,14 +277,14 @@ export default function ToolsList({ tools = [], viewMode = 'grid', openFaultsByT
                                     bgcolor: 'background.subtle',
                                 }}
                             >
-                                <Box display="flex" gap={1.5} alignItems="center">
-                                    <Box display="flex" alignItems="center" gap={0.5} title={`${schedulesCount} Maintenance Schedules`}>
+                                <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }} title={`${schedulesCount} Maintenance Schedules`}>
                                         <BuildIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                                         <Typography variant="caption" color="text.secondary" fontWeight={500}>
                                             {schedulesCount}
                                         </Typography>
                                     </Box>
-                                    <Box display="flex" alignItems="center" gap={0.5} title={`${booksCount} Manuals`}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }} title={`${booksCount} Manuals`}>
                                         <BookIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                                         <Typography variant="caption" color="text.secondary" fontWeight={500}>
                                             {booksCount}

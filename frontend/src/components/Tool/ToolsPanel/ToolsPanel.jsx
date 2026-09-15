@@ -123,7 +123,7 @@ export default function ToolsPanel({ tools = [], loading, error, onCreate, onUpd
                                     {t.model ? ` • ${t.model}` : ''}
                                 </Typography>
                             </Box>
-                            <Box display="flex" alignItems="center" gap={0.5} flexShrink={0}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
                                 <IconButton
                                     size="small"
                                     onClick={() => openDialog('update', t)}

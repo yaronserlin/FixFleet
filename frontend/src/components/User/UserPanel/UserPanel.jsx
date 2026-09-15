@@ -158,7 +158,7 @@ export default function UserPanel({
                         mb: 2,
                     }}
                 >
-                    <Box display="flex" alignItems="center" gap={1.25}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                         <PeopleIcon color="primary" />
                         <Box>
                             <Typography variant="h6" fontWeight={700}>
@@ -225,9 +225,9 @@ export default function UserPanel({
                                         gap: 1.25,
                                     }}
                                 >
-                                    <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <Box sx={{ minWidth: 0, mr: 1 }}>
-                                            <Box display="flex" alignItems="center" gap={0.75} flexWrap="wrap">
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
                                                 <Typography variant="body2" fontWeight={700} noWrap>
                                                     {formatUserName(u.name)}
                                                 </Typography>
@@ -284,19 +284,21 @@ export default function UserPanel({
                                     </Box>
 
                                     <Box
-                                        display="flex"
-                                        alignItems="center"
-                                        justifyContent="space-between"
-                                        flexWrap="wrap"
-                                        gap={1}
-                                        pt={1}
-                                        borderTop="1px solid"
-                                        borderColor="divider"
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            flexWrap: 'wrap',
+                                            gap: 1,
+                                            pt: 1,
+                                            borderTop: '1px solid',
+                                            borderColor: 'divider',
+                                        }}
                                     >
                                         <Typography variant="caption" color="text.secondary" fontWeight={600}>
                                             Role
                                         </Typography>
-                                        <Box display="flex" alignItems="center" gap={1}>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                             <Tooltip
                                                 title={isSelf ? 'Admins cannot change their own role' : ''}
                                                 arrow
@@ -319,7 +321,7 @@ export default function UserPanel({
                                             </Tooltip>
 
                                             {hasChanged && !isSelf && (
-                                                <Box display="flex" alignItems="center" gap={0.5}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                     <Button
                                                         size="small"
                                                         variant="contained"
@@ -372,7 +374,7 @@ export default function UserPanel({
                                 return (
                                     <TableRow key={u._id} hover sx={{ height: 56 }}>
                                         <TableCell>
-                                            <Box display="flex" alignItems="center" gap={1}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <Typography variant="body2" fontWeight={600}>
                                                     {formatUserName(u.name)}
                                                 </Typography>
@@ -401,7 +403,7 @@ export default function UserPanel({
                                             </Typography>
                                         </TableCell>
                                         <TableCell>
-                                            <Box display="flex" alignItems="center" gap={1}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <Tooltip
                                                     title={isSelf ? 'Admins cannot change their own role' : ''}
                                                     arrow
@@ -429,7 +431,7 @@ export default function UserPanel({
                                                 </Tooltip>
 
                                                 {hasChanged && !isSelf && (
-                                                    <Box display="flex" alignItems="center" gap={0.5}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                                         <Button
                                                             size="small"
                                                             variant="contained"
@@ -498,7 +500,7 @@ export default function UserPanel({
                     Are you sure you want to permanently delete{' '}
                     <strong>{formatUserName(dialog.user?.name)}</strong> ({dialog.user?.email})?
                 </Typography>
-                <Box display="flex" justifyContent="flex-end" gap={1}>
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
                     <Button onClick={closeDialog} variant="outlined">Cancel</Button>
                     <Button onClick={handleDelete} color="error" variant="contained">Delete</Button>
                 </Box>

@@ -57,7 +57,7 @@ export default function FaultDetailsDialog({
                     component="div"
                     sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1, pr: 1.5 }}
                 >
-                    <Box display="flex" alignItems="center" gap={1.25} flexWrap="wrap">
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: 'wrap' }}>
                         <Typography variant="h6" component="div" fontWeight="bold">Fault Details</Typography>
                         {fault?.status && (
                             <Chip
@@ -180,7 +180,7 @@ export default function FaultDetailsDialog({
                                     <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
                                         Photos ({fault.photos.length}):
                                     </Typography>
-                                    <Box display="flex" gap={1.5} flexWrap="wrap">
+                                    <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                                         {fault.photos.map((photo, idx) => (
                                             <Box
                                                 key={idx}
@@ -221,7 +221,7 @@ export default function FaultDetailsDialog({
                     )}
                 </DialogContent>
                 <DialogActions sx={{ justifyContent: 'flex-end', px: 3, py: 1.5 }}>
-                    <Box display="flex" gap={1}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
                         {canManage && fault?.status === FAULT_STATUS.CLOSED && onReopenFault && (
                             <Button
                                 variant="contained"

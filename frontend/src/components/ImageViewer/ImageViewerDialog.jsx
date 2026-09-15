@@ -103,7 +103,7 @@ export default function ImageViewerDialog({
                 <Typography variant="h6" component="div" noWrap sx={{ maxWidth: '75%', fontWeight: 600 }}>
                     {displayTitle}
                 </Typography>
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Button
                         size="small"
                         variant="outlined"

@@ -50,7 +50,7 @@ export default function LoginComponent() {
                 }}
             >
                 {/* Logo */}
-                <Box mb={{ xs: 0, md: 6 }} sx={{ position: 'relative' }}>
+                <Box sx={{ mb: { xs: 0, md: 6 }, position: 'relative' }}>
                     <Logo
                         size={44}
                         textColor="#FFFFFF"
@@ -87,9 +87,9 @@ export default function LoginComponent() {
                     </Typography>
 
                     {/* Feature list */}
-                    <Box display="flex" flexDirection="column" gap={1.5}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
                         {FEATURES.map(f => (
-                            <Box key={f} display="flex" alignItems="center" gap={1.25}>
+                            <Box key={f} sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                                 <CheckCircleIcon sx={{ color: '#22C55E', fontSize: 18, flexShrink: 0 }} />
                                 <Typography
                                     variant="body2"

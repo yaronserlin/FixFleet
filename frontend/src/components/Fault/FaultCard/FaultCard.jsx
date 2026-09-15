@@ -79,7 +79,7 @@ export default function FaultCard({ fault, onClick, onCloseFault, onReopenFault,
             <CardActionArea onClick={() => onClick?.(fault)} sx={{ flexGrow: 1 }}>
                 <CardContent sx={{ pb: 1 }}>
                     {/* Header: code + status */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.75}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.75 }}>
                         <Typography variant="h6" fontWeight={700} sx={{ lineHeight: 1.2 }}>
                             {fault.code || 'Fault'}
                         </Typography>
@@ -97,7 +97,7 @@ export default function FaultCard({ fault, onClick, onCloseFault, onReopenFault,
 
                     {/* Equipment name */}
                     {equipmentName && (
-                        <Box display="flex" alignItems="center" gap={0.5} mb={1}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
                             <BuildIcon sx={{ fontSize: 13, color: 'text.disabled' }} />
                             <Typography
                                 variant="caption"
@@ -128,7 +128,7 @@ export default function FaultCard({ fault, onClick, onCloseFault, onReopenFault,
                     </Typography>
 
                     {/* Engine hours + date */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={0.75}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 0.75 }}>
                         {hours !== undefined && (
                             <Chip
                                 icon={<SpeedIcon sx={{ fontSize: '0.9rem !important', color: 'primary.main' }} />}
@@ -161,7 +161,7 @@ export default function FaultCard({ fault, onClick, onCloseFault, onReopenFault,
                         bgcolor: 'background.subtle',
                     }}
                 >
-                    <Box display="flex" gap={1}>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
                         {isOpen ? (
                             <Button
                                 size="small"

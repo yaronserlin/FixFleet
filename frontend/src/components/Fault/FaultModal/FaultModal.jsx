@@ -65,7 +65,7 @@ export default function FaultModal({
             >
                 <Fade in={open}>
                     <Box sx={style}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1.5}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                             <Typography id="modal-title" variant="h6" component="h2" fontWeight="bold">
                                 {fault.tool?.name ?? 'Equipment'} — {fault.code || 'No Code'}
                             </Typography>
@@ -78,7 +78,7 @@ export default function FaultModal({
                             )}
                         </Box>
 
-                        <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 2 }}>
+                        <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
                             {fault.engineHours !== undefined && (
                                 <Chip
                                     icon={<SpeedIcon />}
@@ -111,7 +111,7 @@ export default function FaultModal({
                                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                     Photos ({photos.length}):
                                 </Typography>
-                                <Box display="flex" gap={1.5} flexWrap="wrap">
+                                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                                     {photos.map((photo, idx) => (
                                         <Box
                                             key={idx}
@@ -171,7 +171,7 @@ export default function FaultModal({
                         </Typography>
 
                         <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-                            <Box display="flex" gap={1.5}>
+                            <Box sx={{ display: 'flex', gap: 1.5 }}>
                                 {canManage && fault.status === FAULT_STATUS.CLOSED && onReopenFault && (
                                     <Button
                                         variant="contained"

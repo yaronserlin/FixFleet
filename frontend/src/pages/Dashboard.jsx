@@ -55,7 +55,7 @@ import CreateFaultDialog from '../components/Fault/CreateFaultDialog/CreateFault
 function DashboardSkeleton() {
     return (
         <Container sx={{ mt: 3, mb: 6 }}>
-            <Box mb={3.5}>
+            <Box sx={{ mb: 3.5 }}>
                 <Skeleton variant="text" width={280} height={44} />
                 <Skeleton variant="text" width={200} height={22} />
             </Box>
@@ -89,7 +89,7 @@ function KpiCard({ label, value, caption, accentColor, icon, iconBg }) {
             }}
         >
             <CardContent sx={{ p: 2.5 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1.5}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
                     <Typography
                         variant="overline"
                         sx={{ fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.08em', color: 'text.secondary' }}
@@ -141,7 +141,7 @@ function FilterBar({ total, openCount, closedCount, statusFilter, setStatusFilte
                 mb: 2.5,
             }}
         >
-            <Box display="flex" gap={0.75} flexWrap="wrap">
+            <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
                 {[
                     { value: 'all',    label: `All (${total})`,         color: 'default' },
                     { value: FAULT_STATUS.OPEN,   label: `Open (${openCount})`,    color: 'error'   },
@@ -439,7 +439,7 @@ export default function Dashboard() {
                 </Paper>
 
                 {/* Recent Reports Preview */}
-                <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5} mb={2}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
                     <Box>
                         <Typography variant="h6" fontWeight={700}>
                             Recent Reports Preview
@@ -448,7 +448,7 @@ export default function Dashboard() {
                             Your latest logged tickets
                         </Typography>
                     </Box>
-                    <Box display="flex" gap={1} alignItems="center">
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                         <Button
                             variant="contained"
                             color="primary"
@@ -510,7 +510,7 @@ export default function Dashboard() {
                                 borderLeft: '4px solid #2563EB',
                             }}
                         >
-                            <Box mb={2}>
+                            <Box sx={{ mb: 2 }}>
                                 <Typography variant="subtitle1" fontWeight={700}>
                                     Equipment Manuals
                                 </Typography>
@@ -542,7 +542,7 @@ export default function Dashboard() {
                                 borderLeft: '4px solid #475569',
                             }}
                         >
-                            <Box mb={2}>
+                            <Box sx={{ mb: 2 }}>
                                 <Typography variant="subtitle1" fontWeight={700}>
                                     Account Settings
                                 </Typography>
@@ -593,7 +593,7 @@ export default function Dashboard() {
                     </Typography>
                 </Box>
 
-                <Box display="flex" gap={1.5} flexWrap="wrap">
+                <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
                     <Button
                         variant="outlined"
                         startIcon={<PrecisionManufacturingIcon />}
@@ -658,7 +658,7 @@ export default function Dashboard() {
             {/* 14-Day Activity Chart */}
             <Card sx={{ mb: 4, borderRadius: 3 }}>
                 <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1} mb={2.5}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1, mb: 2.5 }}>
                         <Box>
                             <Typography variant="subtitle1" fontWeight={700}>
                                 14-Day Maintenance Trend
@@ -667,12 +667,12 @@ export default function Dashboard() {
                                 Daily breakdown of reported faults vs resolved tickets
                             </Typography>
                         </Box>
-                        <Box display="flex" gap={2} alignItems="center">
-                            <Box display="flex" alignItems="center" gap={0.75}>
+                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                 <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#DC2626' }} />
                                 <Typography variant="caption" color="text.secondary" fontWeight={500}>Reported</Typography>
                             </Box>
-                            <Box display="flex" alignItems="center" gap={0.75}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                                 <Box sx={{ width: 10, height: 10, borderRadius: '50%', bgcolor: '#16A34A' }} />
                                 <Typography variant="caption" color="text.secondary" fontWeight={500}>Resolved</Typography>
                             </Box>
@@ -750,7 +750,7 @@ export default function Dashboard() {
             </Card>
 
             {/* Recent Faults Section */}
-            <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1.5} mb={2}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
                 <Typography variant="h6" fontWeight={700}>Recent Fault Reports</Typography>
                 <Button
                     variant="contained"

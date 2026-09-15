@@ -57,13 +57,13 @@ export default function PdfViewerDialog({ open, onClose, title, fileUrl }) {
                     borderColor: 'divider',
                 }}
             >
-                <Box display="flex" alignItems="center" gap={1} sx={{ maxWidth: { xs: '60%', sm: '70%' } }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, maxWidth: { xs: '60%', sm: '70%' } }}>
                     <PictureAsPdfIcon color="error" fontSize="small" />
                     <Typography variant="subtitle1" fontWeight={700} noWrap>
                         {title || 'Document Manual'}
                     </Typography>
                 </Box>
-                <Box display="flex" alignItems="center" gap={0.5}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <Button
                         size="small"
                         variant="contained"
@@ -126,7 +126,7 @@ export default function PdfViewerDialog({ open, onClose, title, fileUrl }) {
                             WebkitOverflowScrolling: 'touch',
                         }}
                     >
-                        <Box p={3} textAlign="center">
+                        <Box sx={{ p: 3, textAlign: 'center' }}>
                             <Typography variant="body2" color="text.secondary" gutterBottom>
                                 Your browser cannot display this PDF directly.
                             </Typography>

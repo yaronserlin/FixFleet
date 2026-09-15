@@ -85,11 +85,13 @@ function FileThumbnailPreview({ file, onRemove }) {
                 />
             ) : (
                 <Box
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    height="100%"
-                    color="text.secondary"
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100%',
+                        color: 'text.secondary',
+                    }}
                 >
                     <PhotoCameraIcon fontSize="small" />
                 </Box>
@@ -152,7 +154,7 @@ function FaultFormFields({
     };
 
     return (
-        <Box display="flex" flexDirection="column" gap={2.5}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
             {/* Equipment selector */}
             <FormControl fullWidth required error={Boolean(errors.tool)}>
                 <Select
@@ -215,7 +217,7 @@ function FaultFormFields({
             </FormControl>
 
             {/* Fault code & Engine Hours in one responsive row */}
-            <Box display="flex" gap={2} flexDirection={{ xs: 'column', sm: 'row' }}>
+            <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
                 <TextField
                     label="Fault Code"
                     name="code"
@@ -277,7 +279,7 @@ function FaultFormFields({
                     <Typography variant="body2" fontWeight={500} sx={{ mb: 1 }}>
                         Drag and drop photos here, or select an option:
                     </Typography>
-                    <Box display="flex" justifyContent="center" alignItems="center" gap={1.5} flexWrap="wrap">
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                         <Button
                             component="label"
                             variant="contained"
@@ -458,7 +460,7 @@ export function CreateFaultForm({
             />
 
             {!hideSubmitButton && (
-                <Box mt={3} display="flex" justifyContent="flex-end">
+                <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
                     <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
                         {isSubmitting ? 'Creating…' : 'Create Fault'}
                     </Button>
@@ -542,7 +544,7 @@ export function EditFaultForm({ initialValues, onSubmit, formId = 'edit-fault-fo
                 errors={errors}
                 isEdit
             />
-            <Box mt={3} display="flex" justifyContent="flex-end">
+            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
                 <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
                     {isSubmitting ? 'Updating…' : 'Update Fault'}
                 </Button>

@@ -170,7 +170,7 @@ export default function EquipmentSchedulePage() {
     return (
         <Container maxWidth="md" sx={{ mt: 3, mb: 6 }}>
             {/* Navigation back */}
-            <Box mb={2}>
+            <Box sx={{ mb: 2 }}>
                 <Button
                     startIcon={<ArrowBackIcon />}
                     onClick={() => navigate(equipmentDetailTabRoute(id, 'maintenance'), { state: { tab: 1, refreshedAt: Date.now() } })}
@@ -183,7 +183,7 @@ export default function EquipmentSchedulePage() {
             {/* Schedule Header Card */}
             <Card variant="outlined" sx={{ mb: 3, borderRadius: 2 }}>
                 <CardContent>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2} mb={1}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2, mb: 1 }}>
                         <Box sx={{ flex: '1 1 250px', minWidth: 0 }}>
                             <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ wordBreak: 'break-word' }}>
                                 {schedule.title}
@@ -192,7 +192,7 @@ export default function EquipmentSchedulePage() {
                                 Equipment: {equipment.name} (Serial: {equipment.localSerialNumber || equipment.serialNumber || 'N/A'})
                             </Typography>
                         </Box>
-                        <Box display="flex" gap={1} alignItems="center" flexWrap="wrap">
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                             <Chip
                                 icon={<SpeedIcon />}
                                 label={`Meter: ${currentHours} hrs`}
@@ -229,7 +229,7 @@ export default function EquipmentSchedulePage() {
 
                     <Divider sx={{ my: 1.5 }} />
 
-                    <Box display="flex" gap={3} flexWrap="wrap">
+                    <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
                         <Typography variant="caption" color="text.secondary">
                             Frequency: {schedule.intervalHours > 0 ? `Every ${schedule.intervalHours} engine hours` : ''}
                             {schedule.intervalHours > 0 && schedule.intervalDays > 0 ? ' or ' : ''}
@@ -250,7 +250,7 @@ export default function EquipmentSchedulePage() {
 
             {/* Todo List / Checklist Section */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, mb: 3 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={2} mb={2}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2, mb: 2 }}>
                     <Box>
                         <Typography variant="h6" fontWeight="bold">
                             Maintenance Checklist / To-Do List
@@ -277,7 +277,7 @@ export default function EquipmentSchedulePage() {
                 </Box>
 
                 {checklist.length > 0 && (
-                    <Box display="flex" alignItems="center" gap={2} mb={3}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                         <LinearProgress
                             variant="determinate"
                             value={progressPercent}
@@ -290,7 +290,7 @@ export default function EquipmentSchedulePage() {
                 )}
 
                 {checklist.length === 0 ? (
-                    <Box py={4} textAlign="center">
+                    <Box sx={{ py: 4, textAlign: 'center' }}>
                         <CheckCircleOutlineIcon sx={{ fontSize: 48, color: 'text.disabled', mb: 1 }} />
                         <Typography color="text.secondary">
                             No to-do tasks configured for this maintenance schedule.
@@ -339,7 +339,7 @@ export default function EquipmentSchedulePage() {
 
             {/* Service Process Notes (In-Progress) */}
             <Paper variant="outlined" sx={{ p: 3, borderRadius: 2, mb: 3 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} mb={1}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                     <Box>
                         <Typography variant="h6" fontWeight="bold">
                             Service Process Notes & Observations

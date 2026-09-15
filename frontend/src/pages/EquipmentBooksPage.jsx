@@ -89,15 +89,17 @@ export default function EquipmentBooksPage() {
         <Container maxWidth="lg" sx={{ mt: 3, mb: 6 }}>
             {/* Header */}
             <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems={{ xs: 'flex-start', sm: 'center' }}
-                flexDirection={{ xs: 'column', sm: 'row' }}
-                gap={2}
-                mb={3.5}
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: { xs: 'flex-start', sm: 'center' },
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    gap: 2,
+                    mb: 3.5,
+                }}
             >
                 <Box>
-                    <Box display="flex" alignItems="center" gap={1.25} mb={0.5}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5 }}>
                         <MenuBookIcon color="primary" sx={{ fontSize: 30 }} />
                         <Typography variant="h4" fontWeight={800} letterSpacing="-0.02em">
                             Equipment Manuals & Books
@@ -196,8 +198,8 @@ export default function EquipmentBooksPage() {
                                 >
                                     <CardContent sx={{ p: 2.5, flexGrow: 1 }}>
                                         {/* Equipment Title & Badges */}
-                                        <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={1.5} mb={1.5}>
-                                            <Box display="flex" alignItems="center" gap={1.25}>
+                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1.5, mb: 1.5 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
                                                 <Box
                                                     sx={{
                                                         p: 1,
@@ -230,7 +232,7 @@ export default function EquipmentBooksPage() {
                                         </Box>
 
                                         {/* Info Specs */}
-                                        <Box display="flex" flexWrap="wrap" gap={1.5} mb={2}>
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, mb: 2 }}>
                                             {tool.model && (
                                                 <Typography variant="caption" color="text.secondary">
                                                     <strong>Model:</strong> {tool.model}
@@ -247,13 +249,13 @@ export default function EquipmentBooksPage() {
 
                                         {/* Books List */}
                                         {!hasBooks ? (
-                                            <Box py={2} textAlign="center">
+                                            <Box sx={{ py: 2, textAlign: 'center' }}>
                                                 <Typography variant="body2" color="text.secondary">
                                                     No PDF manuals or workshop documentation uploaded for this machine yet.
                                                 </Typography>
                                             </Box>
                                         ) : (
-                                            <Box display="flex" flexDirection="column" gap={1.25}>
+                                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                                                 {books.map(book => {
                                                     const mediaUrl = getMediaUrl(book.fileUrl);
                                                     return (
@@ -270,7 +272,7 @@ export default function EquipmentBooksPage() {
                                                                 bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.01)',
                                                             }}
                                                         >
-                                                            <Box display="flex" alignItems="center" gap={1.25} sx={{ minWidth: 0 }}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
                                                                 <PictureAsPdfIcon color="error" sx={{ fontSize: 28, flexShrink: 0 }} />
                                                                 <Box sx={{ minWidth: 0 }}>
                                                                     <Typography variant="body2" fontWeight={600} noWrap>
@@ -283,7 +285,7 @@ export default function EquipmentBooksPage() {
                                                                 </Box>
                                                             </Box>
 
-                                                            <Box display="flex" alignItems="center" gap={0.75} flexShrink={0}>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
                                                                 <Button
                                                                     size="small"
                                                                     variant="outlined"
