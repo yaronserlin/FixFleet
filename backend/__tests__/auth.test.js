@@ -2,21 +2,24 @@ const request = require('supertest');
 const { connectTestDB, closeTestDB, registerCompanyAdmin, uniqueEmail } = require('./helpers/setup');
 
 const app = require('../app');
+let server;
 
 jest.setTimeout(90000);
 
 beforeAll(async () => {
     await connectTestDB();
+    server = app.listen(0);
 }, 90000);
 
 afterAll(async () => {
+    await new Promise((resolve) => server.close(resolve));
     await closeTestDB();
 });
 
 describe('Auth Controller', () => {
     describe('POST /api/auth/register', () => {
         it('rejects a company name shorter than 2 characters', async () => {
-            const res = await request(app).post('/api/auth/register').send({
+            const res = await request(server).post('/api/auth/register').send({
                 companyName: 'A',
                 name: 'Valid Name',
                 email: uniqueEmail(),
@@ -27,7 +30,7 @@ describe('Auth Controller', () => {
         });
 
         it('rejects a name shorter than 2 characters', async () => {
-            const res = await request(app).post('/api/auth/register').send({
+            const res = await request(server).post('/api/auth/register').send({
                 companyName: 'Valid Co',
                 name: 'A',
                 email: uniqueEmail(),
@@ -38,7 +41,7 @@ describe('Auth Controller', () => {
         });
 
         it('rejects an invalid email format', async () => {
-            const res = await request(app).post('/api/auth/register').send({
+            const res = await request(server).post('/api/auth/register').send({
                 companyName: 'Valid Co',
                 name: 'Valid Name',
                 email: 'not-an-email',
@@ -49,7 +52,7 @@ describe('Auth Controller', () => {
         });
 
         it('rejects a password shorter than 6 characters', async () => {
-            const res = await request(app).post('/api/auth/register').send({
+            const res = await request(server).post('/api/auth/register').send({
                 companyName: 'Valid Co',
                 name: 'Valid Name',
                 email: uniqueEmail(),
@@ -60,7 +63,7 @@ describe('Auth Controller', () => {
         });
 
         it('rejects registration if terms of service and privacy policy are not accepted', async () => {
-            const res = await request(app).post('/api/auth/register').send({
+            const res = await request(server).post('/api/auth/register').send({
                 companyName: 'Terms Co',
                 name: 'Valid Name',
                 email: uniqueEmail(),
@@ -72,7 +75,7 @@ describe('Auth Controller', () => {
         });
 
         it('rejects duplicate slugs by generating a unique suffix', async () => {
-            const first = await request(app).post('/api/auth/register').send({
+            const first = await request(server).post('/api/auth/register').send({
                 companyName: 'Slug Collision Co',
                 name: 'First Admin',
                 email: uniqueEmail(),
@@ -81,7 +84,7 @@ describe('Auth Controller', () => {
             });
             expect(first.status).toBe(201);
 
-            const second = await request(app).post('/api/auth/register').send({
+            const second = await request(server).post('/api/auth/register').send({
                 companyName: 'Slug Collision Co',
                 name: 'Second Admin',
                 email: uniqueEmail(),
@@ -94,7 +97,7 @@ describe('Auth Controller', () => {
         });
 
         it('forces the creator role to admin regardless of request body', async () => {
-            const res = await request(app).post('/api/auth/register').send({
+            const res = await request(server).post('/api/auth/register').send({
                 companyName: 'Force Admin Co',
                 name: 'Sneaky User',
                 email: uniqueEmail(),
@@ -110,13 +113,13 @@ describe('Auth Controller', () => {
 
     describe('POST /api/auth/login', () => {
         it('rejects missing email or password', async () => {
-            const res = await request(app).post('/api/auth/login').send({ email: 'x@x.com' });
+            const res = await request(server).post('/api/auth/login').send({ email: 'x@x.com' });
             expect(res.status).toBe(400);
             expect(res.body.message).toMatch(/email and password/i);
         });
 
         it('rejects login for a non-existent email', async () => {
-            const res = await request(app).post('/api/auth/login').send({
+            const res = await request(server).post('/api/auth/login').send({
                 email: 'nonexistent@example.com',
                 password: 'password123',
             });
@@ -126,9 +129,9 @@ describe('Auth Controller', () => {
 
         it('rejects login with an incorrect password', async () => {
             const email = uniqueEmail();
-            await registerCompanyAdmin(app, { email, password: 'correctPassword1' });
+            await registerCompanyAdmin(server, { email, password: 'correctPassword1' });
 
-            const res = await request(app).post('/api/auth/login').send({
+            const res = await request(server).post('/api/auth/login').send({
                 email,
                 password: 'wrongPassword',
             });
@@ -138,9 +141,9 @@ describe('Auth Controller', () => {
 
         it('logs in successfully with correct credentials', async () => {
             const email = uniqueEmail();
-            await registerCompanyAdmin(app, { email, password: 'correctPassword1' });
+            await registerCompanyAdmin(server, { email, password: 'correctPassword1' });
 
-            const res = await request(app).post('/api/auth/login').send({
+            const res = await request(server).post('/api/auth/login').send({
                 email,
                 password: 'correctPassword1',
             });
@@ -152,7 +155,7 @@ describe('Auth Controller', () => {
 
     describe('POST /api/auth/logout', () => {
         it('clears the auth cookie and returns success', async () => {
-            const res = await request(app).post('/api/auth/logout');
+            const res = await request(server).post('/api/auth/logout');
             expect(res.status).toBe(200);
             expect(res.body.message).toMatch(/logged out/i);
         });
@@ -160,13 +163,13 @@ describe('Auth Controller', () => {
 
     describe('GET /api/auth/me', () => {
         it('rejects unauthenticated requests', async () => {
-            const res = await request(app).get('/api/auth/me');
+            const res = await request(server).get('/api/auth/me');
             expect(res.status).toBe(401);
         });
 
         it('returns the authenticated profile', async () => {
-            const { token, email } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token, email } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .get('/api/auth/me')
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(200);
@@ -176,8 +179,8 @@ describe('Auth Controller', () => {
 
     describe('PUT /api/auth/me', () => {
         it('rejects an invalid name', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .put('/api/auth/me')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ name: 'A', email: uniqueEmail() });
@@ -186,8 +189,8 @@ describe('Auth Controller', () => {
         });
 
         it('rejects an invalid email', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .put('/api/auth/me')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ name: 'Valid Name', email: 'bad-email' });
@@ -196,8 +199,8 @@ describe('Auth Controller', () => {
         });
 
         it('requires the current password to change email address', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .put('/api/auth/me')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ name: 'Valid Name', email: uniqueEmail() });
@@ -206,8 +209,8 @@ describe('Auth Controller', () => {
         });
 
         it('rejects an incorrect current password when changing email', async () => {
-            const { token } = await registerCompanyAdmin(app, { password: 'password123' });
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server, { password: 'password123' });
+            const res = await request(server)
                 .put('/api/auth/me')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ name: 'Valid Name', email: uniqueEmail(), currentPassword: 'wrongPassword' });
@@ -216,10 +219,10 @@ describe('Auth Controller', () => {
         });
 
         it('rejects an email already used by another user', async () => {
-            const first = await registerCompanyAdmin(app);
-            const second = await registerCompanyAdmin(app, { password: 'password123' });
+            const first = await registerCompanyAdmin(server);
+            const second = await registerCompanyAdmin(server, { password: 'password123' });
 
-            const res = await request(app)
+            const res = await request(server)
                 .put('/api/auth/me')
                 .set('Authorization', `Bearer ${second.token}`)
                 .send({ name: 'Valid Name', email: first.email, currentPassword: 'password123' });
@@ -228,8 +231,8 @@ describe('Auth Controller', () => {
         });
 
         it('updates the name without requiring a password when email is unchanged', async () => {
-            const { token, email } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token, email } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .put('/api/auth/me')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ name: 'Updated Name', email });
@@ -239,9 +242,9 @@ describe('Auth Controller', () => {
         });
 
         it('updates the email successfully when the current password is correct', async () => {
-            const { token } = await registerCompanyAdmin(app, { password: 'password123' });
+            const { token } = await registerCompanyAdmin(server, { password: 'password123' });
             const newEmail = uniqueEmail();
-            const res = await request(app)
+            const res = await request(server)
                 .put('/api/auth/me')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ name: 'Updated Name', email: newEmail, currentPassword: 'password123' });
@@ -253,8 +256,8 @@ describe('Auth Controller', () => {
 
     describe('POST /api/auth/me/avatar', () => {
         it('rejects a request with no file attached', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .post('/api/auth/me/avatar')
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(400);
@@ -262,8 +265,8 @@ describe('Auth Controller', () => {
         });
 
         it('uploads an avatar image successfully', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .post('/api/auth/me/avatar')
                 .set('Authorization', `Bearer ${token}`)
                 .attach('avatar', Buffer.from([0x89, 0x50, 0x4e, 0x47]), {
@@ -275,8 +278,8 @@ describe('Auth Controller', () => {
         });
 
         it('rejects a disallowed file type', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .post('/api/auth/me/avatar')
                 .set('Authorization', `Bearer ${token}`)
                 .attach('avatar', Buffer.from('not an image'), {
@@ -290,8 +293,8 @@ describe('Auth Controller', () => {
 
     describe('POST /api/auth/me/change-password', () => {
         it('rejects missing fields', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .post('/api/auth/me/change-password')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ currentPassword: 'password123' });
@@ -300,8 +303,8 @@ describe('Auth Controller', () => {
         });
 
         it('rejects a new password shorter than 6 characters', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .post('/api/auth/me/change-password')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ currentPassword: 'password123', newPassword: '123' });
@@ -310,8 +313,8 @@ describe('Auth Controller', () => {
         });
 
         it('rejects an incorrect current password', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .post('/api/auth/me/change-password')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ currentPassword: 'wrongPassword', newPassword: 'newPassword1' });
@@ -321,15 +324,15 @@ describe('Auth Controller', () => {
 
         it('changes the password successfully and allows login with the new one', async () => {
             const email = uniqueEmail();
-            const { token } = await registerCompanyAdmin(app, { email, password: 'password123' });
+            const { token } = await registerCompanyAdmin(server, { email, password: 'password123' });
 
-            const changeRes = await request(app)
+            const changeRes = await request(server)
                 .post('/api/auth/me/change-password')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ currentPassword: 'password123', newPassword: 'newPassword1' });
             expect(changeRes.status).toBe(200);
 
-            const loginRes = await request(app).post('/api/auth/login').send({
+            const loginRes = await request(server).post('/api/auth/login').send({
                 email,
                 password: 'newPassword1',
             });
@@ -337,10 +340,10 @@ describe('Auth Controller', () => {
         });
 
         it('requires terms approval during first login forced password change', async () => {
-            const { token: adminToken } = await registerCompanyAdmin(app);
+            const { token: adminToken } = await registerCompanyAdmin(server);
             const userEmail = uniqueEmail('worker');
-            const createRes = await request(app)
-                .post('/api/users')
+            const createRes = await request(server)
+                .post('/api/admin/users')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
                     name: 'Worker Bob',
@@ -351,7 +354,7 @@ describe('Auth Controller', () => {
             expect(createRes.body.mustChangePassword).toBe(true);
 
             // Log in as worker Bob
-            const loginRes = await request(app).post('/api/auth/login').send({
+            const loginRes = await request(server).post('/api/auth/login').send({
                 email: userEmail,
                 password: 'tempPassword123',
             });
@@ -360,7 +363,7 @@ describe('Auth Controller', () => {
             const workerToken = loginRes.body.token;
 
             // Attempt without agreeing to terms
-            const noTermsRes = await request(app)
+            const noTermsRes = await request(server)
                 .post('/api/auth/me/change-password')
                 .set('Authorization', `Bearer ${workerToken}`)
                 .send({
@@ -372,10 +375,10 @@ describe('Auth Controller', () => {
         });
 
         it('allows first login forced password change WITHOUT old password requirement when agreed to terms', async () => {
-            const { token: adminToken } = await registerCompanyAdmin(app);
+            const { token: adminToken } = await registerCompanyAdmin(server);
             const userEmail = uniqueEmail('worker');
-            await request(app)
-                .post('/api/users')
+            await request(server)
+                .post('/api/admin/users')
                 .set('Authorization', `Bearer ${adminToken}`)
                 .send({
                     name: 'Worker Alice',
@@ -383,14 +386,14 @@ describe('Auth Controller', () => {
                     password: 'tempPassword123',
                 });
 
-            const loginRes = await request(app).post('/api/auth/login').send({
+            const loginRes = await request(server).post('/api/auth/login').send({
                 email: userEmail,
                 password: 'tempPassword123',
             });
             const workerToken = loginRes.body.token;
 
             // Submit new password without currentPassword
-            const changeRes = await request(app)
+            const changeRes = await request(server)
                 .post('/api/auth/me/change-password')
                 .set('Authorization', `Bearer ${workerToken}`)
                 .send({
@@ -402,7 +405,7 @@ describe('Auth Controller', () => {
             expect(changeRes.body.termsAccepted).toBe(true);
 
             // Verify worker can log in with new password and mustChangePassword is false
-            const nextLogin = await request(app).post('/api/auth/login').send({
+            const nextLogin = await request(server).post('/api/auth/login').send({
                 email: userEmail,
                 password: 'brandNewSecurePass123',
             });
@@ -414,13 +417,13 @@ describe('Auth Controller', () => {
 
     describe('POST /api/auth/refresh', () => {
         it('rejects a request with no refresh token provided', async () => {
-            const res = await request(app).post('/api/auth/refresh').send({});
+            const res = await request(server).post('/api/auth/refresh').send({});
             expect(res.status).toBe(401);
             expect(res.body.message).toMatch(/refresh token is required/i);
         });
 
         it('rejects an invalid or tampered refresh token', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/auth/refresh')
                 .send({ refreshToken: 'invalid.token.signature' });
             expect(res.status).toBe(401);
@@ -428,10 +431,10 @@ describe('Auth Controller', () => {
         });
 
         it('refreshes token successfully via request body and rotates refresh token', async () => {
-            const { refreshToken: initialRefreshToken } = await registerCompanyAdmin(app);
+            const { refreshToken: initialRefreshToken } = await registerCompanyAdmin(server);
             expect(initialRefreshToken).toBeDefined();
 
-            const refreshRes = await request(app)
+            const refreshRes = await request(server)
                 .post('/api/auth/refresh')
                 .send({ refreshToken: initialRefreshToken });
 
@@ -442,21 +445,21 @@ describe('Auth Controller', () => {
             expect(refreshRes.body.refreshToken).not.toBe(initialRefreshToken);
 
             // New access token works to access protected route
-            const meRes = await request(app)
+            const meRes = await request(server)
                 .get('/api/auth/me')
                 .set('Authorization', `Bearer ${refreshRes.body.accessToken}`);
             expect(meRes.status).toBe(200);
         });
 
         it('refreshes token successfully via cookie', async () => {
-            const { cookies } = await registerCompanyAdmin(app);
+            const { cookies } = await registerCompanyAdmin(server);
             expect(cookies).toBeDefined();
 
             // Find the refreshToken cookie
             const refreshCookie = cookies.find(c => c.startsWith('refreshToken='));
             expect(refreshCookie).toBeDefined();
 
-            const refreshRes = await request(app)
+            const refreshRes = await request(server)
                 .post('/api/auth/refresh')
                 .set('Cookie', [refreshCookie]);
 
@@ -466,23 +469,23 @@ describe('Auth Controller', () => {
         });
 
         it('enforces rotation: cannot reuse an already rotated refresh token', async () => {
-            const { refreshToken: initialRefreshToken } = await registerCompanyAdmin(app);
+            const { refreshToken: initialRefreshToken } = await registerCompanyAdmin(server);
 
             // First refresh succeeds and rotates
-            const firstRefresh = await request(app)
+            const firstRefresh = await request(server)
                 .post('/api/auth/refresh')
                 .send({ refreshToken: initialRefreshToken });
             expect(firstRefresh.status).toBe(200);
 
             // Second attempt to use initialRefreshToken triggers reuse detection
-            const reuseAttempt = await request(app)
+            const reuseAttempt = await request(server)
                 .post('/api/auth/refresh')
                 .send({ refreshToken: initialRefreshToken });
             expect(reuseAttempt.status).toBe(403);
             expect(reuseAttempt.body.code).toBe('TOKEN_REUSE_DETECTED');
 
             // Even the rotated token from the first refresh should now be revoked due to family invalidation
-            const attemptWithRotated = await request(app)
+            const attemptWithRotated = await request(server)
                 .post('/api/auth/refresh')
                 .send({ refreshToken: firstRefresh.body.refreshToken });
             expect(attemptWithRotated.status).toBe(403);
@@ -490,15 +493,15 @@ describe('Auth Controller', () => {
         });
 
         it('revokes refresh token on logout', async () => {
-            const { refreshToken } = await registerCompanyAdmin(app);
+            const { refreshToken } = await registerCompanyAdmin(server);
 
-            const logoutRes = await request(app)
+            const logoutRes = await request(server)
                 .post('/api/auth/logout')
                 .send({ refreshToken });
             expect(logoutRes.status).toBe(200);
 
             // Trying to refresh after logout should fail
-            const refreshRes = await request(app)
+            const refreshRes = await request(server)
                 .post('/api/auth/refresh')
                 .send({ refreshToken });
             expect(refreshRes.status).toBe(403);
@@ -506,16 +509,16 @@ describe('Auth Controller', () => {
 
         it('revokes all active refresh tokens on password change', async () => {
             const email = uniqueEmail();
-            const { token, refreshToken } = await registerCompanyAdmin(app, { email, password: 'oldPassword123' });
+            const { token, refreshToken } = await registerCompanyAdmin(server, { email, password: 'oldPassword123' });
 
-            const changeRes = await request(app)
+            const changeRes = await request(server)
                 .post('/api/auth/me/change-password')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ currentPassword: 'oldPassword123', newPassword: 'newPassword123' });
             expect(changeRes.status).toBe(200);
 
             // Refresh token issued before password change should now be revoked
-            const refreshRes = await request(app)
+            const refreshRes = await request(server)
                 .post('/api/auth/refresh')
                 .send({ refreshToken });
             expect(refreshRes.status).toBe(403);

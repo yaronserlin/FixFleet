@@ -8,6 +8,7 @@ process.env.JWT_SECRET = 'test_secret_key_minimum_32_characters_long';
 process.env.MONGOMS_DOWNLOAD_DIR = path.join(__dirname, '../.mongo-binaries');
 
 const app = require('../app');
+let server;
 
 jest.setTimeout(90000);
 
@@ -17,9 +18,11 @@ beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
     await mongoose.connect(uri);
+    server = app.listen(0);
 }, 90000);
 
 afterAll(async () => {
+    await new Promise((resolve) => server.close(resolve));
     await mongoose.disconnect();
     if (mongoServer) {
         await mongoServer.stop();
@@ -43,7 +46,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
     // ── 1. Onboarding & Registration Isolation ──────────────────────
     describe('Company Onboarding & Auth Security', () => {
         it('registers Company A and creates first user as admin, ignoring client role', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/auth/register')
                 .send({
                     companyName: 'Acme Corp',
@@ -64,7 +67,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('registers Company B independently with its own admin', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/auth/register')
                 .send({
                     companyName: 'Beta Industries',
@@ -82,7 +85,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('enforces global email uniqueness across companies', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/auth/register')
                 .send({
                     companyName: 'Duplicate Corp',
@@ -97,7 +100,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('authenticates and returns profile using cookie auth', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get('/api/auth/me')
                 .set('Cookie', companyACookie);
 
@@ -110,7 +113,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
     // ── 2. Tool Tenant Isolation ────────────────────────────────────
     describe('Tool Isolation', () => {
         it('Company A creates Tool A', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/tools')
                 .set('Authorization', `Bearer ${companyAToken}`)
                 .send({
@@ -127,7 +130,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B creates Tool B', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/tools')
                 .set('Authorization', `Bearer ${companyBToken}`)
                 .send({
@@ -143,7 +146,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company A only lists its own tools', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get('/api/tools')
                 .set('Authorization', `Bearer ${companyAToken}`);
 
@@ -154,7 +157,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B cannot fetch Company A tool by ID (returns 404)', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get(`/api/tools/${toolAId}`)
                 .set('Authorization', `Bearer ${companyBToken}`);
 
@@ -162,7 +165,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B cannot update Company A tool (returns 404)', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .put(`/api/tools/${toolAId}`)
                 .set('Authorization', `Bearer ${companyBToken}`)
                 .send({ name: 'Hacked Tool' });
@@ -171,7 +174,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B cannot delete Company A tool (returns 404)', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .delete(`/api/tools/${toolAId}`)
                 .set('Authorization', `Bearer ${companyBToken}`);
 
@@ -182,7 +185,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
     // ── 3. Fault Tenant Isolation ───────────────────────────────────
     describe('Fault Isolation', () => {
         it('Company A creates a fault on Tool A', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/faults')
                 .set('Authorization', `Bearer ${companyAToken}`)
                 .send({
@@ -197,7 +200,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B cannot log a fault referencing Company A tool', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/faults')
                 .set('Authorization', `Bearer ${companyBToken}`)
                 .send({
@@ -211,7 +214,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B sees zero faults from Company A', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get('/api/faults')
                 .set('Authorization', `Bearer ${companyBToken}`);
 
@@ -220,7 +223,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B cannot close Company A fault (returns 404)', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .patch(`/api/faults/${faultAId}/close`)
                 .set('Authorization', `Bearer ${companyBToken}`);
 
@@ -228,7 +231,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B cannot delete Company A fault (returns 404)', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .delete(`/api/faults/${faultAId}`)
                 .set('Authorization', `Bearer ${companyBToken}`);
 
@@ -239,7 +242,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
     // ── 4. Part & Maintenance Tenant Isolation ──────────────────────
     describe('Part & Maintenance Isolation', () => {
         it('Company A creates a Part for Tool A', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/parts')
                 .set('Authorization', `Bearer ${companyAToken}`)
                 .send({
@@ -254,7 +257,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B cannot see Company A parts', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get('/api/parts')
                 .set('Authorization', `Bearer ${companyBToken}`);
 
@@ -263,7 +266,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B cannot link a part to Company A tool', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/parts')
                 .set('Authorization', `Bearer ${companyBToken}`)
                 .send({
@@ -277,7 +280,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company A logs maintenance on Tool A', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/maintenance')
                 .set('Authorization', `Bearer ${companyAToken}`)
                 .send({
@@ -290,7 +293,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B cannot see Company A maintenance logs', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get('/api/maintenance')
                 .set('Authorization', `Bearer ${companyBToken}`);
 
@@ -304,7 +307,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         let companyAOperatorId;
 
         it('Company A admin creates an operator user', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/admin/users')
                 .set('Authorization', `Bearer ${companyAToken}`)
                 .send({
@@ -319,14 +322,14 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
             companyAOperatorId = res.body._id;
 
             // Log in as operator to get token
-            const loginRes = await request(app)
+            const loginRes = await request(server)
                 .post('/api/auth/login')
                 .send({ email: 'aaron@acme.com', password: 'password123' });
             companyAOperatorToken = loginRes.body.token;
         });
 
         it('Company B admin list only shows Company B users', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get('/api/admin/users')
                 .set('Authorization', `Bearer ${companyBToken}`);
 
@@ -338,7 +341,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Company B cannot modify Company A user role (returns 404)', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .patch(`/api/admin/users/${companyAOperatorId}/role`)
                 .set('Authorization', `Bearer ${companyBToken}`)
                 .send({ role: 'admin' });
@@ -347,7 +350,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Operator role cannot access admin routes (returns 403)', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get('/api/admin/users')
                 .set('Authorization', `Bearer ${companyAOperatorToken}`);
 
@@ -355,7 +358,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Operator role cannot mutate tools directly on /api/tools (returns 403 - Critical #2 Fix)', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/tools')
                 .set('Authorization', `Bearer ${companyAOperatorToken}`)
                 .send({ name: 'Unauthorized Tool' });
@@ -364,7 +367,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Operator role cannot close faults (returns 403 - Finding #5 Fix)', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .patch(`/api/faults/${faultAId}/close`)
                 .set('Authorization', `Bearer ${companyAOperatorToken}`);
 
@@ -373,13 +376,13 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
 
         it('Admin can reopen a closed fault', async () => {
             // First ensure it's closed
-            await request(app)
+            await request(server)
                 .patch(`/api/faults/${faultAId}/close`)
                 .set('Authorization', `Bearer ${companyAToken}`)
                 .send({ engineHours: 150 });
 
             // Reopen
-            const reopenRes = await request(app)
+            const reopenRes = await request(server)
                 .put(`/api/faults/${faultAId}/reopen`)
                 .set('Authorization', `Bearer ${companyAToken}`);
 
@@ -389,7 +392,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('GET /api/equipment returns equipment for Company A', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get('/api/equipment')
                 .set('Authorization', `Bearer ${companyAToken}`);
 
@@ -399,7 +402,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('POST /api/equipment/:id/schedules creates schedule with checklist and persists it', async () => {
-            const addRes = await request(app)
+            const addRes = await request(server)
                 .post(`/api/equipment/${toolAId}/schedules`)
                 .set('Authorization', `Bearer ${companyAToken}`)
                 .send({
@@ -421,7 +424,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
             expect(createdSchedule.checklist[0].done).toBe(false);
 
             // Fetch via getSchedule endpoint
-            const schedRes = await request(app)
+            const schedRes = await request(server)
                 .get(`/api/equipment/${toolAId}/schedules/${createdSchedule._id}`)
                 .set('Authorization', `Bearer ${companyAToken}`);
 
@@ -431,7 +434,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('PUT /api/faults/:id updates fault fields for Company A admin', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .put(`/api/faults/${faultAId}`)
                 .set('Authorization', `Bearer ${companyAToken}`)
                 .send({
@@ -447,7 +450,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('PUT /api/faults/:id returns 403 for operator role', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .put(`/api/faults/${faultAId}`)
                 .set('Authorization', `Bearer ${companyAOperatorToken}`)
                 .send({ description: 'Operator trying to edit fault' });
@@ -456,7 +459,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('PUT /api/faults/:id returns 404 for Company B (tenant isolation)', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .put(`/api/faults/${faultAId}`)
                 .set('Authorization', `Bearer ${companyBToken}`)
                 .send({ description: 'Cross tenant modification' });
@@ -465,7 +468,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('Returns 400 when invalid nested ObjectId is supplied', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get(`/api/equipment/${toolAId}/schedules/invalid-schedule-id`)
                 .set('Authorization', `Bearer ${companyAToken}`);
 
@@ -474,12 +477,12 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
 
         it('GET /uploads/:filename enforces authentication', async () => {
-            const res = await request(app).get('/uploads/test-manual.pdf');
+            const res = await request(server).get('/uploads/test-manual.pdf');
             expect(res.status).toBe(401);
         });
 
         it('GET /uploads/:filename returns 404 for authenticated user when file does not exist', async () => {
-            const res = await request(app)
+            const res = await request(server)
                 .get('/uploads/nonexistent-manual-12345.pdf')
                 .set('Authorization', `Bearer ${companyAToken}`);
 
@@ -490,7 +493,7 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
     // ── 6. Health & System Check ────────────────────────────────────
     describe('Health Check Endpoint', () => {
         it('GET /api/health returns healthy', async () => {
-            const res = await request(app).get('/api/health');
+            const res = await request(server).get('/api/health');
             expect(res.status).toBe(200);
             expect(res.body.status).toBe('healthy');
             expect(res.body.database).toBe('connected');

@@ -2,19 +2,22 @@ const request = require('supertest');
 const { connectTestDB, closeTestDB, registerCompanyAdmin } = require('./helpers/setup');
 
 const app = require('../app');
+let server;
 
 jest.setTimeout(90000);
 
 beforeAll(async () => {
     await connectTestDB();
+    server = app.listen(0);
 }, 90000);
 
 afterAll(async () => {
+    await new Promise((resolve) => server.close(resolve));
     await closeTestDB();
 });
 
 async function createTool(token, overrides = {}) {
-    const res = await request(app)
+    const res = await request(server)
         .post('/api/tools')
         .set('Authorization', `Bearer ${token}`)
         .send({ name: 'Test Tool', ...overrides });
@@ -24,9 +27,9 @@ async function createTool(token, overrides = {}) {
 describe('Maintenance Controller', () => {
     describe('POST /api/maintenance (createMaintenance)', () => {
         it('rejects a request with no details', async () => {
-            const { token } = await registerCompanyAdmin(app);
+            const { token } = await registerCompanyAdmin(server);
             const tool = await createTool(token);
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/maintenance')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ tool: tool._id });
@@ -35,8 +38,8 @@ describe('Maintenance Controller', () => {
         });
 
         it('rejects a request with no tool reference', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .post('/api/maintenance')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ details: 'Replaced filter' });
@@ -45,8 +48,8 @@ describe('Maintenance Controller', () => {
         });
 
         it('rejects a tool that does not belong to the company', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .post('/api/maintenance')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ details: 'Replaced filter', tool: '64b7f3f3f3f3f3f3f3f3f3f3' });
@@ -55,9 +58,9 @@ describe('Maintenance Controller', () => {
         });
 
         it('creates a maintenance record with an explicit date', async () => {
-            const { token } = await registerCompanyAdmin(app);
+            const { token } = await registerCompanyAdmin(server);
             const tool = await createTool(token);
-            const res = await request(app)
+            const res = await request(server)
                 .post('/api/maintenance')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ tool: tool._id, details: 'Replaced filter', date: '2025-01-01' });
@@ -69,22 +72,22 @@ describe('Maintenance Controller', () => {
 
     describe('GET /api/maintenance (getAllMaintenance)', () => {
         it('filters by toolId and paginates', async () => {
-            const { token } = await registerCompanyAdmin(app);
+            const { token } = await registerCompanyAdmin(server);
             const toolA = await createTool(token, { name: 'Tool A' });
             const toolB = await createTool(token, { name: 'Tool B' });
-            await request(app).post('/api/maintenance').set('Authorization', `Bearer ${token}`)
+            await request(server).post('/api/maintenance').set('Authorization', `Bearer ${token}`)
                 .send({ tool: toolA._id, details: 'A1' });
-            await request(app).post('/api/maintenance').set('Authorization', `Bearer ${token}`)
+            await request(server).post('/api/maintenance').set('Authorization', `Bearer ${token}`)
                 .send({ tool: toolA._id, details: 'A2' });
-            await request(app).post('/api/maintenance').set('Authorization', `Bearer ${token}`)
+            await request(server).post('/api/maintenance').set('Authorization', `Bearer ${token}`)
                 .send({ tool: toolB._id, details: 'B1' });
 
-            const filtered = await request(app)
+            const filtered = await request(server)
                 .get(`/api/maintenance?toolId=${toolA._id}`)
                 .set('Authorization', `Bearer ${token}`);
             expect(filtered.body.length).toBe(2);
 
-            const paged = await request(app)
+            const paged = await request(server)
                 .get('/api/maintenance?page=1&limit=1')
                 .set('Authorization', `Bearer ${token}`);
             expect(paged.body.logs).toHaveLength(1);
@@ -95,22 +98,22 @@ describe('Maintenance Controller', () => {
 
     describe('GET /api/maintenance/:id (getMaintenanceById)', () => {
         it('returns 404 for a non-existent record', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .get('/api/maintenance/64b7f3f3f3f3f3f3f3f3f3f3')
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(404);
         });
 
         it('returns the record when found', async () => {
-            const { token } = await registerCompanyAdmin(app);
+            const { token } = await registerCompanyAdmin(server);
             const tool = await createTool(token);
-            const createRes = await request(app)
+            const createRes = await request(server)
                 .post('/api/maintenance')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ tool: tool._id, details: 'Oil change' });
 
-            const res = await request(app)
+            const res = await request(server)
                 .get(`/api/maintenance/${createRes.body._id}`)
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(200);
@@ -120,27 +123,27 @@ describe('Maintenance Controller', () => {
 
     describe('DELETE /api/maintenance/:id (deleteMaintenance)', () => {
         it('returns 404 for a non-existent record', async () => {
-            const { token } = await registerCompanyAdmin(app);
-            const res = await request(app)
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
                 .delete('/api/maintenance/64b7f3f3f3f3f3f3f3f3f3f3')
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(404);
         });
 
         it('deletes an existing record', async () => {
-            const { token } = await registerCompanyAdmin(app);
+            const { token } = await registerCompanyAdmin(server);
             const tool = await createTool(token);
-            const createRes = await request(app)
+            const createRes = await request(server)
                 .post('/api/maintenance')
                 .set('Authorization', `Bearer ${token}`)
                 .send({ tool: tool._id, details: 'Oil change' });
 
-            const res = await request(app)
+            const res = await request(server)
                 .delete(`/api/maintenance/${createRes.body._id}`)
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(200);
 
-            const getRes = await request(app)
+            const getRes = await request(server)
                 .get(`/api/maintenance/${createRes.body._id}`)
                 .set('Authorization', `Bearer ${token}`);
             expect(getRes.status).toBe(404);
