@@ -15,7 +15,7 @@ import MobileNav from './MobileNav';
 import DesktopNav from './DesktopNav';
 import UserMenu from './UserMenu';
 
-export default function Navbar({ pages = [] }) {
+export default function Navbar() {
     const { user } = useAuth();
     const { mode, toggleColorMode } = useThemeMode();
     const isDark = mode === 'dark';

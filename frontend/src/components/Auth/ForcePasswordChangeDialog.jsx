@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
     Dialog,
     DialogTitle,
@@ -20,7 +20,7 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Link from '@mui/material/Link';
 import { useAuth } from '../../contexts/AuthContext';
-import apiClient from '../../services/apiClient';
+import userService from '../../services/userService';
 import LegalModal from '../Legal/LegalModal';
 
 export default function ForcePasswordChangeDialog() {
@@ -34,6 +34,7 @@ export default function ForcePasswordChangeDialog() {
     const [error, setError] = useState('');
     const [legalModalOpen, setLegalModalOpen] = useState(false);
     const [legalDefaultTab, setLegalDefaultTab] = useState('terms');
+    const newPasswordInputRef = useRef(null);
 
     const open = Boolean(user && user.mustChangePassword);
 
@@ -58,7 +59,7 @@ export default function ForcePasswordChangeDialog() {
 
         setLoading(true);
         try {
-            await apiClient.post('/auth/me/change-password', {
+            await userService.changePassword({
                 currentPassword: loginPassword || undefined,
                 newPassword,
                 agreeToTerms: true,
@@ -82,6 +83,11 @@ export default function ForcePasswordChangeDialog() {
             disableEscapeKeyDown
             maxWidth="xs"
             fullWidth
+            slotProps={{
+                transition: {
+                    onEntered: () => newPasswordInputRef.current?.focus(),
+                },
+            }}
             sx={{
                 '& .MuiDialog-paper': {
                     p: 1,
@@ -127,7 +133,7 @@ export default function ForcePasswordChangeDialog() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         required
-                        autoFocus
+                        inputRef={newPasswordInputRef}
                         disabled={loading}
                         InputProps={{
                             endAdornment: (

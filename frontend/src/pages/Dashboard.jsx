@@ -41,7 +41,6 @@ import { useNotify } from '../contexts/NotificationContext';
 import { useEquipment } from '../contexts/EquipmentContext';
 import { useFault } from '../contexts/FaultContext';
 import { formatUserName } from '../utils/formatUtils';
-import apiClient from '../services/apiClient';
 import equipmentService from '../services/equipmentService';
 import faultService from '../services/faultsService';
 import FaultModal from '../components/Fault/FaultModal/FaultModal';
@@ -224,11 +223,10 @@ export default function Dashboard() {
     const fetchData = useCallback(async () => {
         if (!user || user.mustChangePassword) return;
         try {
-            const [faultsRes, equipmentRes] = await Promise.all([
-                apiClient.get('/faults'),
+            const [faultsData, equipmentRes] = await Promise.all([
+                faultService.getAll(),
                 equipmentService.getAll().catch(() => []),
             ]);
-            const faultsData    = Array.isArray(faultsRes.data) ? faultsRes.data : (faultsRes.data.faults || []);
             const equipmentData = Array.isArray(equipmentRes) ? equipmentRes : [];
 
             const total  = faultsData.length;
@@ -297,9 +295,6 @@ export default function Dashboard() {
         });
     }, [activeFaultsList, statusFilter, searchQuery]);
 
-    const operatorOpenCount   = useMemo(() => operatorFaults.filter(f => f.status === 'open').length,   [operatorFaults]);
-    const operatorClosedCount = useMemo(() => operatorFaults.filter(f => f.status === 'closed').length, [operatorFaults]);
-
     const handleCreateFault = async (values) => {
         if (!values?.tool) {
             notify.error('Please select an equipment to report a fault for');
@@ -324,7 +319,7 @@ export default function Dashboard() {
             const payload = typeof closeData === 'object' && closeData !== null
                 ? closeData
                 : { engineHours: closeData };
-            await apiClient.patch(`/faults/${fault._id}/close`, payload);
+            await faultService.close(fault._id, payload);
             setCloseDialogOpen(false);
             setFaultToClose(null);
             notify.success('Fault marked as resolved');
@@ -334,13 +329,13 @@ export default function Dashboard() {
                 fetchFaults ? fetchFaults() : Promise.resolve(),
             ]);
         } catch (err) {
-            notify.error('Failed to close fault');
+            notify.error(err.response?.data?.message || 'Failed to close fault');
         }
     };
 
     const handleReopenFault = async (fault) => {
         try {
-            await apiClient.patch(`/faults/${fault._id}/reopen`);
+            await faultService.reopen(fault._id);
             notify.success('Fault reopened');
             await Promise.all([
                 fetchData(),
@@ -348,13 +343,13 @@ export default function Dashboard() {
                 fetchFaults ? fetchFaults() : Promise.resolve(),
             ]);
         } catch (err) {
-            notify.error('Failed to reopen fault');
+            notify.error(err.response?.data?.message || 'Failed to reopen fault');
         }
     };
 
     const handleDeleteFault = async (fault) => {
         try {
-            await apiClient.delete(`/faults/${fault._id}`);
+            await faultService.delete(fault._id);
             notify.success('Fault deleted');
             await Promise.all([
                 fetchData(),
@@ -362,7 +357,7 @@ export default function Dashboard() {
                 fetchFaults ? fetchFaults() : Promise.resolve(),
             ]);
         } catch (err) {
-            notify.error('Failed to delete fault');
+            notify.error(err.response?.data?.message || 'Failed to delete fault');
         }
     };
 

@@ -43,7 +43,6 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
     const navigate = useNavigate();
     const { user } = useAuth();
     const notify = useNotify();
-    const isAdmin = user?.role === 'admin';
     const canManage = user?.role === 'admin' || user?.role === 'mechanic';
 
     const [addDialogOpen, setAddDialogOpen] = useState(false);

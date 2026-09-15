@@ -20,7 +20,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
 import LockIcon from '@mui/icons-material/Lock';
 import { useTool } from '../../../contexts/ToolContext';
-import { useAuth } from '../../../contexts/AuthContext';
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -113,8 +112,6 @@ function FaultFormFields({
     toolError = '',
     lockEquipment = false,
 }) {
-    const { user } = useAuth();
-    const isOperator = user?.role === 'operator';
     const [isDragging, setIsDragging] = useState(false);
 
     const handleDragOver = (e) => {

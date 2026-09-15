@@ -72,7 +72,7 @@ function RequireStaff({ children }) {
     return children;
 }
 
-function AppLayout({ pages }) {
+function AppLayout() {
     const location  = useLocation();
     const { user } = useAuth();
     const hideNavbar = HIDE_NAVBAR_PATHS.some(p => location.pathname === p);
@@ -92,7 +92,7 @@ function AppLayout({ pages }) {
 
     return (
         <>
-            {!hideNavbar && <Navbar pages={pages} />}
+            {!hideNavbar && <Navbar />}
             {!hideNavbar && <ForcePasswordChangeDialog />}
             <Box
                 component="main"
@@ -240,14 +240,12 @@ function AppLayout({ pages }) {
 }
 
 export default function AppRoutes() {
-    const pages = ['Dashboard', 'Equipment'];
-
     return (
         <NotificationProvider>
             <AuthProvider>
                 <ToolProvider>
                     <FaultProvider>
-                        <AppLayout pages={pages} />
+                        <AppLayout />
                     </FaultProvider>
                 </ToolProvider>
             </AuthProvider>

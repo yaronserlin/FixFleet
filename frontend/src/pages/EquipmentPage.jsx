@@ -63,20 +63,20 @@ export default function EquipmentPage() {
     const [faultToDelete, setFaultToDelete] = useState(null);
 
     // Tab state: 0 = Faults, 1 = Maintenance Schedule, 2 = Books & Manuals
-    const resolveTab = () => {
+    const resolveTab = useCallback(() => {
         if (location.state?.tab !== undefined) return Number(location.state.tab);
         const tabParam = searchParams.get('tab');
         if (tabParam === 'maintenance') return 1;
         if (tabParam === 'books' || tabParam === 'manuals') return 2;
         if (tabParam === 'faults') return 0;
         return 0;
-    };
+    }, [location.state, searchParams]);
 
     const [value, setValue] = useState(resolveTab);
 
     useEffect(() => {
         setValue(resolveTab());
-    }, [location.search, location.state]);
+    }, [resolveTab]);
 
     const [toolData, setToolData] = useState(null);
 

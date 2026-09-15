@@ -11,15 +11,11 @@ import {
     Chip,
     Alert,
     IconButton,
-    useMediaQuery,
-    useTheme,
 } from '@mui/material';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CloseIcon from '@mui/icons-material/Close';
 
 export default function CloseFaultDialog({ open, onClose, onConfirm, fault, tool, equipment }) {
-    const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const activeEquipment = equipment || tool;
     const lastReportedHours = activeEquipment?.currentEngineHours ?? fault?.engineHours ?? 0;
     const [engineHours, setEngineHours] = useState('');

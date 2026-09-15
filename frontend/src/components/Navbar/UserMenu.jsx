@@ -45,14 +45,14 @@ export default function UserMenu({ user }) {
                 <IconButton
                     onClick={handleOpen}
                     aria-label="Open account menu"
-                    aria-controls={Boolean(anchorEl) ? 'user-menu' : undefined}
+                    aria-controls={anchorEl ? 'user-menu' : undefined}
                     aria-haspopup="true"
-                    aria-expanded={Boolean(anchorEl) ? 'true' : undefined}
+                    aria-expanded={anchorEl ? 'true' : undefined}
                     sx={{
                         p: 0.5,
                         borderRadius: 2,
                         border: '2px solid',
-                        borderColor: Boolean(anchorEl) ? `${role.color}.main` : 'divider',
+                        borderColor: anchorEl ? `${role.color}.main` : 'divider',
                         transition: 'border-color 0.2s ease',
                         '&:hover': { borderColor: `${role.color}.main` },
                     }}

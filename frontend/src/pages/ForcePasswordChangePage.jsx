@@ -22,7 +22,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Link from '@mui/material/Link';
 import LogoutIcon from '@mui/icons-material/Logout';
 import { useAuth } from '../contexts/AuthContext';
-import apiClient from '../services/apiClient';
+import userService from '../services/userService';
 import { formatUserName } from '../utils/formatUtils';
 import LegalModal from '../components/Legal/LegalModal';
 
@@ -59,7 +59,7 @@ export default function ForcePasswordChangePage() {
 
         setLoading(true);
         try {
-            const res = await apiClient.post('/auth/me/change-password', {
+            await userService.changePassword({
                 currentPassword: loginPassword || undefined,
                 newPassword,
                 agreeToTerms: true,

@@ -9,13 +9,15 @@ const apiClient = axios.create({
     },
 });
 
-// Initialize token from localStorage if present
+// Initialize token from localStorage if present. Safe no-op if localStorage
+// is unavailable (e.g. privacy mode, non-browser test environment) — the
+// user simply starts unauthenticated, same as a first visit.
 try {
     const storedToken = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
     if (storedToken) {
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
     }
-} catch (e) {
+} catch {
     // Ignore in non-browser environments
 }
 
@@ -23,10 +25,22 @@ try {
 apiClient.setToken = (token) => {
     if (token) {
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        try { localStorage.setItem('token', token); } catch (e) {}
+        try {
+            localStorage.setItem('token', token);
+        } catch (e) {
+            // Persisting the token is best-effort: the in-memory Authorization
+            // header above still works for this session even if storage
+            // (e.g. Safari private mode, full quota) rejects the write. Log
+            // it so a silent logout-on-refresh isn't a total mystery later.
+            console.warn('Failed to persist auth token to localStorage:', e);
+        }
     } else {
         delete apiClient.defaults.headers.common['Authorization'];
-        try { localStorage.removeItem('token'); } catch (e) {}
+        try {
+            localStorage.removeItem('token');
+        } catch (e) {
+            console.warn('Failed to clear auth token from localStorage:', e);
+        }
     }
 };
 

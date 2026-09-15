@@ -25,7 +25,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import CloseIcon from '@mui/icons-material/Close';
 import PrecisionManufacturingIcon from '@mui/icons-material/PrecisionManufacturing';
 
-import apiClient from '../services/apiClient';
+import equipmentService from '../services/equipmentService';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { useNotify } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -51,9 +51,10 @@ export default function EquipmentBooksPage() {
             if (!user || user.mustChangePassword) return;
             try {
                 setLoading(true);
-                const { data } = await apiClient.get('/tools');
+                const data = await equipmentService.getAll();
                 setTools(data || []);
             } catch (err) {
+                console.error('Failed to load equipment manuals:', err);
                 notify.error('Failed to load equipment manuals');
             } finally {
                 setLoading(false);

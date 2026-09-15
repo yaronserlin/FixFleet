@@ -11,19 +11,16 @@ import {
     Chip,
     Paper,
     Skeleton,
-    useTheme,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
-import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
 import { useNotify } from '../contexts/NotificationContext';
 import { useEquipment } from '../contexts/EquipmentContext';
 import { useFault } from '../contexts/FaultContext';
-import apiClient from '../services/apiClient';
 import faultService from '../services/faultsService';
 import FaultCard from '../components/Fault/FaultCard/FaultCard';
 import FaultDetailsDialog from '../components/Fault/FaultDetailsDialog/FaultDetailsDialog';
@@ -32,8 +29,6 @@ import CreateFaultDialog from '../components/Fault/CreateFaultDialog/CreateFault
 export default function OperatorReportsPage() {
     const { user } = useAuth();
     const notify = useNotify();
-    const theme = useTheme();
-    const navigate = useNavigate();
     const { fetchEquipment } = useEquipment();
     const { fetchFaults } = useFault();
 
@@ -48,7 +43,7 @@ export default function OperatorReportsPage() {
         if (!user || user.mustChangePassword) return;
         try {
             setLoading(true);
-            const { data } = await apiClient.get('/faults');
+            const data = await faultService.getAll();
             const uid = user?.id || user?._id;
             // Filter to current user's reported faults if user is operator
             const myFaults = (data || []).filter(f => {
@@ -57,6 +52,7 @@ export default function OperatorReportsPage() {
             });
             setFaults(myFaults);
         } catch (err) {
+            console.error('Failed to load reports:', err);
             notify.error('Failed to load reports');
         } finally {
             setLoading(false);

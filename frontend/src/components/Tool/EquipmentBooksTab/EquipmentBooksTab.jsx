@@ -45,7 +45,6 @@ export default function EquipmentBooksTab({ equipment, tool, onRefresh }) {
     const eq = equipment || tool;
     const { user } = useAuth();
     const notify = useNotify();
-    const isAdmin = user?.role === 'admin';
     const canManageBooks = user?.role === 'admin' || user?.role === 'mechanic';
 
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
