@@ -115,7 +115,12 @@ export function useEquipment() {
     const { equipment, ...rest } = context;
     const sorted = useMemo(() => sortToolsByLocalSerial(equipment || []), [equipment]);
 
-    return { equipment: sorted, tools: sorted, ...rest };
+    // `rest` still carries the provider's raw (unsorted) `tools` alias, so it
+    // must be spread BEFORE the sorted overrides below — otherwise it would
+    // clobber `tools` back to the unsorted array while `equipment` stayed
+    // sorted, silently desyncing the two aliases for any consumer (e.g.
+    // FaultForms, AdminDashboard) that reads `tools` instead of `equipment`.
+    return { ...rest, equipment: sorted, tools: sorted };
 }
 
 // Backward-compatible export
