@@ -116,6 +116,16 @@ This runbook covers operational procedures, deployment workflows, health monitor
 - **Cause**: In production (`NODE_ENV=production`), auth cookies require `secure: true` (HTTPS) and appropriate `sameSite` policy.
 - **Fix**: Ensure HTTPS is enabled across both frontend and backend domains and that frontend Axios client uses `withCredentials: true`.
 
+### 6. PWA Users Get Silently Logged Out After a While (but regular browser tabs are fine)
+- **Symptom**: Users who installed the app as a PWA (Add to Home Screen / desktop "Install app") get logged out after some period of use, while the same account in a normal browser tab stays signed in.
+- **Cause**: If the frontend and backend are deployed on **different registrable domains** (e.g. a static host's own subdomain like `myapp.vercel.app` for the frontend and a PaaS subdomain like `myapi.onrender.com` for the backend — see `VITE_API_URL=https://<your-api-domain.com>/api` in the frontend deployment steps above), the `refreshToken` cookie set by the backend is, from the frontend's perspective, a **third-party cookie**. Browsers increasingly restrict third-party cookies, and this is enforced *much* more aggressively for installed/standalone PWAs than for a regular browser tab (most notably iOS/macOS Safari's Intelligent Tracking Prevention). The access token (see `backend/constants/auth.js`) still expires normally, but the silent-refresh request that's supposed to renew it finds no valid `refreshToken` cookie to present -- forcing a full re-login. This can also show up as the PDF/photo viewer or media downloads failing intermittently, since those go through the same cookie-backed auth.
+- **Fix (recommended)**: Deploy the frontend and backend under the **same registrable domain**, e.g. `app.example.com` for the SPA and `app.example.com/api/*` reverse-proxied to the backend service (or `api.example.com` if your host supports first-party subdomain cookies -- same registrable domain, `Domain=.example.com` cookie scope). This turns the refresh-token cookie into a first-party cookie, sidestepping third-party-cookie restrictions entirely. Concretely:
+  - **Vercel**: add a `rewrites` entry routing `/api/*` (and `/uploads/*`) to the backend's URL, then set `VITE_API_URL=/api` (relative) at build time.
+  - **Netlify**: add an equivalent proxy redirect in `netlify.toml` (`from = "/api/*"`, `to = "https://<backend>/api/:splat"`, `status = 200`).
+  - **Cloudflare Pages/Workers**: a Worker route or Pages Function proxying `/api/*` to the backend origin.
+  - Any of these let `VITE_API_URL` stay relative (`/api`), matching `frontend/.env.example`'s default and avoiding the cross-origin cookie problem from the start.
+- **Fix (if same-origin isn't possible right now)**: confirm `sameSite: 'none'` + `secure: true` are actually in effect (`NODE_ENV=production` on the backend) and that both domains are served over HTTPS; test specifically in an *installed* PWA, not just a regular tab, since that's where third-party-cookie enforcement is strictest. Expect this to remain unreliable on iOS Safari PWAs regardless -- same-origin deployment is the only fully reliable fix.
+
 ---
 
 ## 4. Rollback Procedures

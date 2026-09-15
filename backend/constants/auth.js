@@ -2,9 +2,20 @@
 
 /**
  * Lifetime of a signed JWT access token, as a jsonwebtoken `expiresIn` string.
+ *
+ * Deliberately not shorter than this: every expiry requires a successful
+ * silent refresh (POST /auth/refresh, which depends on the refresh-token
+ * cookie actually reaching the server). In a PWA -- especially one whose
+ * frontend and API are on different domains in production, making the
+ * refresh cookie a third-party cookie -- that request is meaningfully more
+ * likely to fail (browser third-party-cookie restrictions, a backgrounded/
+ * suspended app missing its refresh window, flaky mobile connectivity) than
+ * in a same-origin desktop browser tab. A longer access-token lifetime
+ * means fewer refresh attempts overall, so fewer chances for any one of
+ * them to be the unlucky one that fails and force-logs the user out.
  * @type {string}
  */
-const ACCESS_TOKEN_EXPIRY = '15m';
+const ACCESS_TOKEN_EXPIRY = '60m';
 
 /**
  * Lifetime of a signed JWT refresh token, as a jsonwebtoken `expiresIn` string.
@@ -14,10 +25,10 @@ const REFRESH_TOKEN_EXPIRY = '7d';
 
 /**
  * Max-age, in milliseconds, for the access-token cookie. Kept in sync with
- * {@link ACCESS_TOKEN_EXPIRY} (15 minutes).
+ * {@link ACCESS_TOKEN_EXPIRY} (60 minutes).
  * @type {number}
  */
-const ACCESS_COOKIE_MAX_AGE = 15 * 60 * 1000;
+const ACCESS_COOKIE_MAX_AGE = 60 * 60 * 1000;
 
 /**
  * Max-age, in milliseconds, for the refresh-token cookie. Kept in sync with
