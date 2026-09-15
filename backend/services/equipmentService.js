@@ -398,18 +398,22 @@ async function completeSchedule(companyId, userId, toolId, scheduleId, body) {
         detailsText += `\nNotes: ${notes.trim()}`;
     }
 
-    // Record entry in Maintenance collection with checklist and service engine hours
-    await Maintenance.create({
-        companyId,
-        tool: tool._id,
-        mechanic: userId,
-        details: detailsText,
-        engineHours: validHours,
-        checklist: checklistSnapshot,
-        date: new Date(),
-    });
-
-    await tool.save();
+    // Record entry in Maintenance collection with checklist and service engine hours.
+    // This write and saving the mutated `tool` document are independent
+    // (different collections, neither reads what the other writes), so run
+    // them concurrently.
+    await Promise.all([
+        Maintenance.create({
+            companyId,
+            tool: tool._id,
+            mechanic: userId,
+            details: detailsText,
+            engineHours: validHours,
+            checklist: checklistSnapshot,
+            date: new Date(),
+        }),
+        tool.save(),
+    ]);
 
     // Update equipment's currentEngineHours to highest value recorded in resolved faults or services
     const updatedTool = await syncEquipmentEngineHours(tool._id, companyId, validHours);

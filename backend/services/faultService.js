@@ -139,15 +139,20 @@ async function createFault(companyId, userId, body, files = []) {
 
     // Atomically push fault into Tool backref without modifying currentEngineHours.
     // Machine engine hours are only updated when a mechanic/admin resolves the fault and only if higher.
-    await Tool.findOneAndUpdate(
-        { _id: tool._id, companyId },
-        { $push: { faults: fault._id } }
-    );
+    // This update and the populated re-fetch below are independent (neither
+    // reads what the other writes), so run them concurrently.
+    const [, populatedFault] = await Promise.all([
+        Tool.findOneAndUpdate(
+            { _id: tool._id, companyId },
+            { $push: { faults: fault._id } }
+        ),
+        Fault.findById(fault._id)
+            .populate('tool', 'name serialNumber model currentEngineHours')
+            .populate('operator', 'name email role')
+            .populate('resolvedBy', 'name email role'),
+    ]);
 
-    return Fault.findById(fault._id)
-        .populate('tool', 'name serialNumber model currentEngineHours')
-        .populate('operator', 'name email role')
-        .populate('resolvedBy', 'name email role');
+    return populatedFault;
 }
 
 /**

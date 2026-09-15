@@ -139,18 +139,21 @@ async function register(body) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const existingUser = await User.findOne({ email: normalizedEmail });
+    const baseSlug = generateSlug(companyName.trim()) || 'company';
+
+    // These three checks/computations are independent of one another (none
+    // reads a value the others produce), so run them concurrently.
+    const [existingUser, slugExists, hashedPassword] = await Promise.all([
+        User.findOne({ email: normalizedEmail }),
+        Company.findOne({ slug: baseSlug }),
+        bcrypt.hash(password, BCRYPT_SALT_ROUNDS),
+    ]);
+
     if (existingUser) {
         throw httpError(400, 'User with this email already exists');
     }
 
-    // Generate unique slug
-    const baseSlug = generateSlug(companyName.trim()) || 'company';
-    let slug = baseSlug;
-    const slugExists = await Company.findOne({ slug });
-    if (slugExists) {
-        slug = `${baseSlug}-${Date.now().toString(36)}`;
-    }
+    const slug = slugExists ? `${baseSlug}-${Date.now().toString(36)}` : baseSlug;
 
     const company = await Company.create({
         name: companyName.trim(),
@@ -159,7 +162,6 @@ async function register(body) {
     });
 
     try {
-        const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
         // Role is strictly admin for the company creator, never from the request body
         const user = await User.create({
             name: name.trim(),
