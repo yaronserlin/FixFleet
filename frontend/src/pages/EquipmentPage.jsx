@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Container, Typography, Box, Button, Tabs, Tab, Chip, Paper } from '@mui/material';
+import { Container, Typography, Box, Button, Tabs, Tab, Chip, Paper, useMediaQuery, useTheme } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SpeedIcon from '@mui/icons-material/Speed';
@@ -54,6 +54,8 @@ export default function EquipmentPage() {
     const location = useLocation();
     const [searchParams] = useSearchParams();
     const { user } = useAuth();
+    const theme = useTheme();
+    const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const { equipment, loading, error: equipmentError, fetchEquipment } = useEquipment();
     const { faults, error: faultError, fetchFaults, createFault, deleteFault, closeFault, reopenFault } = useFault(id);
 
@@ -287,7 +289,9 @@ export default function EquipmentPage() {
                         value={value}
                         onChange={handleChange}
                         aria-label="tabs for equipment details"
-                        variant="fullWidth"
+                        variant={isMobile ? 'scrollable' : 'fullWidth'}
+                        scrollButtons={isMobile ? 'auto' : false}
+                        allowScrollButtonsMobile
                         textColor="primary"
                         indicatorColor="primary"
                     >
