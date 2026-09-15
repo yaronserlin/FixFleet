@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const request = require('supertest');
 const path = require('path');
+const bcrypt = require('bcrypt');
 
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_secret_key_minimum_32_characters_long';
@@ -69,9 +70,42 @@ async function registerCompanyAdmin(app, overrides = {}) {
     };
 }
 
+// Creates a Company + User directly against the DB (bypassing HTTP), for
+// fast/precise unit tests of services or middleware that need a real
+// document to operate on but don't need to exercise the registration flow
+// itself. Lazily requires the models so this helper stays usable from test
+// files that connect to the DB themselves in any order.
+async function createCompanyAndUser(overrides = {}) {
+    const Company = require('../../models/Company');
+    const User = require('../../models/User');
+
+    counter += 1;
+    const company = await Company.create({
+        name: overrides.companyName || `Direct Co ${Date.now()}_${counter}`,
+        slug: overrides.slug || `direct-co-${Date.now()}-${counter}`,
+        isActive: overrides.companyIsActive !== undefined ? overrides.companyIsActive : true,
+    });
+
+    const rawPassword = overrides.password || 'password123';
+    const hashedPassword = overrides.skipHash ? rawPassword : await bcrypt.hash(rawPassword, 4);
+
+    const user = await User.create({
+        name: overrides.name || 'Direct User',
+        email: overrides.email || uniqueEmail('direct'),
+        password: hashedPassword,
+        role: overrides.role || 'admin',
+        companyId: company._id,
+        mustChangePassword: overrides.mustChangePassword || false,
+        termsAccepted: overrides.termsAccepted !== undefined ? overrides.termsAccepted : true,
+    });
+
+    return { company, user, rawPassword };
+}
+
 module.exports = {
     connectTestDB,
     closeTestDB,
     uniqueEmail,
     registerCompanyAdmin,
+    createCompanyAndUser,
 };
