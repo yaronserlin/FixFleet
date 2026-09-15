@@ -20,7 +20,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
-import apiClient from '../services/apiClient';
+import userService from '../services/userService';
 import { getMediaUrl } from '../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../utils/formatUtils';
 
@@ -76,11 +76,7 @@ export default function AccountPage() {
             if (updateAvatar) {
                 await updateAvatar(file);
             } else {
-                const formData = new FormData();
-                formData.append('avatar', file);
-                const { data } = await apiClient.post('/auth/me/avatar', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
+                const { data } = await userService.uploadAvatar(file);
                 setUser(prev => ({ ...prev, ...data }));
             }
             setProfileMsg('Profile picture updated successfully');
@@ -108,7 +104,7 @@ export default function AccountPage() {
         setProfileError(null);
         try {
             const formattedName = formatUserName(form.name);
-            const { data } = await apiClient.put('/auth/me', {
+            const { data } = await userService.updateProfile({
                 ...form,
                 name: formattedName,
                 currentPassword: isEmailChanged ? emailPassword : undefined,
@@ -134,7 +130,7 @@ export default function AccountPage() {
         setPwdMsg(null);
         setPwdError(null);
         try {
-            const { data } = await apiClient.post('/auth/me/change-password', {
+            const { data } = await userService.changePassword({
                 currentPassword: pwd.currentPassword,
                 newPassword: pwd.newPassword,
             });

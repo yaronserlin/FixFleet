@@ -27,7 +27,7 @@ import ErrorComponent from '../components/ErrorComponent/ErrorComponent';
 import { CreateToolForm } from '../components/Tool/ToolForms/ToolForms';
 import { useEquipment } from '../contexts/EquipmentContext';
 import { useAuth } from '../contexts/AuthContext';
-import apiClient from '../services/apiClient';
+import faultService from '../services/faultsService';
 
 /**
  * Displays an interactive directory of equipment with search, status filtering, and view mode toggle.
@@ -47,10 +47,9 @@ export default function EquipmentsPage() {
     useEffect(() => {
         if (!user || user.mustChangePassword) return;
         let isMounted = true;
-        apiClient.get('/faults')
-            .then(res => {
+        faultService.getAll()
+            .then(list => {
                 if (!isMounted) return;
-                const list = Array.isArray(res.data) ? res.data : (res.data.faults || []);
                 const counts = {};
                 list.filter(f => f.status === 'open').forEach(f => {
                     const toolId = f.tool?._id || f.tool;
@@ -60,7 +59,11 @@ export default function EquipmentsPage() {
                 });
                 setOpenFaultsByTool(counts);
             })
-            .catch(() => {});
+            .catch((err) => {
+                // Best-effort enhancement: equipment list still renders without
+                // open-fault badges if this fails, so just log for diagnostics.
+                console.error('Failed to load fault counts for equipment list:', err);
+            });
         return () => { isMounted = false; };
     }, [user]);
 
