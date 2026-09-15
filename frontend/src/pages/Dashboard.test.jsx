@@ -213,12 +213,29 @@ describe('Dashboard', () => {
                 expect(notify.success).toHaveBeenCalledWith('Fault reopened');
             });
 
-            it('deletes a fault via the FaultCard action and refreshes', async () => {
+            it('prompts for confirmation before deleting a fault via the FaultCard action, and does not delete until confirmed', async () => {
                 faultService.delete.mockResolvedValueOnce({});
                 render(<Dashboard />);
                 fireEvent.click(await screen.findByText('delete-f1'));
+
+                // Clicking the card's delete action only opens the confirmation dialog --
+                // the delete service call must not fire until the user confirms.
+                expect(await screen.findByText('Confirm Delete')).toBeInTheDocument();
+                expect(faultService.delete).not.toHaveBeenCalled();
+
+                fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
                 await waitFor(() => expect(faultService.delete).toHaveBeenCalledWith('f1'));
                 expect(notify.success).toHaveBeenCalledWith('Fault deleted');
+            });
+
+            it('cancelling the delete confirmation dialog does not delete the fault', async () => {
+                render(<Dashboard />);
+                fireEvent.click(await screen.findByText('delete-f1'));
+                expect(await screen.findByText('Confirm Delete')).toBeInTheDocument();
+
+                fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+                await waitFor(() => expect(screen.queryByText('Confirm Delete')).not.toBeInTheDocument());
+                expect(faultService.delete).not.toHaveBeenCalled();
             });
 
             it('surfaces a server-provided error message when closing a fault fails', async () => {

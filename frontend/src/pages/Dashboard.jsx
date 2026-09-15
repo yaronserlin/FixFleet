@@ -50,6 +50,7 @@ import FaultModal from '../components/Fault/FaultModal/FaultModal';
 import FaultCard from '../components/Fault/FaultCard/FaultCard';
 import CloseFaultDialog from '../components/Fault/CloseFaultDialog/CloseFaultDialog';
 import CreateFaultDialog from '../components/Fault/CreateFaultDialog/CreateFaultDialog';
+import ConfirmDialog from '../components/ConfirmDialog/ConfirmDialog';
 
 // ─── Skeleton loading state ──────────────────────────────────────────────────
 function DashboardSkeleton() {
@@ -222,6 +223,7 @@ export default function Dashboard() {
     const [closeDialogOpen, setCloseDialogOpen] = useState(false);
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [faultToClose, setFaultToClose] = useState(null);
+    const [faultToDelete, setFaultToDelete] = useState(null);
 
     const fetchData = useCallback(async () => {
         if (!user || user.mustChangePassword) return;
@@ -350,10 +352,17 @@ export default function Dashboard() {
         }
     };
 
-    const handleDeleteFault = async (fault) => {
+    const handleDeletePrompt = (fault) => {
+        setFaultToDelete(fault);
+    };
+
+    const handleConfirmDeleteFault = async () => {
+        if (!faultToDelete) return;
         try {
-            await faultService.delete(fault._id);
+            await faultService.delete(faultToDelete._id);
             notify.success('Fault deleted');
+            setFaultToDelete(null);
+            setSelectedFault(null);
             await Promise.all([
                 fetchData(),
                 fetchEquipment ? fetchEquipment() : Promise.resolve(),
@@ -361,6 +370,7 @@ export default function Dashboard() {
             ]);
         } catch (err) {
             notify.error(err.response?.data?.message || 'Failed to delete fault');
+            setFaultToDelete(null);
         }
     };
 
@@ -788,7 +798,7 @@ export default function Dashboard() {
                                 onClick={f => setSelectedFault(f)}
                                 onCloseFault={(f) => { setFaultToClose(f); setCloseDialogOpen(true); }}
                                 onReopenFault={handleReopenFault}
-                                onDeleteFault={handleDeleteFault}
+                                onDeleteFault={handleDeletePrompt}
                             />
                         </Grid>
                     ))}
@@ -803,7 +813,7 @@ export default function Dashboard() {
                     open={Boolean(selectedFault)}
                     onCloseFault={(f) => { setFaultToClose(f); setCloseDialogOpen(true); }}
                     onReopenFault={handleReopenFault}
-                    onDeleteFault={handleDeleteFault}
+                    onDeleteFault={handleDeletePrompt}
                 />
             )}
             <CreateFaultDialog
@@ -818,6 +828,16 @@ export default function Dashboard() {
                 fault={faultToClose}
                 equipment={faultToClose?.tool}
                 tool={faultToClose?.tool}
+            />
+            <ConfirmDialog
+                open={Boolean(faultToDelete)}
+                title="Confirm Delete"
+                message="Are you sure you want to permanently delete this fault?"
+                confirmText="Delete"
+                cancelText="Cancel"
+                confirmColor="error"
+                onConfirm={handleConfirmDeleteFault}
+                onCancel={() => setFaultToDelete(null)}
             />
         </Container>
     );
