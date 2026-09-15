@@ -1,5 +1,6 @@
 // models/Fault.js
 const mongoose = require('mongoose');
+const { FAULT_STATUS, ALL_FAULT_STATUSES } = require('../constants/faultStatus');
 
 const FaultSchema = new mongoose.Schema({
     companyId: {
@@ -17,7 +18,7 @@ const FaultSchema = new mongoose.Schema({
     closingEngineHours: { type: Number, min: 0 },
     resolutionDescription: { type: String, trim: true, default: '' },
     resolvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    status: { type: String, enum: ['open', 'closed'], default: 'open' },
+    status: { type: String, enum: ALL_FAULT_STATUSES, default: FAULT_STATUS.OPEN },
     closedAt: { type: Date },
 }, { timestamps: true });
 
