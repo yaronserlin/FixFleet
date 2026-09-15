@@ -102,7 +102,14 @@ export default function BottomNav({ display, user, pages, onOpenCreateFault }) {
                 }}
             >
                 <Box sx={{ display: 'flex', alignItems: 'stretch', width: '100%', height: BOTTOM_NAV_HEIGHT }}>
-                    {leftPages.map(renderTab)}
+                    {/* Each side is its own flex:1 group (not individual flex:1 tabs
+                        directly in the row) so the two halves are always equal width
+                        -- and the FAB stays exactly centered -- regardless of how many
+                        nav pages a role has (e.g. admin's 4 vs operator's 3) or that
+                        the right side also carries the Account tab. */}
+                    <Box sx={{ flex: 1, display: 'flex', alignItems: 'stretch' }}>
+                        {leftPages.map(renderTab)}
+                    </Box>
 
                     {/* Raised center FAB: quick fault creation, reachable from any page */}
                     <Box
@@ -133,27 +140,29 @@ export default function BottomNav({ display, user, pages, onOpenCreateFault }) {
                         </ButtonBase>
                     </Box>
 
-                    {rightPages.map(renderTab)}
+                    <Box sx={{ flex: 1, display: 'flex', alignItems: 'stretch' }}>
+                        {rightPages.map(renderTab)}
 
-                    <ButtonBase
-                        onClick={() => setAccountOpen(true)}
-                        aria-label="Open account menu"
-                        sx={{
-                            flex: 1,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minHeight: BOTTOM_NAV_HEIGHT,
-                            color: 'text.secondary',
-                        }}
-                    >
-                        <Avatar
-                            src={avatarSrc}
-                            sx={{ width: 26, height: 26, fontSize: '0.7rem', bgcolor: `${ROLE_COLOR[user.role] || 'primary'}.main` }}
+                        <ButtonBase
+                            onClick={() => setAccountOpen(true)}
+                            aria-label="Open account menu"
+                            sx={{
+                                flex: 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                minHeight: BOTTOM_NAV_HEIGHT,
+                                color: 'text.secondary',
+                            }}
                         >
-                            {getUserInitials(user.name)}
-                        </Avatar>
-                    </ButtonBase>
+                            <Avatar
+                                src={avatarSrc}
+                                sx={{ width: 26, height: 26, fontSize: '0.7rem', bgcolor: `${ROLE_COLOR[user.role] || 'primary'}.main` }}
+                            >
+                                {getUserInitials(user.name)}
+                            </Avatar>
+                        </ButtonBase>
+                    </Box>
                 </Box>
             </Paper>
 
