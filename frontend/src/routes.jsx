@@ -21,21 +21,21 @@ import LegalFooter from './components/Legal/LegalFooter';
 import { ROUTES } from './constants/routes';
 import { ROLES } from './constants/roles';
 
-const Dashboard            = lazy(() => import('./pages/Dashboard'));
-const ToolPage             = lazy(() => import('./pages/ToolPage'));
-const Login                = lazy(() => import('./pages/Login'));
-const NotFound             = lazy(() => import('./pages/NotFound'));
-const Logout               = lazy(() => import('./pages/Logout'));
-const ToolsPage            = lazy(() => import('./pages/ToolsPage'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const ToolPage = lazy(() => import('./pages/ToolPage'));
+const Login = lazy(() => import('./pages/Login'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const Logout = lazy(() => import('./pages/Logout'));
+const ToolsPage = lazy(() => import('./pages/ToolsPage'));
 const EquipmentSchedulePage = lazy(() => import('./pages/EquipmentSchedulePage'));
-const ProfilePage          = lazy(() => import('./pages/ProfilePage'));
-const AccountPage          = lazy(() => import('./pages/AccountPage'));
-const AdminDashboard       = lazy(() => import('./pages/AdminDashboard'));
-const OperatorReportsPage  = lazy(() => import('./pages/OperatorReportsPage'));
-const EquipmentBooksPage   = lazy(() => import('./pages/EquipmentBooksPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const AccountPage = lazy(() => import('./pages/AccountPage'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const OperatorReportsPage = lazy(() => import('./pages/OperatorReportsPage'));
+const EquipmentBooksPage = lazy(() => import('./pages/EquipmentBooksPage'));
 const ForcePasswordChangePage = lazy(() => import('./pages/ForcePasswordChangePage'));
-const LegalPage               = lazy(() => import('./pages/LegalPage'));
-const NotificationsPage       = lazy(() => import('./pages/NotificationsPage'));
+const LegalPage = lazy(() => import('./pages/LegalPage'));
+const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 import ForcePasswordChangeDialog from './components/Auth/ForcePasswordChangeDialog';
 
 // Preload route chunks in the background to avoid page transition freezes
@@ -84,7 +84,7 @@ function RequireStaff({ children }) {
 }
 
 function AppLayout() {
-    const location  = useLocation();
+    const location = useLocation();
     const { user } = useAuth();
     const notify = useNotify();
     const { fetchEquipment } = useTool();

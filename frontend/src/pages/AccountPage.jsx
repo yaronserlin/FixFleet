@@ -453,18 +453,18 @@ export default function AccountPage() {
 
             <Box sx={{ mt: 3.5, mb: 3.5 }}>
                 <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5 }}>
-                    <PaletteIcon color="primary" />
-                    <Typography variant="h6" fontWeight={700}>Appearance & Notifications</Typography>
-                </Box>
-                <Typography variant="body2" color="text.secondary">
-                    Choose the color mode and notification preferences used on this device.
-                </Typography>
-                <FormControlLabel
-                    sx={{ mt: 1.5, ml: 0, display: 'flex' }}
-                    control={<Switch checked={mode === 'dark'} onChange={toggleColorMode} />}
-                    label={mode === 'dark' ? 'Dark mode' : 'Light mode'}
-                />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 0.5 }}>
+                        <PaletteIcon color="primary" />
+                        <Typography variant="h6" fontWeight={700}>Appearance & Notifications</Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                        Choose the color mode and notification preferences used on this device.
+                    </Typography>
+                    <FormControlLabel
+                        sx={{ mt: 1.5, ml: 0, display: 'flex' }}
+                        control={<Switch checked={mode === 'dark'} onChange={toggleColorMode} />}
+                        label={mode === 'dark' ? 'Dark mode' : 'Light mode'}
+                    />
                 </Paper>
                 <Box sx={{ mt: 2 }}>
                     <PushNotificationSettings />
