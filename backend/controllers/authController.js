@@ -176,6 +176,16 @@ exports.updateProfile = async (req, res, next) => {
     }
 };
 
+exports.deleteAccount = async (req, res, next) => {
+    try {
+        await authService.deleteAccount(req.user.userId, req.body?.confirmation);
+        clearAuthCookies(res);
+        res.json({ message: 'Account deleted successfully' });
+    } catch (err) {
+        next(err);
+    }
+};
+
 /**
  * POST /api/auth/me/avatar - Uploads/sets the authenticated user's avatar image.
  * @param {import('express').Request} req - Express request; uses `req.user.userId` and `req.file`.

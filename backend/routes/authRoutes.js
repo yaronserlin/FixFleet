@@ -9,6 +9,7 @@ const {
     logout,
     me,
     updateProfile,
+    deleteAccount,
     uploadAvatar,
     changePassword,
 } = require('../controllers/authController');
@@ -33,6 +34,7 @@ router.post('/logout', logout);
 // Protected routes
 router.get('/me', verifyToken, me);
 router.put('/me', verifyToken, updateProfile);
+router.delete('/me', verifyToken, deleteAccount);
 router.post('/me/avatar', verifyToken, upload.single('avatar'), uploadAvatar);
 router.post('/me/change-password', verifyToken, changePassword);
 

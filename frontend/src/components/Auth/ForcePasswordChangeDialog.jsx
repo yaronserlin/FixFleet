@@ -5,31 +5,25 @@ import {
     DialogContent,
     DialogActions,
     Button,
-    TextField,
     Typography,
     Box,
     Alert,
     CircularProgress,
-    InputAdornment,
-    IconButton,
 } from '@mui/material';
 import LockResetIcon from '@mui/icons-material/LockReset';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Link from '@mui/material/Link';
 import { useAuth } from '../../contexts/AuthContext';
 import userService from '../../services/userService';
 import LegalModal from '../Legal/LegalModal';
+import PasswordField from '../Form/PasswordField';
 
 export default function ForcePasswordChangeDialog() {
     const { user, setUser, logout, loginPassword, clearLoginPassword } = useAuth();
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [agreeToTerms, setAgreeToTerms] = useState(false);
-    const [showNew, setShowNew] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [legalModalOpen, setLegalModalOpen] = useState(false);
@@ -126,53 +120,25 @@ export default function ForcePasswordChangeDialog() {
 
                     {error && <Alert severity="error">{error}</Alert>}
 
-                    <TextField
+                    <PasswordField
                         fullWidth
                         label="New Password (min 6 characters)"
-                        type={showNew ? 'text' : 'password'}
+                        name="newPassword"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         required
                         inputRef={newPasswordInputRef}
                         disabled={loading}
-                        InputProps={{
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <IconButton
-                                        onClick={() => setShowNew(p => !p)}
-                                        edge="end"
-                                        size="small"
-                                        aria-label="toggle new password visibility"
-                                    >
-                                        {showNew ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                                    </IconButton>
-                                </InputAdornment>
-                            ),
-                        }}
                     />
 
-                    <TextField
+                    <PasswordField
                         fullWidth
                         label="Confirm New Password"
-                        type={showConfirm ? 'text' : 'password'}
+                        name="confirmPassword"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
                         disabled={loading}
-                        InputProps={{
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <IconButton
-                                        onClick={() => setShowConfirm(p => !p)}
-                                        edge="end"
-                                        size="small"
-                                        aria-label="toggle confirm password visibility"
-                                    >
-                                        {showConfirm ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                                    </IconButton>
-                                </InputAdornment>
-                            ),
-                        }}
                     />
 
                     {/* Terms and Privacy Agreement Checkbox */}

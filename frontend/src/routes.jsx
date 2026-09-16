@@ -17,6 +17,7 @@ import CreateFaultDialog from './components/Fault/CreateFaultDialog/CreateFaultD
 import PullToRefresh from './components/PullToRefresh/PullToRefresh';
 import { PageSkeleton } from './components/Skeletons/Skeletons';
 import LoadingComponent from './components/LoadingComponent/LoadingComponent';
+import LegalFooter from './components/Legal/LegalFooter';
 import { ROUTES } from './constants/routes';
 import { ROLES } from './constants/roles';
 
@@ -313,6 +314,9 @@ function AppLayout() {
                 <PullToRefresh onRefresh={refreshPage}>
                     {routedContent}
                 </PullToRefresh>
+                <Box sx={{ px: { xs: 2, sm: 3, md: 4 }, pb: { xs: 2, sm: 3 }, maxWidth: 1100, mx: 'auto', width: '100%' }}>
+                    <LegalFooter />
+                </Box>
             </Box>
             <CreateFaultDialog
                 open={globalCreateFaultOpen}

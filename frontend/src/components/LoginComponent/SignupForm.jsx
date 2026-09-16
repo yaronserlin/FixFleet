@@ -11,8 +11,6 @@ import BusinessIcon from '@mui/icons-material/Business';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import FormHelperText from '@mui/material/FormHelperText';
@@ -22,6 +20,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import useForm from '../../hooks/useForm';
 import { validateName, validateEmail, validatePassword } from '../../utils/validate';
 import LegalModal from '../Legal/LegalModal';
+import PasswordField from '../Form/PasswordField';
 
 function validateSignup(vals) {
     const errs = {};
@@ -43,7 +42,6 @@ function validateSignup(vals) {
 export default function SignupForm() {
     const { signup, loading } = useAuth();
     const [serverError, setServerError] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
     const [legalModalOpen, setLegalModalOpen] = useState(false);
     const [legalDefaultTab, setLegalDefaultTab] = useState('terms');
 
@@ -146,9 +144,8 @@ export default function SignupForm() {
             />
 
             {/* Password */}
-            <TextField
+            <PasswordField
                 name="password"
-                type={showPassword ? 'text' : 'password'}
                 label="Password"
                 autoComplete="new-password"
                 value={values.password}
@@ -157,29 +154,7 @@ export default function SignupForm() {
                 fullWidth
                 error={Boolean(errors.password)}
                 helperText={errors.password}
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <LockIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
-                        </InputAdornment>
-                    ),
-                    endAdornment: (
-                        <InputAdornment position="end">
-                            <IconButton
-                                size="small"
-                                onClick={() => setShowPassword(v => !v)}
-                                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                edge="end"
-                                tabIndex={-1}
-                            >
-                                {showPassword
-                                    ? <VisibilityOff sx={{ fontSize: 18 }} />
-                                    : <Visibility sx={{ fontSize: 18 }} />
-                                }
-                            </IconButton>
-                        </InputAdornment>
-                    ),
-                }}
+                startAdornment={<LockIcon sx={{ fontSize: 18, color: 'text.disabled' }} />}
             />
 
             {/* Terms and Privacy Agreement */}

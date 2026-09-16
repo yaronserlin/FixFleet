@@ -18,6 +18,8 @@ const userService = {
      */
     updateProfile: (data) => apiClient.put('/auth/me', data),
 
+    deleteAccount: (confirmation) => apiClient.delete('/auth/me', { data: { confirmation } }),
+
     /**
      * Change the current user's password
      * @param {{currentPassword: string, newPassword: string}} payload

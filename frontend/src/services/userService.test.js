@@ -4,6 +4,7 @@ jest.mock('./apiClient', () => ({
         get: jest.fn(),
         post: jest.fn(),
         put: jest.fn(),
+        delete: jest.fn(),
     },
 }));
 
@@ -11,6 +12,15 @@ import apiClient from './apiClient';
 import userService from './userService';
 
 describe('userService', () => {
+    it('deleteAccount sends the exact confirmation to the self-delete endpoint', async () => {
+        apiClient.delete.mockResolvedValueOnce({ data: { message: 'Account deleted successfully' } });
+
+        await userService.deleteAccount('delete Jane Doe');
+
+        expect(apiClient.delete).toHaveBeenCalledWith('/auth/me', {
+            data: { confirmation: 'delete Jane Doe' },
+        });
+    });
     afterEach(() => {
         jest.clearAllMocks();
     });

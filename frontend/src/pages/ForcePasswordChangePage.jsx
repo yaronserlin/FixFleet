@@ -5,18 +5,13 @@ import {
     Box,
     Paper,
     Typography,
-    TextField,
     Button,
     Alert,
     CircularProgress,
-    InputAdornment,
-    IconButton,
     Container,
 } from '@mui/material';
 import LockResetIcon from '@mui/icons-material/LockReset';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Link from '@mui/material/Link';
@@ -26,6 +21,7 @@ import userService from '../services/userService';
 import { formatUserName } from '../utils/formatUtils';
 import LegalModal from '../components/Legal/LegalModal';
 import { ROUTES } from '../constants/routes';
+import PasswordField from '../components/Form/PasswordField';
 
 export default function ForcePasswordChangePage() {
     const { user, setUser, logout, loginPassword, clearLoginPassword } = useAuth();
@@ -34,8 +30,6 @@ export default function ForcePasswordChangePage() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [agreeToTerms, setAgreeToTerms] = useState(false);
-    const [showNew, setShowNew] = useState(false);
-    const [showConfirm, setShowConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [legalModalOpen, setLegalModalOpen] = useState(false);
@@ -133,65 +127,29 @@ export default function ForcePasswordChangePage() {
                     )}
 
                     <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <TextField
+                        <PasswordField
                             fullWidth
                             size="medium"
                             label="New Password"
-                            type={showNew ? 'text' : 'password'}
+                            name="newPassword"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                             required
                             disabled={loading}
                             helperText="Minimum 6 characters"
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <LockOutlinedIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            onClick={() => setShowNew(p => !p)}
-                                            edge="end"
-                                            size="small"
-                                            aria-label="toggle new password visibility"
-                                        >
-                                            {showNew ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                            }}
+                            startAdornment={<LockOutlinedIcon sx={{ color: 'text.disabled', fontSize: 20 }} />}
                         />
 
-                        <TextField
+                        <PasswordField
                             fullWidth
                             size="medium"
                             label="Confirm New Password"
-                            type={showConfirm ? 'text' : 'password'}
+                            name="confirmPassword"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             required
                             disabled={loading}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <LockOutlinedIcon sx={{ color: 'text.disabled', fontSize: 20 }} />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: (
-                                    <InputAdornment position="end">
-                                        <IconButton
-                                            onClick={() => setShowConfirm(p => !p)}
-                                            edge="end"
-                                            size="small"
-                                            aria-label="toggle confirm password visibility"
-                                        >
-                                            {showConfirm ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                                        </IconButton>
-                                    </InputAdornment>
-                                ),
-                            }}
+                            startAdornment={<LockOutlinedIcon sx={{ color: 'text.disabled', fontSize: 20 }} />}
                         />
 
                         {/* Terms and Privacy Agreement Checkbox */}

@@ -6,14 +6,12 @@ import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
-import IconButton from '@mui/material/IconButton';
 import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
-import Visibility from '@mui/icons-material/Visibility';
-import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useAuth } from '../../contexts/AuthContext';
 import useForm from '../../hooks/useForm';
 import { validateEmail, isRequired } from '../../utils/validate';
+import PasswordField from '../Form/PasswordField';
 
 function validate(vals) {
     const errs = {};
@@ -27,7 +25,6 @@ function validate(vals) {
 export default function LoginForm() {
     const { login, loading } = useAuth();
     const [serverError, setServerError] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
 
     const { values, errors, isSubmitting, handleChange, handleSubmit, resetForm } = useForm({
         initialValues: { email: '', password: '' },
@@ -89,9 +86,8 @@ export default function LoginForm() {
             />
 
             {/* Password */}
-            <TextField
+            <PasswordField
                 name="password"
-                type={showPassword ? 'text' : 'password'}
                 label="Password"
                 autoComplete="current-password"
                 value={values.password}
@@ -100,29 +96,7 @@ export default function LoginForm() {
                 fullWidth
                 error={Boolean(errors.password)}
                 helperText={errors.password}
-                InputProps={{
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <LockIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
-                        </InputAdornment>
-                    ),
-                    endAdornment: (
-                        <InputAdornment position="end">
-                            <IconButton
-                                size="small"
-                                onClick={() => setShowPassword(v => !v)}
-                                aria-label={showPassword ? 'Hide password' : 'Show password'}
-                                edge="end"
-                                tabIndex={-1}
-                            >
-                                {showPassword
-                                    ? <VisibilityOff sx={{ fontSize: 18 }} />
-                                    : <Visibility sx={{ fontSize: 18 }} />
-                                }
-                            </IconButton>
-                        </InputAdornment>
-                    ),
-                }}
+                startAdornment={<LockIcon sx={{ fontSize: 18, color: 'text.disabled' }} />}
             />
 
             {/* Submit */}

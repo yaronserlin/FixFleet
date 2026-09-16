@@ -4,15 +4,11 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
-import Link from '@mui/material/Link';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
-import LegalModal from '../Legal/LegalModal';
 
 export default function LoginCard() {
     const [mode, setMode] = useState('login'); // 'login' | 'signup'
-    const [legalModalOpen, setLegalModalOpen] = useState(false);
-    const [legalDefaultTab, setLegalDefaultTab] = useState('terms');
     const isLogin = mode === 'login';
 
     return (
@@ -63,44 +59,6 @@ export default function LoginCard() {
                 </Button>
             </Box>
 
-            {/* Legal Links */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, mt: 2.5 }}>
-                <Link
-                    component="button"
-                    type="button"
-                    variant="caption"
-                    color="text.secondary"
-                    underline="hover"
-                    onClick={() => {
-                        setLegalDefaultTab('terms');
-                        setLegalModalOpen(true);
-                    }}
-                    sx={{ cursor: 'pointer' }}
-                >
-                    Terms of Service
-                </Link>
-                <Typography variant="caption" color="text.disabled">•</Typography>
-                <Link
-                    component="button"
-                    type="button"
-                    variant="caption"
-                    color="text.secondary"
-                    underline="hover"
-                    onClick={() => {
-                        setLegalDefaultTab('privacy');
-                        setLegalModalOpen(true);
-                    }}
-                    sx={{ cursor: 'pointer' }}
-                >
-                    Privacy Policy
-                </Link>
-            </Box>
-
-            <LegalModal
-                open={legalModalOpen}
-                onClose={() => setLegalModalOpen(false)}
-                defaultTab={legalDefaultTab}
-            />
         </Box>
     );
 }

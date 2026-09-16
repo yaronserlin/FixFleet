@@ -5,6 +5,7 @@ import Typography from '@mui/material/Typography';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LoginCard from './LoginCard';
 import Logo from '../Logo/Logo';
+import LegalFooter from '../Legal/LegalFooter';
 
 const FEATURES = [
     'Track equipment faults and repairs',
@@ -17,6 +18,7 @@ export default function LoginComponent() {
         <Box
             sx={{
                 minHeight: '100dvh',
+                width: '100%',
                 display: 'flex',
                 flexDirection: { xs: 'column', md: 'row' },
             }}
@@ -123,16 +125,22 @@ export default function LoginComponent() {
             <Box
                 sx={{
                     flex: 1,
+                    width: '100%',
+                    boxSizing: 'border-box',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     p: { xs: 3, sm: 4, md: 6 },
                     bgcolor: 'background.default',
                     overflowY: 'auto',
+                    flexDirection: 'column',
                 }}
             >
-                <Box sx={{ width: '100%', maxWidth: 420 }}>
+                <Box sx={{ width: '100%', maxWidth: 420, flex: 1, mx: 'auto', display: 'flex', alignItems: 'center', py: { xs: 2, md: 0 } }}>
                     <LoginCard />
+                </Box>
+                <Box sx={{ width: '100%', maxWidth: 720 }}>
+                    <LegalFooter />
                 </Box>
             </Box>
         </Box>

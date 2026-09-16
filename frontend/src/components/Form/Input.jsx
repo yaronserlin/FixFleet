@@ -1,17 +1,12 @@
 // src/components/Form/Input.jsx
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef } from 'react';
 import {
     TextField,
-    FormControl,
     InputLabel,
-    OutlinedInput,
-    InputAdornment,
-    IconButton,
-    FormHelperText,
     Select,
     MenuItem
 } from '@mui/material';
-import { Visibility, VisibilityOff } from '@mui/icons-material';
+import PasswordField from './PasswordField';
 
 /**
  * Factory to create a MUI TextField wrapper with fixed type and default label.
@@ -32,48 +27,6 @@ function createInputComponent(type, defaultLabel) {
     Component.displayName = `${defaultLabel.replace(/\s+/g, '')}Input`;
     return Component;
 }
-
-/**
- * Password field with visibility toggle and accessible FormHelperText.
- */
-const Password = forwardRef(({ label = 'Password', helperText, error, required, ...props }, ref) => {
-    const [show, setShow] = useState(false);
-    const handleToggle = () => setShow((prev) => !prev);
-    const inputId = props.id || props.name || 'password-input';
-    const helperId = `${inputId}-helper-text`;
-
-    return (
-        <FormControl fullWidth variant="outlined" required={required} error={!!error}>
-            <InputLabel htmlFor={inputId}>{label}</InputLabel>
-            <OutlinedInput
-                id={inputId}
-                inputRef={ref}
-                type={show ? 'text' : 'password'}
-                error={!!error}
-                aria-describedby={helperText ? helperId : undefined}
-                endAdornment={
-                    <InputAdornment position="end">
-                        <IconButton
-                            aria-label={show ? 'Hide password' : 'Show password'}
-                            onClick={handleToggle}
-                            edge="end"
-                        >
-                            {show ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                    </InputAdornment>
-                }
-                label={label}
-                {...props}
-            />
-            {helperText && (
-                <FormHelperText id={helperId}>
-                    {helperText}
-                </FormHelperText>
-            )}
-        </FormControl>
-    );
-});
-Password.displayName = 'PasswordInput';
 
 /**
  * Select input component with options and accessible helper text.
@@ -116,7 +69,7 @@ const Url = createInputComponent('url', 'URL');
 
 const Input = {
     Email,
-    Password,
+    Password: PasswordField,
     Text,
     Number: NumberInput,
     Url,

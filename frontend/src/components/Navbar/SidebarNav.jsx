@@ -7,16 +7,12 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Tooltip from '@mui/material/Tooltip';
-import IconButton from '@mui/material/IconButton';
 import Divider from '@mui/material/Divider';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 import Logo, { LogoMark } from '../Logo/Logo';
 import UserMenu from './UserMenu';
 import NotificationBell from '../Notifications/NotificationBell';
-import { useThemeMode } from '../../contexts/ThemeContext';
 import { pageToPath, pageIcon, isPageActive } from './navItems';
 import { SIDEBAR_FULL_WIDTH, SIDEBAR_RAIL_WIDTH } from './navConstants';
 import { ROUTES } from '../../constants/routes';
@@ -37,8 +33,6 @@ import { ROLES } from '../../constants/roles';
  */
 export default function SidebarNav({ variant = 'full', display, user, pages }) {
     const location = useLocation();
-    const { mode, toggleColorMode } = useThemeMode();
-    const isDark = mode === 'dark';
     const collapsed = variant === 'rail';
     const width = collapsed ? SIDEBAR_RAIL_WIDTH : SIDEBAR_FULL_WIDTH;
 
@@ -156,7 +150,7 @@ export default function SidebarNav({ variant = 'full', display, user, pages }) {
 
             <Divider />
 
-            {/* Footer: theme toggle + user menu */}
+            {/* Footer: notifications + user menu */}
             <Box
                 sx={{
                     p: collapsed ? 1 : 1.5,
@@ -168,30 +162,6 @@ export default function SidebarNav({ variant = 'full', display, user, pages }) {
                     gap: 1,
                 }}
             >
-                <Tooltip
-                    title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                    placement={collapsed ? 'right' : 'top'}
-                    arrow
-                >
-                    <IconButton
-                        onClick={toggleColorMode}
-                        aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                        size="small"
-                        sx={{
-                            width: 36,
-                            height: 36,
-                            color: 'text.secondary',
-                            bgcolor: (theme) => alpha(theme.palette.text.primary, 0.06),
-                            '&:hover': {
-                                bgcolor: (theme) => alpha(theme.palette.text.primary, 0.1),
-                                color: 'text.primary',
-                            },
-                        }}
-                    >
-                        {isDark ? <LightModeIcon sx={{ fontSize: 18 }} /> : <DarkModeIcon sx={{ fontSize: 18 }} />}
-                    </IconButton>
-                </Tooltip>
-
                 <NotificationBell tooltipPlacement={collapsed ? 'right' : 'top'} />
 
                 <UserMenu user={user} />

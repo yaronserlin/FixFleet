@@ -5,7 +5,6 @@ import Alert from '@mui/material/Alert';
 import Paper from '@mui/material/Paper';
 import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
-import Skeleton from '@mui/material/Skeleton';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 
 import usePushNotifications from '../../hooks/usePushNotifications';
@@ -38,7 +37,7 @@ export default function PushNotificationSettings() {
     } = usePushNotifications();
 
     if (!ready) {
-        return <Skeleton variant="rounded" height={92} sx={{ borderRadius: 3 }} />;
+        return null;
     }
 
     const blocked = permission === 'denied';

@@ -76,16 +76,9 @@ describe('SidebarNav', () => {
         });
     });
 
-    it('clicking the theme toggle calls toggleColorMode', () => {
-        const toggleColorMode = jest.fn();
-        setup({ overrides: { toggleColorMode } });
-        fireEvent.click(screen.getByRole('button', { name: /switch to dark mode/i }));
-        expect(toggleColorMode).toHaveBeenCalledTimes(1);
-    });
-
-    it('renders the dark-mode toggle label when mode is dark', () => {
-        setup({ overrides: { mode: 'dark' } });
-        expect(screen.getByRole('button', { name: /switch to light mode/i })).toBeInTheDocument();
+    it('does not expose the theme control in navigation', () => {
+        setup();
+        expect(screen.queryByRole('button', { name: /switch to dark mode|switch to light mode/i })).not.toBeInTheDocument();
     });
 
     it('renders the user menu trigger', () => {

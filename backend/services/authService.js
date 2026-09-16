@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Company = require('../models/Company');
 const RefreshToken = require('../models/RefreshToken');
+const PushSubscription = require('../models/PushSubscription');
 const { ROLES } = require('../constants/roles');
 const {
     ACCESS_TOKEN_EXPIRY,
@@ -17,6 +18,29 @@ const { httpError } = require('../utils/httpError');
 const mediaStorage = require('../utils/mediaStorage');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function deleteAccount(userId, confirmation) {
+    const user = await User.findById(userId);
+    if (!user) {
+        throw httpError(404, 'User not found');
+    }
+
+    const expectedConfirmation = `delete ${user.name}`;
+    if (typeof confirmation !== 'string' || confirmation.trim().toLowerCase() !== expectedConfirmation.toLowerCase()) {
+        throw httpError(400, `Type "delete ${user.name}" to confirm account deletion`);
+    }
+
+    await Promise.all([
+        User.deleteOne({ _id: user._id }),
+        RefreshToken.deleteMany({ userId: user._id }),
+        PushSubscription.deleteMany({ user: user._id }),
+    ]);
+
+    const avatarFileId = mediaStorage.idFromUrl(user.avatar);
+    if (avatarFileId) {
+        await mediaStorage.deleteFile(avatarFileId);
+    }
+}
 
 /**
  * Resolves the secret used to sign/verify refresh tokens, falling back to
@@ -529,4 +553,5 @@ module.exports = {
     updateProfile,
     uploadAvatar,
     changePassword,
+    deleteAccount,
 };

@@ -18,12 +18,9 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
 import NotificationsIcon from '@mui/icons-material/Notifications';
-import LightModeIcon from '@mui/icons-material/LightMode';
-import DarkModeIcon from '@mui/icons-material/DarkMode';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { getMediaUrl } from '../../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../../utils/formatUtils';
-import { useThemeMode } from '../../contexts/ThemeContext';
 import { useNotificationFeed } from '../../contexts/NotificationFeedContext';
 import { pageToPath, pageIcon, pageMenuLabel, isPageActive } from './navItems';
 import { BOTTOM_NAV_HEIGHT } from './navConstants';
@@ -49,9 +46,7 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
     const [accountOpen, setAccountOpen] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const { mode, toggleColorMode } = useThemeMode();
     const { unreadCount } = useNotificationFeed();
-    const isDark = mode === 'dark';
 
     if (!user) return null;
 
@@ -190,7 +185,7 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
                 </Box>
             </Paper>
 
-            {/* Account bottom sheet: keeps profile/activity/theme/logout reachable
+            {/* Account bottom sheet: keeps profile/activity/logout reachable
                 on phone without a persistent top bar. */}
             <Drawer
                 anchor="bottom"
@@ -256,13 +251,6 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
                         <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
                         <ListItemText primary="My Activity" />
                     </ListItemButton>
-                    <ListItemButton onClick={toggleColorMode} sx={{ minHeight: 48 }}>
-                        <ListItemIcon>
-                            {isDark ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
-                        </ListItemIcon>
-                        <ListItemText primary={isDark ? 'Light Mode' : 'Dark Mode'} />
-                    </ListItemButton>
-
                     <Divider sx={{ my: 0.5 }} />
 
                     <ListItemButton

@@ -108,18 +108,11 @@ describe('BottomNav', () => {
             expect(mockNavigate).toHaveBeenCalledWith('/logout');
         });
 
-        it('shows a Dark Mode entry that toggles the theme, keeping it reachable on phone', () => {
-            const toggleColorMode = jest.fn();
-            setup({ overrides: { toggleColorMode } });
+        it('does not expose the theme control in the phone sheet', () => {
+            setup();
             fireEvent.click(screen.getByRole('button', { name: /open account menu/i }));
-            fireEvent.click(screen.getByText('Dark Mode'));
-            expect(toggleColorMode).toHaveBeenCalledTimes(1);
-        });
-
-        it('shows a Light Mode entry when already in dark mode', () => {
-            setup({ overrides: { mode: 'dark' } });
-            fireEvent.click(screen.getByRole('button', { name: /open account menu/i }));
-            expect(screen.getByText('Light Mode')).toBeInTheDocument();
+            expect(screen.queryByText('Dark Mode')).not.toBeInTheDocument();
+            expect(screen.queryByText('Light Mode')).not.toBeInTheDocument();
         });
     });
 

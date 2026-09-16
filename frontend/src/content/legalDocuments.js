@@ -1,5 +1,7 @@
 // src/content/legalDocuments.js
 
+export const LEGAL_CONTACT_EMAIL = 'yaronserlindev@gmail.com';
+
 export const TERMS_OF_SERVICE = {
     title: 'Terms of Service',
     lastUpdated: 'September 2026',
@@ -49,7 +51,7 @@ export const TERMS_OF_SERVICE = {
         },
         {
             heading: '10. Contact Information',
-            content: `For questions regarding these Terms of Service, please contact support@maintenancesystem.local or your designated system administrator.`
+            content: `For questions regarding these Terms of Service, please contact ${LEGAL_CONTACT_EMAIL} or your designated system administrator.`
         }
     ]
 };
@@ -107,7 +109,7 @@ We do not employ third-party tracking or advertising cookies.`
         },
         {
             heading: '8. Contact Our Privacy Office',
-            content: `If you have questions, concerns, or requests regarding this Privacy Policy or how your data is handled, please contact our Data Protection Team at privacy@maintenancesystem.local.`
+            content: `If you have questions, concerns, or requests regarding this Privacy Policy or how your data is handled, please contact our Data Protection Team at ${LEGAL_CONTACT_EMAIL}.`
         }
     ]
 };
