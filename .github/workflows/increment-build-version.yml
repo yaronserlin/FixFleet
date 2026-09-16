@@ -5,17 +5,12 @@ on:
     branches:
       - '**'
 
-permissions:
-  contents: write
-
 concurrency:
   group: increment-build-version
   cancel-in-progress: false
 
 jobs:
   increment-build:
-    # The version commit triggers this workflow again, so ignore that bot push.
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
     steps:
@@ -24,12 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Rebase on the latest branch state
-        run: |
-          git fetch origin "${GITHUB_REF_NAME}"
-          git rebase "origin/${GITHUB_REF_NAME}"
-
-      - name: Increment build number
+      - name: Set build version
         id: version
         working-directory: frontend
         shell: bash
@@ -49,7 +39,8 @@ jobs:
             throw new Error(`Expected major.minor.build version, received ${packageJson.version}`);
           }
 
-          versionParts[2] += 1;
+          // GitHub run numbers increase for every run without changing the repository.
+          versionParts[2] = Number(process.env.GITHUB_RUN_NUMBER);
           const nextVersion = versionParts.join('.');
           packageJson.version = nextVersion;
           fs.writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
@@ -62,12 +53,12 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${nextVersion}\n`);
           NODE
 
-      - name: Commit and push version bump
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
         env:
           VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add frontend/package.json frontend/package-lock.json
-          git commit -m "chore: increment build version to ${VERSION}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+        working-directory: frontend
+        run: npm run build
