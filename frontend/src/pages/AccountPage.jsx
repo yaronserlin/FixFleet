@@ -29,6 +29,7 @@ import { usePageRefresh } from '../contexts/PageRefreshContext';
 import PushNotificationSettings from '../components/Notifications/PushNotificationSettings';
 import { FormSkeleton } from '../components/Skeletons/Skeletons';
 import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
+import { APP_VERSION } from '../constants/appVersion';
 
 const VisuallyHiddenInput = styled('input')({
     clip: 'rect(0 0 0 0)',
@@ -553,6 +554,15 @@ export default function AccountPage() {
                     </Button>
                 </Box>
             </Paper>
+
+            <Typography
+                variant="caption"
+                color="text.secondary"
+                align="center"
+                sx={{ display: 'block', mt: 2.5 }}
+            >
+                App version {APP_VERSION}
+            </Typography>
         </Container>
     );
 }

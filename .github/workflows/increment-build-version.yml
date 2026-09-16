@@ -1,0 +1,73 @@
+name: Increment Build Version
+
+on:
+  push:
+    branches:
+      - '**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: increment-build-version
+  cancel-in-progress: false
+
+jobs:
+  increment-build:
+    # The version commit triggers this workflow again, so ignore that bot push.
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the pushed branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rebase on the latest branch state
+        run: |
+          git fetch origin "${GITHUB_REF_NAME}"
+          git rebase "origin/${GITHUB_REF_NAME}"
+
+      - name: Increment build number
+        id: version
+        working-directory: frontend
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const packagePath = 'package.json';
+          const lockPath = 'package-lock.json';
+          const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+          const versionParts = packageJson.version.split('.').map(Number);
+
+          if (
+            versionParts.length !== 3 ||
+            versionParts.some(part => !Number.isInteger(part) || part < 0)
+          ) {
+            throw new Error(`Expected major.minor.build version, received ${packageJson.version}`);
+          }
+
+          versionParts[2] += 1;
+          const nextVersion = versionParts.join('.');
+          packageJson.version = nextVersion;
+          fs.writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
+
+          const lockJson = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+          lockJson.version = nextVersion;
+          lockJson.packages[''].version = nextVersion;
+          fs.writeFileSync(lockPath, `${JSON.stringify(lockJson, null, 2)}\n`);
+
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${nextVersion}\n`);
+          NODE
+
+      - name: Commit and push version bump
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add frontend/package.json frontend/package-lock.json
+          git commit -m "chore: increment build version to ${VERSION}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
