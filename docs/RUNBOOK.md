@@ -9,6 +9,7 @@ This runbook covers operational procedures, deployment workflows, health monitor
 ### Architecture Overview
 - **Backend**: Node.js/Express service connecting to MongoDB, serving REST APIs and managing multi-tenant media uploads.
 - **Frontend**: Single Page Application (SPA) / Progressive Web App (PWA) built with React and Vite.
+- **Media Storage**: Uploaded files (fault photos, equipment manuals, avatars) are stored in MongoDB GridFS (`uploads.files`/`uploads.chunks` collections, see `backend/utils/mediaStorage.js`), not on local disk. No persistent volume is required for uploads -- they live in the same database and survive redeploys on ephemeral-filesystem hosts. Files are served back through `GET /uploads/:id`, where `:id` is the GridFS ObjectId.
 
 ### Step-by-Step Backend Deployment (Cloud/PaaS e.g. Render, Railway, AWS ECS)
 1. **Configure Environment Variables**:
@@ -24,6 +25,7 @@ This runbook covers operational procedures, deployment workflows, health monitor
    - Install dependencies: `npm ci --omit=dev`
    - Syntax verification: `npm run build`
    - Initial database setup (if new environment): `npm run seed`
+   - **Upgrading an existing deployment that still has a `backend/uploads/` disk directory**: run the one-time migration `node scripts/migrateUploadsToGridFS.js` to copy those files into GridFS and rewrite their database references. Safe to re-run; new uploads already go straight to GridFS regardless. See the script's header comment for details.
    - Start process: `npm start` (or managed via PM2 / systemd / Docker)
 
 ### Step-by-Step Frontend Deployment (Static Host / CDN e.g. Vercel, Netlify, Cloudflare Pages, S3)

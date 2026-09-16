@@ -46,7 +46,7 @@ A modern, multi-tenant web application designed for comprehensive industrial and
 - **Runtime & Framework**: [Node.js](https://nodejs.org/), [Express 5](https://expressjs.com/)
 - **Database**: [MongoDB](https://www.mongodb.com/) with [Mongoose 8](https://mongoosejs.com/)
 - **Authentication**: JWT (`jsonwebtoken`) delivered via secure, HTTP-only cookies (`cookie-parser`) with bcrypt password hashing
-- **File Uploads**: [Multer](https://github.com/expressjs/multer) with tenant-validated media streaming
+- **File Uploads**: [Multer](https://github.com/expressjs/multer) (in-memory parsing) storing into MongoDB GridFS, with tenant-validated media streaming on download
 - **Security & Rate Limiting**: [Helmet](https://helmetjs.github.io/), [CORS](https://github.com/expressjs/cors), [express-rate-limit](https://github.com/express-rate-limit/express-rate-limit)
 - **Testing**: [Jest](https://jestjs.io/), [Supertest](https://github.com/ladjs/supertest), [mongodb-memory-server](https://github.com/nodkz/mongodb-memory-server)
 
@@ -63,9 +63,10 @@ MaintenanceSystemApp/
 │   ├── middleware/           # Auth, validation, upload, sanitize, and centralized error middleware
 │   ├── models/               # Mongoose data schemas (Tenant-scoped)
 │   ├── routes/               # Express API route declarations
+│   ├── scripts/               # One-off operational scripts (e.g. GridFS upload migration)
 │   ├── seeders/               # Database seeding scripts
 │   ├── services/              # Business logic and data access, called by controllers
-│   ├── uploads/               # Local storage for manuals and images
+│   ├── utils/                 # Shared helpers (logger, GridFS media storage, error helpers)
 │   └── __tests__/             # Backend unit and integration tests
 ├── frontend/                 # React Single Page Application (PWA)
 │   ├── src/

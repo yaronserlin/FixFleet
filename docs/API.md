@@ -36,6 +36,7 @@ This document provides the complete API specification for the MaintenanceSystemA
 |--------|------|---------------|--------------|-------------|
 | `POST` | `/api/auth/register` | No | None | Register new user account (Rate limited: 20 req/15min) |
 | `POST` | `/api/auth/login` | No | None | Authenticate user credentials and set auth cookie (Rate limited) |
+| `POST` | `/api/auth/refresh` | No | None | Rotate access/refresh tokens from the `refreshToken` cookie (Rate limited); revokes the session family on reuse-attack detection |
 | `POST` | `/api/auth/logout` | No | None | Clear authentication cookie |
 | `GET` | `/api/auth/me` | Yes | Any | Retrieve current authenticated user profile |
 | `PUT` | `/api/auth/me` | Yes | Any | Update current user profile (name, phone, language, etc.) |
@@ -91,6 +92,7 @@ This document provides the complete API specification for the MaintenanceSystemA
 | `GET` | `/api/notifications` | Yes | Any | List own notifications, newest first (`page`, `limit`, `unreadOnly`) |
 | `GET` | `/api/notifications/unread-count` | Yes | Any | Unread badge count (cheap; polled by the client) |
 | `PATCH` | `/api/notifications/:id/read` | Yes | Any | Mark one own notification read (idempotent) |
+| `DELETE` | `/api/notifications/:id` | Yes | Any | Delete one own notification (`404` if not found or not owned) |
 | `POST` | `/api/notifications/read-all` | Yes | Any | Mark every own unread notification read |
 | `GET` | `/api/notifications/push/public-key` | Yes | Any | VAPID public key, plus whether push is configured server-side |
 | `POST` | `/api/notifications/push/subscriptions` | Yes | Any | Register this browser's push endpoint (upsert, keyed on endpoint) |
