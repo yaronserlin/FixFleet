@@ -1,4 +1,5 @@
 // services/notificationService.js
+const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const pushService = require('./pushService');
@@ -84,10 +85,15 @@ async function dispatch({ companyId, recipients, type, title, body, link = null,
 async function notifyFaultReported(fault, reporter) {
     if (!fault) return [];
 
+    // Wrapped with mongoose.trusted(): these operators are built from a
+    // fixed role list and the authenticated reporter's own id, not from
+    // request input, but `sanitizeFilter` (config/db.js) can't tell that --
+    // left untrusted it rewrites `{ $ne: ... }`/`{ $in: ... }` into
+    // `{ $eq: { $ne: ... } } `, which then fails to cast.
     const recipients = await User.find({
         companyId: fault.companyId,
-        role: { $in: MECHANIC_OR_ADMIN_ROLES },
-        _id: { $ne: reporter?.userId },
+        role: mongoose.trusted({ $in: MECHANIC_OR_ADMIN_ROLES }),
+        _id: mongoose.trusted({ $ne: reporter?.userId }),
     }).select('_id');
 
     if (recipients.length === 0) {
@@ -144,7 +150,9 @@ async function createAnnouncement(companyId, sender, payload = {}) {
         throw httpError(400, `Message must be ${ANNOUNCEMENT_LIMITS.BODY_MAX} characters or fewer`);
     }
 
-    const filter = { companyId, _id: { $ne: sender?.userId } };
+    // See the mongoose.trusted() note in notifyFaultReported above --
+    // sender?.userId is the authenticated admin's own id, not request input.
+    const filter = { companyId, _id: mongoose.trusted({ $ne: sender?.userId }) };
 
     if (roles !== undefined) {
         const requested = Array.isArray(roles) ? roles : [roles];
@@ -158,7 +166,8 @@ async function createAnnouncement(companyId, sender, payload = {}) {
         if (cleaned.length === 0) {
             throw httpError(400, 'Select at least one role to notify');
         }
-        filter.role = { $in: cleaned };
+        // cleaned is validated above against ALL_ROLES, not raw request input.
+        filter.role = mongoose.trusted({ $in: cleaned });
     }
 
     const recipients = await User.find(filter).select('_id');

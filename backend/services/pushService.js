@@ -1,4 +1,5 @@
 // services/pushService.js
+const mongoose = require('mongoose');
 const webpush = require('web-push');
 const PushSubscription = require('../models/PushSubscription');
 const logger = require('../utils/logger');
@@ -133,7 +134,11 @@ async function sendToUsers(userIds, payload) {
 
     let subscriptions;
     try {
-        subscriptions = await PushSubscription.find({ user: { $in: userIds } });
+        // mongoose.trusted(): userIds is caller-constructed (already-stored
+        // recipient ids), not request input -- see the note in
+        // notificationService.js's notifyFaultReported for why this is
+        // needed under the global `sanitizeFilter` setting (config/db.js).
+        subscriptions = await PushSubscription.find({ user: mongoose.trusted({ $in: userIds }) });
     } catch (err) {
         logger.error(`Failed to load push subscriptions: ${err.message}`);
         return tally;
