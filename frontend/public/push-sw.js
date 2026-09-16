@@ -62,6 +62,26 @@ async function syncAppBadge() {
     }
 }
 
+/**
+ * Tells every open tab of this app that a push just arrived, so an
+ * already-open window updates its notification feed (and, transitively, the
+ * page data it's looking at -- see NotificationFeedContext.jsx) the moment
+ * this fires instead of waiting for its next poll tick, which could be up
+ * to a minute away. This is what makes an admin's announcement feel live to
+ * someone already sitting on the page, rather than something that only
+ * shows up after they reload -- polling alone can't do better than
+ * "eventually", and push delivery is normally a second or two.
+ *
+ * Scoped to `includeUncontrolled: true` window clients so it reaches every
+ * open tab, not just ones this SW version happens to control yet.
+ */
+async function notifyOpenClients(payload) {
+    const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    windowClients.forEach((client) => {
+        client.postMessage({ type: 'PUSH_NOTIFICATION_RECEIVED', payload });
+    });
+}
+
 self.addEventListener('push', (event) => {
     const payload = readPayload(event);
     const title = payload.title || DEFAULT_TITLE;
@@ -86,6 +106,7 @@ self.addEventListener('push', (event) => {
     event.waitUntil(Promise.all([
         self.registration.showNotification(title, options),
         syncAppBadge(),
+        notifyOpenClients(payload),
     ]));
 });
 

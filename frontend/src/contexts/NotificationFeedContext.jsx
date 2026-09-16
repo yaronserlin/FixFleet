@@ -28,8 +28,14 @@ import { usePageRefreshTrigger } from './PageRefreshContext';
  */
 const NotificationFeedContext = createContext(null);
 
-/** How often to poll the unread count while the tab is visible. */
-const POLL_INTERVAL_MS = 60_000;
+/**
+ * How often to poll the unread count while the tab is visible -- the
+ * fallback for a tab that (a) never receives the push-driven instant
+ * refresh below, because this browser/device never granted notification
+ * permission, or (b) stays continuously visible, so the visibilitychange
+ * refetch never fires either.
+ */
+const POLL_INTERVAL_MS = 20_000;
 
 export function NotificationFeedProvider({ children }) {
     const { user } = useAuth();
@@ -170,6 +176,24 @@ export function NotificationFeedProvider({ children }) {
             document.removeEventListener('visibilitychange', handleVisibility);
         };
     }, [canFetch, refresh, refreshUnreadCount]);
+
+    // The instant path: push-sw.js's `push` handler posts this to every open
+    // tab the moment a push arrives (typically a second or two after the
+    // server sends it), so a tab that's sitting open and focused -- where
+    // neither the poll interval nor a visibilitychange has any reason to
+    // fire soon -- still updates right away. Only reaches tabs whose user
+    // has granted notification permission and subscribed (see
+    // usePushNotifications.js); everyone else still gets the poll above.
+    useEffect(() => {
+        if (!('serviceWorker' in navigator)) return undefined;
+        const handleMessage = (event) => {
+            if (event.data?.type === 'PUSH_NOTIFICATION_RECEIVED') {
+                refresh();
+            }
+        };
+        navigator.serviceWorker.addEventListener('message', handleMessage);
+        return () => navigator.serviceWorker.removeEventListener('message', handleMessage);
+    }, [refresh]);
 
     /**
      * Marks one notification read, updating the list and badge optimistically
