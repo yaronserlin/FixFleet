@@ -122,10 +122,11 @@ async function removeSubscription(userId, endpoint) {
  * what keeps the collection from filling with dead rows.
  *
  * @param {Array<string|mongoose.Types.ObjectId>} userIds - Recipients.
- * @param {{ title: string, body: string, link?: string|null, type?: string, notificationId?: string }} payload - Rendered by the service worker (see frontend/public/push-sw.js).
+ * @param {{ title: string, body: string, link?: string|null, type?: string }} payload - Fields shared by every recipient's push; rendered by the service worker (see frontend/public/push-sw.js).
+ * @param {Map<string, string>} [notificationIdByUser] - Each recipient's own Notification `_id`, keyed by user id as a string. Merged into that user's payload as `notificationId` so a tap on the OS notification can mark it read (see push-sw.js's `notificationclick` handler) without the recipient ever opening the in-app list -- omitted entirely for a user not in the map, so callers that don't have per-recipient ids yet degrade to the old shared-payload behavior.
  * @returns {Promise<{ sent: number, failed: number, pruned: number }>} Delivery tally, for logging.
  */
-async function sendToUsers(userIds, payload) {
+async function sendToUsers(userIds, payload, notificationIdByUser) {
     const tally = { sent: 0, failed: 0, pruned: 0 };
 
     if (!configured || !Array.isArray(userIds) || userIds.length === 0) {
@@ -148,10 +149,12 @@ async function sendToUsers(userIds, payload) {
         return tally;
     }
 
-    const body = JSON.stringify(payload);
-
     await Promise.all(subscriptions.map(async (sub) => {
         try {
+            const notificationId = notificationIdByUser?.get(String(sub.user));
+            const body = JSON.stringify(
+                notificationId ? { ...payload, notificationId } : payload
+            );
             await webpush.sendNotification(sub.toWebPushSubscription(), body);
             tally.sent += 1;
         } catch (err) {

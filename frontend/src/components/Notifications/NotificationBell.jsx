@@ -17,6 +17,7 @@ import { ListRowsSkeleton } from '../Skeletons/Skeletons';
 import { skeletonA11yProps } from '../Skeletons/skeletonA11y';
 import { ROUTES } from '../../constants/routes';
 import NotificationItem from './NotificationItem';
+import { sortByUnreadFirst } from './notificationPresentation';
 
 /** How many notifications the popover previews before "View all". */
 const PREVIEW_COUNT = 6;
@@ -54,7 +55,9 @@ export default function NotificationBell({ tooltipPlacement = 'right' }) {
         }
     };
 
-    const preview = notifications.slice(0, PREVIEW_COUNT);
+    // Unread-first so a handful of new items are never bumped out of the
+    // preview window by older, already-read ones.
+    const preview = sortByUnreadFirst(notifications).slice(0, PREVIEW_COUNT);
     const label = unreadCount > 0
         ? `Notifications (${unreadCount} unread)`
         : 'Notifications';

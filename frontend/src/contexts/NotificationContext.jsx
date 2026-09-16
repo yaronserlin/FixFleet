@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useMemo } from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import { BOTTOM_NAV_HEIGHT } from '../components/Navbar/navConstants';
 
 // Create notification context
 const NotificationContext = createContext();
@@ -26,7 +27,22 @@ export function NotificationProvider({ children }) {
     return (
         <NotificationContext.Provider value={notify}>
             {children}
-            <Snackbar open={open} autoHideDuration={6000} onClose={handleClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}>
+            <Snackbar
+                open={open}
+                autoHideDuration={6000}
+                onClose={handleClose}
+                // Right-anchored so it never sits over the fixed left sidebar
+                // rail (tablet/desktop); the `bottom` override on phone clears
+                // the fixed bottom nav bar (+ its safe-area inset) instead of
+                // colliding with it at the default 8px offset.
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                sx={{
+                    bottom: {
+                        xs: `calc(${BOTTOM_NAV_HEIGHT}px + env(safe-area-inset-bottom, 0px) + 12px)`,
+                        sm: 24,
+                    },
+                }}
+            >
                 <Alert onClose={handleClose} severity={messageInfo.severity} variant="filled" sx={{ width: '100%' }}>
                     {messageInfo.message}
                 </Alert>

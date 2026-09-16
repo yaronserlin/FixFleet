@@ -54,8 +54,15 @@ async function dispatch({ companyId, recipients, type, title, body, link = null,
         }))
     );
 
+    // insertMany preserves input order, so `created[i]` is recipientIds[i]'s
+    // own notification doc -- this is what lets sendToUsers tell each
+    // recipient's push which specific notification to mark read on tap.
+    const notificationIdByUser = new Map(
+        created.map((doc, i) => [String(recipientIds[i]), String(doc._id)])
+    );
+
     try {
-        const tally = await pushService.sendToUsers(recipientIds, { type, title, body, link });
+        const tally = await pushService.sendToUsers(recipientIds, { type, title, body, link }, notificationIdByUser);
         if (tally.sent || tally.failed) {
             logger.debug(
                 `Push fan-out for "${type}": ${tally.sent} sent, ${tally.failed} failed, ${tally.pruned} pruned`

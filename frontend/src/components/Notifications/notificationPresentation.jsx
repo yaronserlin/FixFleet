@@ -52,6 +52,23 @@ export function notificationDisplay(type) {
 }
 
 /**
+ * Orders a notification list unread-first, otherwise preserving the input
+ * order (a stable sort, relied on here since the list already arrives
+ * newest-first from the server).
+ *
+ * Without this, a handful of unread items can end up buried below a run of
+ * older, already-read ones -- easy to miss, especially in the bell's
+ * six-item preview -- purely because of when they happened to arrive
+ * relative to what's already been read.
+ *
+ * @param {Array<{ readAt: string|null }>} notifications
+ * @returns {Array} A new, re-ordered array; the input is left untouched.
+ */
+export function sortByUnreadFirst(notifications) {
+    return [...notifications].sort((a, b) => (a.readAt ? 1 : 0) - (b.readAt ? 1 : 0));
+}
+
+/**
  * Compact relative time ("just now", "5m ago", "3d ago"), falling back to a
  * date once something is more than a week old -- past that, "14d ago" is
  * less useful than the actual day.

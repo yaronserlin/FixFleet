@@ -24,8 +24,20 @@ import React, {
  * Handlers are kept in a Set rather than a single slot, so a page and any
  * self-fetching child it renders can each register and all get refreshed
  * together by one pull.
+ *
+ * The same registry also backs multi-user sync: there's no websocket layer
+ * in this app, so a change one user makes doesn't otherwise reach anyone
+ * else's already-open screen. Polling the exact handlers each page already
+ * declared for pull-to-refresh -- plus a refetch whenever the tab regains
+ * focus, the common case being the user switching back after a while away
+ * -- gets every page near-live updates for free, with no per-page changes
+ * and no new fetch logic to keep in sync. Mirrors the pattern
+ * NotificationFeedContext already uses for the same reason.
  */
 const PageRefreshContext = createContext(null);
+
+/** How often to silently re-run the current page's refresh handler(s). */
+const POLL_INTERVAL_MS = 30_000;
 
 export function PageRefreshProvider({ children }) {
     // A plain ref (not state): registering/unregistering a handler must never
@@ -53,6 +65,31 @@ export function PageRefreshProvider({ children }) {
             }
         }));
     }, []);
+
+    // Silently re-run whatever the current page(s) registered: on an
+    // interval while the tab is visible, and once immediately whenever it
+    // becomes visible again. `refresh()` already swallows individual handler
+    // errors (see above), so a failed background poll never surfaces as a
+    // toast -- it just tries again next tick.
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                refresh();
+            }
+        }, POLL_INTERVAL_MS);
+
+        const handleVisibility = () => {
+            if (document.visibilityState === 'visible') {
+                refresh();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener('visibilitychange', handleVisibility);
+        };
+    }, [refresh]);
 
     const value = useMemo(
         () => ({ registerRefreshHandler, refresh }),

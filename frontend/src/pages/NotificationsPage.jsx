@@ -16,6 +16,8 @@ import { useNavigate } from 'react-router-dom';
 import { useNotificationFeed } from '../contexts/NotificationFeedContext';
 import { usePageRefresh } from '../contexts/PageRefreshContext';
 import NotificationItem from '../components/Notifications/NotificationItem';
+import { sortByUnreadFirst } from '../components/Notifications/notificationPresentation';
+import ConfirmDialog from '../components/ConfirmDialog/ConfirmDialog';
 import { ListRowsSkeleton } from '../components/Skeletons/Skeletons';
 import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
 
@@ -27,15 +29,18 @@ export default function NotificationsPage() {
     const navigate = useNavigate();
     const { notifications, unreadCount, loading, refresh, markRead, deleteNotification, markAllRead } = useNotificationFeed();
     const [filter, setFilter] = useState('all'); // 'all' | 'unread'
+    const [deletingNotification, setDeletingNotification] = useState(null);
 
     // Pull down to re-fetch, like every other screen.
     usePageRefresh(refresh);
 
-    const visible = useMemo(() => (
-        filter === 'unread'
-            ? notifications.filter(n => !n.readAt)
-            : notifications
-    ), [notifications, filter]);
+    const visible = useMemo(() => {
+        const base = filter === 'unread' ? notifications.filter(n => !n.readAt) : notifications;
+        // Only matters for 'all' (an 'unread' list is already homogeneous),
+        // but sorting both keeps the two views from ever ordering the same
+        // items differently.
+        return sortByUnreadFirst(base);
+    }, [notifications, filter]);
 
     const handleSelect = (notification) => {
         if (!notification.readAt) {
@@ -44,6 +49,12 @@ export default function NotificationsPage() {
         if (notification.link) {
             navigate(notification.link);
         }
+    };
+
+    const handleConfirmDelete = () => {
+        if (!deletingNotification) return;
+        deleteNotification(deletingNotification._id);
+        setDeletingNotification(null);
     };
 
     if (loading && notifications.length === 0) {
@@ -136,12 +147,23 @@ export default function NotificationsPage() {
                                 key={notification._id}
                                 notification={notification}
                                 onSelect={handleSelect}
-                                onDelete={(n) => deleteNotification(n._id)}
+                                onDelete={setDeletingNotification}
                             />
                         ))}
                     </List>
                 </Paper>
             )}
+
+            <ConfirmDialog
+                open={Boolean(deletingNotification)}
+                title="Delete notification"
+                message={`Remove "${deletingNotification?.title}"? This can't be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                confirmColor="error"
+                onConfirm={handleConfirmDelete}
+                onCancel={() => setDeletingNotification(null)}
+            />
         </Container>
     );
 }

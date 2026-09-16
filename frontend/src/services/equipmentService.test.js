@@ -61,7 +61,19 @@ describe('equipmentService', () => {
         await equipmentService.uploadBook('1', formData);
         expect(apiClient.post).toHaveBeenCalledWith('/equipment/1/books', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
+            timeout: 3 * 60 * 1000,
+            onUploadProgress: undefined,
         });
+    });
+
+    it('uploadBook forwards an onUploadProgress callback for a progress indicator', async () => {
+        apiClient.post.mockReturnValueOnce(resolveWithData({}));
+        const formData = new FormData();
+        const onUploadProgress = jest.fn();
+        await equipmentService.uploadBook('1', formData, { onUploadProgress });
+        expect(apiClient.post).toHaveBeenCalledWith('/equipment/1/books', formData, expect.objectContaining({
+            onUploadProgress,
+        }));
     });
 
     it('deleteBook calls DELETE /equipment/:id/books/:bookId', async () => {

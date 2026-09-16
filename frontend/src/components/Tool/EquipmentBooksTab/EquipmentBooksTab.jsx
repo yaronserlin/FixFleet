@@ -15,6 +15,7 @@ import {
     DialogActions,
     TextField,
     Alert,
+    LinearProgress,
 } from '@mui/material';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
@@ -51,7 +52,10 @@ export default function EquipmentBooksTab({ equipment, tool, onRefresh }) {
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [bookTitle, setBookTitle] = useState('');
     const [selectedFile, setSelectedFile] = useState(null);
-    const [uploading, setUploading] = useState(false);
+    // Background upload task, tracked outside the dialog's own state so the
+    // dialog can close immediately on submit instead of blocking on the
+    // request -- the progress bar below the header keeps running either way.
+    const [uploadTask, setUploadTask] = useState(null); // { name, progress } | null
 
     // In-App PDF viewer state
     const [activePdf, setActivePdf] = useState(null);
@@ -86,28 +90,41 @@ export default function EquipmentBooksTab({ equipment, tool, onRefresh }) {
         }
     };
 
-    const handleUploadSubmit = async (e) => {
+    const handleUploadSubmit = (e) => {
         e.preventDefault();
-        if (!selectedFile || !bookTitle.trim()) return;
+        if (!selectedFile || !bookTitle.trim() || uploadTask) return;
 
-        setUploading(true);
-        try {
-            const formData = new FormData();
-            formData.append('title', bookTitle.trim());
-            formData.append('book', selectedFile);
+        const title = bookTitle.trim();
+        const file = selectedFile;
 
-            await equipmentService.uploadBook(eq._id, formData);
-            notify.success('PDF manual uploaded successfully');
-            setUploadDialogOpen(false);
-            setSelectedFile(null);
-            setBookTitle('');
-            onRefresh?.();
-        } catch (err) {
-            console.error('Book upload error:', err);
-            notify.error('Failed to upload PDF manual');
-        } finally {
-            setUploading(false);
-        }
+        // Close and reset the dialog right away -- the upload continues in
+        // the background (tracked by uploadTask below) so a large PDF on a
+        // slow connection never reads as a frozen UI.
+        setUploadDialogOpen(false);
+        setSelectedFile(null);
+        setBookTitle('');
+        setUploadTask({ name: file.name, progress: 0 });
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('book', file);
+
+        equipmentService
+            .uploadBook(eq._id, formData, {
+                onUploadProgress: (evt) => {
+                    if (!evt.total) return;
+                    setUploadTask(prev => (prev ? { ...prev, progress: Math.round((evt.loaded / evt.total) * 100) } : prev));
+                },
+            })
+            .then(() => {
+                notify.success('PDF manual uploaded successfully');
+                onRefresh?.();
+            })
+            .catch((err) => {
+                console.error('Book upload error:', err);
+                notify.error(`Failed to upload "${title}"`);
+            })
+            .finally(() => setUploadTask(null));
     };
 
     const handleConfirmDeleteBook = async () => {
@@ -141,11 +158,21 @@ export default function EquipmentBooksTab({ equipment, tool, onRefresh }) {
                         variant="contained"
                         startIcon={<AddIcon />}
                         onClick={handleOpenUpload}
+                        disabled={Boolean(uploadTask)}
                     >
                         Upload
                     </Button>
                 )}
             </Box>
+
+            {uploadTask && (
+                <Box sx={{ mb: 3, p: 1.5, borderRadius: 1, bgcolor: 'action.hover' }}>
+                    <Typography variant="caption" color="text.secondary" noWrap sx={{ display: 'block', mb: 0.5 }}>
+                        Uploading &quot;{uploadTask.name}&quot;… {uploadTask.progress}%
+                    </Typography>
+                    <LinearProgress variant="determinate" value={uploadTask.progress} sx={{ borderRadius: 1 }} />
+                </Box>
+            )}
 
             {books.length === 0 ? (
                 <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center' }}>
@@ -255,15 +282,15 @@ export default function EquipmentBooksTab({ equipment, tool, onRefresh }) {
                         </Button>
                     </DialogContent>
                     <DialogActions>
-                        <Button onClick={() => setUploadDialogOpen(false)} disabled={uploading}>
+                        <Button onClick={() => setUploadDialogOpen(false)}>
                             Cancel
                         </Button>
                         <Button
                             type="submit"
                             variant="contained"
-                            disabled={!selectedFile || !bookTitle.trim() || uploading}
+                            disabled={!selectedFile || !bookTitle.trim()}
                         >
-                            {uploading ? 'Uploading...' : 'Upload'}
+                            Upload
                         </Button>
                     </DialogActions>
                 </Box>

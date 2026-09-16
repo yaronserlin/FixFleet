@@ -53,12 +53,18 @@ const equipmentService = {
             .then(res => res.data),
 
     /**
-     * Upload a PDF manual/book for equipment
+     * Upload a PDF manual/book for equipment.
+     * `onUploadProgress` (axios progress event -> void) drives a progress
+     * indicator; the extended timeout is so a stalled connection eventually
+     * surfaces an error instead of leaving the caller waiting forever (axios
+     * has no timeout by default).
      */
-    uploadBook: (id, formData) =>
+    uploadBook: (id, formData, { onUploadProgress } = {}) =>
         apiClient
             .post(`/equipment/${id}/books`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
+                timeout: 3 * 60 * 1000,
+                onUploadProgress,
             })
             .then(res => res.data),
 

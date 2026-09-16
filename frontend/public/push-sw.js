@@ -70,8 +70,13 @@ self.addEventListener('push', (event) => {
         body: payload.body || '',
         icon: NOTIFICATION_ICON,
         badge: NOTIFICATION_BADGE,
-        // Carried through to the click handler so it knows where to go.
-        data: { link: payload.link || '/notifications', type: payload.type || null },
+        // Carried through to the click handler so it knows where to go, and
+        // which notification to mark read (see notificationclick below).
+        data: {
+            link: payload.link || '/notifications',
+            type: payload.type || null,
+            notificationId: payload.notificationId || null,
+        },
         // Group by type so a burst of fault reports collapses into the
         // latest one rather than stacking a dozen entries in the tray.
         tag: payload.type || 'notification',
@@ -84,35 +89,63 @@ self.addEventListener('push', (event) => {
     ]));
 });
 
+/**
+ * Marks the tapped notification read server-side, so the unread badge
+ * reflects it without the user separately opening the in-app list -- which
+ * they may never do if the push's own link already took them where they
+ * needed. Uses the `token`/`accessToken` cookie authMiddleware.js accepts
+ * as a fallback to the Authorization header (see backend/controllers/
+ * authController.js), since a service worker has no access to the page's
+ * localStorage-held JWT. Best-effort: an older cached SW build or a push
+ * sent before this field existed just won't have a `notificationId`, and
+ * any network/auth failure here must never block opening the notification.
+ */
+async function markNotificationRead(notificationId) {
+    if (!notificationId) return;
+    try {
+        await fetch(`/api/notifications/${notificationId}/read`, {
+            method: 'PATCH',
+            credentials: 'include',
+        });
+        await syncAppBadge();
+    } catch {
+        // Best-effort only -- see comment above.
+    }
+}
+
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
 
-    const link = (event.notification.data && event.notification.data.link) || '/notifications';
+    const data = event.notification.data || {};
+    const link = data.link || '/notifications';
     const targetUrl = new URL(link, self.location.origin).href;
 
-    event.waitUntil((async () => {
-        const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+    event.waitUntil(Promise.all([
+        markNotificationRead(data.notificationId),
+        (async () => {
+            const windowClients = await clients.matchAll({ type: 'window', includeUncontrolled: true });
 
-        // Prefer focusing a tab that's already on the target, then any open
-        // tab of this app (navigating it), and only open a new window as a
-        // last resort -- tapping a notification shouldn't pile up tabs.
-        const exact = windowClients.find(client => client.url === targetUrl);
-        if (exact) {
-            return exact.focus();
-        }
+            // Prefer focusing a tab that's already on the target, then any open
+            // tab of this app (navigating it), and only open a new window as a
+            // last resort -- tapping a notification shouldn't pile up tabs.
+            const exact = windowClients.find(client => client.url === targetUrl);
+            if (exact) {
+                return exact.focus();
+            }
 
-        const anyAppWindow = windowClients.find(client => client.url.startsWith(self.location.origin));
-        if (anyAppWindow) {
-            await anyAppWindow.focus();
-            if ('navigate' in anyAppWindow) {
-                return anyAppWindow.navigate(targetUrl);
+            const anyAppWindow = windowClients.find(client => client.url.startsWith(self.location.origin));
+            if (anyAppWindow) {
+                await anyAppWindow.focus();
+                if ('navigate' in anyAppWindow) {
+                    return anyAppWindow.navigate(targetUrl);
+                }
+                return undefined;
+            }
+
+            if (clients.openWindow) {
+                return clients.openWindow(targetUrl);
             }
             return undefined;
-        }
-
-        if (clients.openWindow) {
-            return clients.openWindow(targetUrl);
-        }
-        return undefined;
-    })());
+        })(),
+    ]));
 });

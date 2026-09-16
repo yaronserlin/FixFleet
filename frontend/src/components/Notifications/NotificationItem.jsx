@@ -38,6 +38,12 @@ export default function NotificationItem({ notification, onSelect, onDelete, den
                 bgcolor: unread
                     ? (theme) => alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.12 : 0.05)
                     : 'transparent',
+                // A left accent bar makes unread unmistakable at a glance --
+                // the tint alone is too subtle for some users/screens to
+                // register as the difference between read and unread.
+                // Transparent (not absent) on read rows so nothing shifts.
+                borderLeft: '3px solid',
+                borderLeftColor: unread ? 'primary.main' : 'transparent',
             }}
         >
             <Box
