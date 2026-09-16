@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 import notificationsService from '../services/notificationsService';
 import { useAuth } from './AuthContext';
+import { usePageRefreshTrigger } from './PageRefreshContext';
 
 /**
  * The app's notification feed: the list behind the bell, its unread badge,
@@ -32,6 +33,11 @@ const POLL_INTERVAL_MS = 60_000;
 
 export function NotificationFeedProvider({ children }) {
     const { user } = useAuth();
+    // NotificationFeedProvider is mounted inside PageRefreshProvider (see
+    // routes.jsx), so this reaches the same "refresh whatever the current
+    // page registered" trigger PageRefreshContext's own poll and the pull-
+    // gesture use -- see the unread-count-increased checks below.
+    const refreshPage = usePageRefreshTrigger();
 
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -52,6 +58,31 @@ export function NotificationFeedProvider({ children }) {
     const notificationsRef = useRef(notifications);
     useEffect(() => { notificationsRef.current = notifications; }, [notifications]);
 
+    // Lets refresh()/refreshUnreadCount() tell a rising count (new
+    // notification arrived) apart from a falling one (something got marked
+    // read) without depending on `unreadCount` state directly -- see below.
+    const unreadCountRef = useRef(0);
+    useEffect(() => { unreadCountRef.current = unreadCount; }, [unreadCount]);
+    // Guards the very first load: there's no "other user's change" to react
+    // to yet, just whatever was already unread when this tab opened, and the
+    // page's own initial fetch already covers that.
+    const hasLoadedOnceRef = useRef(false);
+
+    /**
+     * A new notification arriving is exactly the signal that someone else
+     * changed the data this tab is looking at (a fault reported, an
+     * announcement sent) -- so beyond updating the feed itself, it also
+     * re-runs whatever the current page registered for its own refresh
+     * (PageRefreshContext), rather than waiting for that context's
+     * independent timer to come back around.
+     */
+    const maybeRefreshPageForNewNotifications = useCallback((newCount) => {
+        if (hasLoadedOnceRef.current && newCount > unreadCountRef.current) {
+            refreshPage();
+        }
+        hasLoadedOnceRef.current = true;
+    }, [refreshPage]);
+
     const refresh = useCallback(async ({ showLoading = false } = {}) => {
         if (!canFetchRef.current) {
             setNotifications([]);
@@ -62,9 +93,11 @@ export function NotificationFeedProvider({ children }) {
         if (showLoading) setLoading(true);
         try {
             const data = await notificationsService.getAll({ limit: 20 });
+            const newCount = data.unreadCount || 0;
             setNotifications(data.notifications || []);
-            setUnreadCount(data.unreadCount || 0);
+            setUnreadCount(newCount);
             setError(null);
+            maybeRefreshPageForNewNotifications(newCount);
         } catch (err) {
             // The feed is ambient: a failed poll shouldn't raise a toast or
             // block the page the user is actually working on.
@@ -73,18 +106,20 @@ export function NotificationFeedProvider({ children }) {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [maybeRefreshPageForNewNotifications]);
 
     /** Polls just the badge count -- much cheaper than refetching the list. */
     const refreshUnreadCount = useCallback(async () => {
         if (!canFetchRef.current) return;
         try {
             const { unreadCount: count } = await notificationsService.getUnreadCount();
-            setUnreadCount(count || 0);
+            const newCount = count || 0;
+            setUnreadCount(newCount);
+            maybeRefreshPageForNewNotifications(newCount);
         } catch (err) {
             console.warn('Failed to refresh unread notification count:', err);
         }
-    }, []);
+    }, [maybeRefreshPageForNewNotifications]);
 
     // Initial load, and a reload whenever the signed-in user changes.
     useEffect(() => {
