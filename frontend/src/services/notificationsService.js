@@ -48,6 +48,15 @@ const notificationsService = {
     },
 
     /**
+     * Deletes one notification.
+     * @param {string} id
+     * @returns {Promise<void>}
+     */
+    deleteNotification: async (id) => {
+        await apiClient.delete(`/notifications/${id}`);
+    },
+
+    /**
      * Admin-only: broadcasts a message to users in the admin's own company.
      * @param {{ title: string, body: string, roles?: string[] }} payload - Omit `roles` to reach everyone.
      * @returns {Promise<{ recipients: number }>}

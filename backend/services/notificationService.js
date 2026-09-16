@@ -281,6 +281,26 @@ async function markRead(companyId, userId, notificationId) {
 }
 
 /**
+ * Deletes one of the user's own notifications.
+ *
+ * Scoped by recipient *and* company, like {@link markRead}: a notification
+ * addressed to someone else is a 404, not a 403, so the endpoint never
+ * confirms that someone else's notification id exists.
+ *
+ * @param {string} companyId - Tenant scope.
+ * @param {string} userId - The requesting user.
+ * @param {string} notificationId - The notification to delete.
+ * @throws {Error & { status: number }} 404 if it isn't this user's notification.
+ * @returns {Promise<void>}
+ */
+async function deleteNotification(companyId, userId, notificationId) {
+    const result = await Notification.deleteOne({ _id: notificationId, companyId, recipient: userId });
+    if (result.deletedCount === 0) {
+        throw httpError(404, 'Notification not found');
+    }
+}
+
+/**
  * Marks every unread notification of the user read.
  *
  * @param {string} companyId - Tenant scope.
@@ -302,5 +322,6 @@ module.exports = {
     listForUser,
     getUnreadCount,
     markRead,
+    deleteNotification,
     markAllRead,
 };

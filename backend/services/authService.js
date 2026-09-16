@@ -14,6 +14,7 @@ const {
     REFRESH_REUSE_GRACE_MS,
 } = require('../constants/auth');
 const { httpError } = require('../utils/httpError');
+const mediaStorage = require('../utils/mediaStorage');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -406,7 +407,7 @@ async function updateProfile(userId, body) {
  * Sets the authenticated user's avatar to a newly-uploaded image.
  *
  * @param {string} userId - The requesting user's id.
- * @param {{ filename: string }} file - The uploaded file (from multer).
+ * @param {{ buffer: Buffer, mimetype: string }} file - The uploaded file (from multer memory storage).
  * @throws {Error & { status: number }} 400 if no file was uploaded; 404 if the user no longer exists.
  * @returns {Promise<Object>} Shaped profile object.
  */
@@ -415,7 +416,19 @@ async function uploadAvatar(userId, file) {
         throw httpError(400, 'Avatar image file is required');
     }
 
-    const avatarUrl = `/uploads/${file.filename}`;
+    const previousUser = await User.findById(userId);
+    if (!previousUser) {
+        throw httpError(404, 'User not found');
+    }
+    const previousFileId = mediaStorage.idFromUrl(previousUser.avatar);
+
+    const fileId = await mediaStorage.storeFile({
+        buffer: file.buffer,
+        filename: `avatar-${userId}`,
+        contentType: file.mimetype,
+    });
+    const avatarUrl = `/uploads/${fileId}`;
+
     const user = await User.findByIdAndUpdate(
         userId,
         { avatar: avatarUrl },
@@ -424,6 +437,10 @@ async function uploadAvatar(userId, file) {
 
     if (!user) {
         throw httpError(404, 'User not found');
+    }
+
+    if (previousFileId) {
+        await mediaStorage.deleteFile(previousFileId);
     }
 
     return {

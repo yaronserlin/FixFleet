@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { ROLES, ALL_ROLES, DEFAULT_ROLE } = require('../constants/roles');
 const { BCRYPT_SALT_ROUNDS } = require('../constants/auth');
 const { httpError } = require('../utils/httpError');
+const mediaStorage = require('../utils/mediaStorage');
 
 const ALLOWED_ROLES = ALL_ROLES;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -149,6 +150,11 @@ async function deleteUser(companyId, actingUserId, targetUserId) {
     }
 
     await User.findByIdAndDelete(targetUserId);
+
+    const avatarFileId = mediaStorage.idFromUrl(targetUser.avatar);
+    if (avatarFileId) {
+        await mediaStorage.deleteFile(avatarFileId);
+    }
 }
 
 module.exports = {

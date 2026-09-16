@@ -1,14 +1,11 @@
 const request = require('supertest');
-const fs = require('fs');
-const path = require('path');
 const { connectTestDB, closeTestDB, registerCompanyAdmin } = require('./helpers/setup');
+const mediaStorage = require('../utils/mediaStorage');
 
 const app = require('../app');
 let server;
 
 jest.setTimeout(90000);
-
-const uploadsDir = path.join(__dirname, '../uploads');
 
 beforeAll(async () => {
     await connectTestDB();
@@ -63,20 +60,18 @@ describe('App-level middleware and error handling', () => {
     });
 
     describe('GET /uploads/:filename', () => {
-        const filename = `test-file-${Date.now()}.pdf`;
-        const filePath = path.join(uploadsDir, filename);
+        let filename;
 
-        beforeAll(() => {
-            if (!fs.existsSync(uploadsDir)) {
-                fs.mkdirSync(uploadsDir, { recursive: true });
-            }
-            fs.writeFileSync(filePath, '%PDF-1.4 test file');
+        beforeAll(async () => {
+            filename = await mediaStorage.storeFile({
+                buffer: Buffer.from('%PDF-1.4 test file'),
+                filename: 'test-file.pdf',
+                contentType: 'application/pdf',
+            });
         });
 
-        afterAll(() => {
-            if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
-            }
+        afterAll(async () => {
+            await mediaStorage.deleteFile(filename);
         });
 
         it('requires authentication', async () => {
@@ -84,7 +79,7 @@ describe('App-level middleware and error handling', () => {
             expect(res.status).toBe(401);
         });
 
-        it('returns 404 when the file does not exist on disk', async () => {
+        it('returns 404 for a nonexistent or malformed id', async () => {
             const { token } = await registerCompanyAdmin(server);
             const res = await request(server)
                 .get('/uploads/does-not-exist-at-all.pdf')

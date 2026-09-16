@@ -1,40 +1,5 @@
 // middleware/uploadMiddleware.js
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-
-const uploadsDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-    /**
-     * Always writes uploaded files to the shared `backend/uploads/` directory.
-     * @param {import('express').Request} req - Express request (unused).
-     * @param {Express.Multer.File} file - The incoming file (unused).
-     * @param {(error: Error|null, destination: string) => void} cb - Multer callback.
-     * @returns {void}
-     */
-    destination: (req, file, cb) => {
-        cb(null, uploadsDir);
-    },
-    /**
-     * Generates a collision-resistant filename: a `book-`/`photo-` prefix
-     * based on mime type, a timestamp + random suffix for uniqueness, and
-     * the original file's extension (lowercased).
-     * @param {import('express').Request} req - Express request (unused).
-     * @param {Express.Multer.File} file - The incoming file; reads `mimetype` and `originalname`.
-     * @param {(error: Error|null, filename: string) => void} cb - Multer callback.
-     * @returns {void}
-     */
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase();
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        const prefix = file.mimetype === 'application/pdf' ? 'book' : 'photo';
-        cb(null, `${prefix}-${uniqueSuffix}${ext}`);
-    },
-});
 
 /**
  * Restricts uploads to jpeg/png/webp/gif images and PDF documents by mime
@@ -65,14 +30,19 @@ const fileFilter = (req, file, cb) => {
 
 /**
  * Configured multer instance used by every file-upload route (avatars,
- * fault photos, equipment book PDFs): disk storage under `backend/uploads/`
- * with collision-resistant filenames, a 50MB per-file size limit, and the
- * jpeg/png/webp/gif/PDF mime-type filter above. Routes call `.single(field)`
- * or `.array(field, maxCount)` on this instance (see routes/*.js).
+ * fault photos, equipment book PDFs): in-memory storage (`req.file(s).buffer`)
+ * with a 50MB per-file size limit and the jpeg/png/webp/gif/PDF mime-type
+ * filter above. Routes call `.single(field)` or `.array(field, maxCount)`
+ * on this instance (see routes/*.js).
+ *
+ * Memory, not disk: callers (services/faultService.js, equipmentService.js,
+ * authService.js) hand the buffer straight to utils/mediaStorage.js, which
+ * persists it to GridFS -- see that module for why disk storage was
+ * dropped (it doesn't survive a redeploy on most hosts).
  * @type {import('multer').Multer}
  */
 const upload = multer({
-    storage,
+    storage: multer.memoryStorage(),
     fileFilter,
     limits: {
         fileSize: 50 * 1024 * 1024, // 50MB

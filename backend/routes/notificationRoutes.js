@@ -7,6 +7,7 @@ const {
     getMyNotifications,
     getUnreadCount,
     markRead,
+    deleteNotification,
     markAllRead,
     sendAnnouncement,
     getPushPublicKey,
@@ -34,5 +35,6 @@ router.post('/announcements', ensureAdmin, sendAnnouncement);
 
 // Declared last so the literal paths above are never shadowed by `:id`.
 router.patch('/:id/read', validateObjectId('id'), markRead);
+router.delete('/:id', validateObjectId('id'), deleteNotification);
 
 module.exports = router;

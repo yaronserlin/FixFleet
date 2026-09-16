@@ -5,6 +5,7 @@ const { DEFAULT_PAGE, DEFAULT_LIMIT, MAX_LIMIT } = require('../constants/paginat
 const { FAULT_STATUS, ALL_FAULT_STATUSES } = require('../constants/faultStatus');
 const { syncEquipmentEngineHours } = require('../utils/equipmentEngineHours');
 const { httpError } = require('../utils/httpError');
+const mediaStorage = require('../utils/mediaStorage');
 
 const FAULT_POPULATE_FIELDS = [
     ['tool', 'name serialNumber model'],
@@ -83,7 +84,7 @@ async function getFaultById(companyId, faultId) {
  * @param {string} companyId - Tenant scope for the new fault and for the referenced tool lookup.
  * @param {string} userId - The reporting user (stored as `operator`).
  * @param {{ tool?: string, description?: string, code?: string, photos?: string|string[], engineHours?: string|number }} body - Raw request body.
- * @param {Array<{ filename: string }>} [files] - Uploaded photo files (from multer), if any.
+ * @param {Array<{ buffer: Buffer, mimetype: string, originalname: string }>} [files] - Uploaded photo files (from multer memory storage), if any.
  * @throws {Error & { status: number }} 400 if description/tool are missing or the tool doesn't belong to this company.
  * @returns {Promise<Object>} The created, populated fault.
  */
@@ -108,8 +109,17 @@ async function createFault(companyId, userId, body, files = []) {
         throw httpError(400, 'Referenced tool does not exist in your organization');
     }
 
-    // Gather uploaded photo paths / filenames
-    const uploadedPhotos = files ? files.map(f => `/uploads/${f.filename}`) : [];
+    // Store each uploaded photo in GridFS and collect its `/uploads/<id>` reference.
+    const uploadedPhotos = files && files.length
+        ? await Promise.all(files.map(async (f) => {
+            const id = await mediaStorage.storeFile({
+                buffer: f.buffer,
+                filename: f.originalname,
+                contentType: f.mimetype,
+            });
+            return `/uploads/${id}`;
+        }))
+        : [];
 
     // Parse any photo URLs sent in the body
     let additionalPhotos = [];
@@ -250,6 +260,16 @@ async function deleteFault(companyId, faultId) {
     if (!fault) {
         throw httpError(404, 'Fault not found');
     }
+
+    // Best-effort: an externally-hosted photo URL has nothing in GridFS to
+    // delete (idFromUrl returns null for those), and a storage hiccup here
+    // must never turn an already-completed delete into an error.
+    await Promise.all(
+        (fault.photos || [])
+            .map(mediaStorage.idFromUrl)
+            .filter(Boolean)
+            .map(id => mediaStorage.deleteFile(id))
+    );
 
     if (fault.tool) {
         const toolId = fault.tool._id || fault.tool;

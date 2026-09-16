@@ -404,6 +404,64 @@ describe('Notifications', () => {
         });
     });
 
+    describe('DELETE /api/notifications/:id', () => {
+        it('deletes an unread notification and decrements the unread count', async () => {
+            const { token: adminToken } = await registerCompanyAdmin(server);
+            const mechanic = await createMember(adminToken, 'mechanic');
+            await request(server)
+                .post('/api/notifications/announcements')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({ title: 'Gone soon', body: 'Delete me' });
+
+            const feed = await listNotifications(mechanic.token);
+            const id = feed.body.notifications[0]._id;
+
+            const del = await request(server)
+                .delete(`/api/notifications/${id}`)
+                .set('Authorization', `Bearer ${mechanic.token}`);
+            expect(del.status).toBe(204);
+
+            const after = await listNotifications(mechanic.token);
+            expect(after.body.notifications.find(n => n._id === id)).toBeUndefined();
+            expect(after.body.unreadCount).toBe(0);
+        });
+
+        it('cannot delete someone else\'s notification', async () => {
+            const { token: adminToken } = await registerCompanyAdmin(server);
+            const mechanic = await createMember(adminToken, 'mechanic');
+            const other = await createMember(adminToken, 'operator');
+
+            await request(server)
+                .post('/api/notifications/announcements')
+                .set('Authorization', `Bearer ${adminToken}`)
+                .send({ title: 'For both', body: 'Hello', roles: ['mechanic'] });
+
+            const feed = await listNotifications(mechanic.token);
+            const notMine = feed.body.notifications[0]._id;
+
+            const res = await request(server)
+                .delete(`/api/notifications/${notMine}`)
+                .set('Authorization', `Bearer ${other.token}`);
+            expect(res.status).toBe(404);
+
+            const stillThere = await listNotifications(mechanic.token);
+            expect(stillThere.body.notifications.find(n => n._id === notMine)).toBeDefined();
+        });
+
+        it('rejects a malformed notification id', async () => {
+            const { token } = await registerCompanyAdmin(server);
+            const res = await request(server)
+                .delete('/api/notifications/not-an-id')
+                .set('Authorization', `Bearer ${token}`);
+            expect(res.status).toBe(400);
+        });
+
+        it('requires authentication', async () => {
+            const res = await request(server).delete('/api/notifications/507f1f77bcf86cd799439011');
+            expect(res.status).toBe(401);
+        });
+    });
+
     describe('push subscriptions', () => {
         const subscription = {
             endpoint: 'https://push.example.com/endpoint-abc',

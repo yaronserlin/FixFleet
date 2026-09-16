@@ -7,6 +7,7 @@ const { DEFAULT_PAGE, DEFAULT_LIMIT, MAX_LIMIT } = require('../constants/paginat
 const { SCHEDULE_STATUS } = require('../constants/scheduleStatus');
 const { syncEquipmentEngineHours } = require('../utils/equipmentEngineHours');
 const { httpError } = require('../utils/httpError');
+const mediaStorage = require('../utils/mediaStorage');
 
 const Tool = Equipment;
 
@@ -176,6 +177,15 @@ async function deleteTool(companyId, toolId) {
         throw httpError(404, 'Equipment not found');
     }
 
+    // Best-effort cleanup of this tool's own book PDFs in GridFS -- see the
+    // matching comment in faultService.js's deleteFault.
+    await Promise.all(
+        (tool.books || [])
+            .map(book => mediaStorage.idFromUrl(book.fileUrl))
+            .filter(Boolean)
+            .map(id => mediaStorage.deleteFile(id))
+    );
+
     // Cascade cleanup of dependent records within this company
     await Promise.all([
         Fault.deleteMany({ tool: tool._id, companyId }),
@@ -189,7 +199,7 @@ async function deleteTool(companyId, toolId) {
  *
  * @param {string} companyId - Tenant scope.
  * @param {string} toolId - The equipment's ObjectId.
- * @param {{ filename: string, originalname: string, size: number }} file - The uploaded file (from multer).
+ * @param {{ buffer: Buffer, mimetype: string, originalname: string, size: number }} file - The uploaded file (from multer memory storage).
  * @param {{ title?: string }} body - Raw request body.
  * @throws {Error & { status: number }} 400 if the file/title are missing, or 404 if the tool isn't found in this company.
  * @returns {Promise<Object>} The updated equipment document, including the new book.
@@ -203,9 +213,21 @@ async function addBook(companyId, toolId, file, body) {
         throw httpError(400, 'Book title is required');
     }
 
+    // Confirmed before storing the file so a bad toolId doesn't orphan it in GridFS.
+    const exists = await Equipment.exists({ _id: toolId, companyId });
+    if (!exists) {
+        throw httpError(404, 'Equipment not found');
+    }
+
+    const fileId = await mediaStorage.storeFile({
+        buffer: file.buffer,
+        filename: file.originalname,
+        contentType: file.mimetype,
+    });
+
     const book = {
         title: title.trim(),
-        fileUrl: `/uploads/${file.filename}`,
+        fileUrl: `/uploads/${fileId}`,
         fileName: file.originalname,
         fileSize: file.size,
         uploadedAt: new Date(),
@@ -225,7 +247,7 @@ async function addBook(companyId, toolId, file, body) {
 }
 
 /**
- * Removes a book from a tool.
+ * Removes a book from a tool, along with its PDF in GridFS.
  *
  * @param {string} companyId - Tenant scope.
  * @param {string} toolId - The equipment's ObjectId.
@@ -234,6 +256,12 @@ async function addBook(companyId, toolId, file, body) {
  * @returns {Promise<Object>} The updated equipment document.
  */
 async function deleteBook(companyId, toolId, bookId) {
+    const before = await Equipment.findOne(
+        { _id: toolId, companyId, 'books._id': bookId },
+        { 'books.$': 1 }
+    );
+    const fileId = before?.books?.[0] ? mediaStorage.idFromUrl(before.books[0].fileUrl) : null;
+
     const tool = await Equipment.findOneAndUpdate(
         { _id: toolId, companyId },
         { $pull: { books: { _id: bookId } } },
@@ -242,6 +270,10 @@ async function deleteBook(companyId, toolId, bookId) {
 
     if (!tool) {
         throw httpError(404, 'Equipment not found');
+    }
+
+    if (fileId) {
+        await mediaStorage.deleteFile(fileId);
     }
 
     return tool;

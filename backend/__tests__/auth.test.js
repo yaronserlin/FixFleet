@@ -276,7 +276,7 @@ describe('Auth Controller', () => {
                     contentType: 'image/png',
                 });
             expect(res.status).toBe(200);
-            expect(res.body.avatar).toMatch(/^\/uploads\/photo-/);
+            expect(res.body.avatar).toMatch(/^\/uploads\/[a-f0-9]{24}$/);
         });
 
         it('rejects a disallowed file type', async () => {

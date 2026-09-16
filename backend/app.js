@@ -1,8 +1,6 @@
 // app.js
 require('dotenv').config();
 const express = require('express');
-const path = require('path');
-const fs = require('fs');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
@@ -11,6 +9,7 @@ const connectDB = require('./config/db');
 const { verifyToken } = require('./middleware/authMiddleware');
 const { errorHandler } = require('./middleware/errorMiddleware');
 const { sanitizeRequest } = require('./middleware/sanitizeMiddleware');
+const mediaStorage = require('./utils/mediaStorage');
 
 // Model imports for tenant-aware media access
 const Equipment = require('./models/Equipment');
@@ -96,18 +95,27 @@ app.use((req, res, next) => {
 });
 
 // Uploads - Protected multi-tenant media delivery
-const uploadsDir = path.join(__dirname, 'uploads');
+//
+// `:filename` is a GridFS file id (see utils/mediaStorage.js), kept under
+// this historical route/param name so every already-stored `/uploads/<id>`
+// reference (Fault.photos, Equipment.books[].fileUrl, User.avatar) and every
+// frontend caller of that URL keeps working unchanged.
 app.get('/uploads/:filename', verifyToken, async (req, res, next) => {
     try {
-        const rawFilename = req.params.filename;
-        const filename = path.basename(rawFilename);
-        const filePath = path.join(uploadsDir, filename);
+        const id = req.params.filename;
+        const fileInfo = await mediaStorage.getFileInfo(id);
 
-        if (!fs.existsSync(filePath)) {
+        if (!fileInfo) {
             return res.status(404).json({ message: 'Media file not found' });
         }
 
-        const safePattern = new RegExp(filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        const safePattern = new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+
+        const serve = () => {
+            res.set('Content-Type', fileInfo.contentType || 'application/octet-stream');
+            res.set('Content-Length', fileInfo.length);
+            mediaStorage.openDownloadStream(id).on('error', next).pipe(res);
+        };
 
         // Check if resource belongs to the requesting user's company
         const [ownsEquipmentBook, ownsFaultPhoto, ownsUserAvatar] = await Promise.all([
@@ -117,14 +125,19 @@ app.get('/uploads/:filename', verifyToken, async (req, res, next) => {
         ]);
 
         if (ownsEquipmentBook || ownsFaultPhoto || ownsUserAvatar) {
-            return res.sendFile(filePath);
+            return serve();
         }
 
-        // Check if resource belongs to another company
+        // Check if resource belongs to another company. mongoose.trusted():
+        // this `$ne` is built from the authenticated user's own companyId,
+        // not request input, but the global `sanitizeFilter` (config/db.js)
+        // can't tell that -- left untrusted it rewrites `{ $ne: ... }` into
+        // `{ $eq: { $ne: ... } }`, which fails to cast (same bug fixed in
+        // services/notificationService.js).
         const [otherEquipmentBook, otherFaultPhoto, otherUserAvatar] = await Promise.all([
-            Equipment.exists({ companyId: { $ne: req.user.companyId }, 'books.fileUrl': safePattern }),
-            Fault.exists({ companyId: { $ne: req.user.companyId }, photos: safePattern }),
-            User.exists({ companyId: { $ne: req.user.companyId }, avatar: safePattern }),
+            Equipment.exists({ companyId: mongoose.trusted({ $ne: req.user.companyId }), 'books.fileUrl': safePattern }),
+            Fault.exists({ companyId: mongoose.trusted({ $ne: req.user.companyId }), photos: safePattern }),
+            User.exists({ companyId: mongoose.trusted({ $ne: req.user.companyId }), avatar: safePattern }),
         ]);
 
         if (otherEquipmentBook || otherFaultPhoto || otherUserAvatar) {
@@ -132,7 +145,7 @@ app.get('/uploads/:filename', verifyToken, async (req, res, next) => {
         }
 
         // Fallback for unassigned or general media
-        res.sendFile(filePath);
+        serve();
     } catch (err) {
         next(err);
     }

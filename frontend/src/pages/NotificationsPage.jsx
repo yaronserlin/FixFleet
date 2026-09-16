@@ -25,7 +25,7 @@ import { skeletonA11yProps } from '../components/Skeletons/skeletonA11y';
  */
 export default function NotificationsPage() {
     const navigate = useNavigate();
-    const { notifications, unreadCount, loading, refresh, markRead, markAllRead } = useNotificationFeed();
+    const { notifications, unreadCount, loading, refresh, markRead, deleteNotification, markAllRead } = useNotificationFeed();
     const [filter, setFilter] = useState('all'); // 'all' | 'unread'
 
     // Pull down to re-fetch, like every other screen.
@@ -136,6 +136,7 @@ export default function NotificationsPage() {
                                 key={notification._id}
                                 notification={notification}
                                 onSelect={handleSelect}
+                                onDelete={(n) => deleteNotification(n._id)}
                             />
                         ))}
                     </List>

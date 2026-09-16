@@ -59,6 +59,22 @@ exports.markRead = async (req, res, next) => {
 };
 
 /**
+ * DELETE /api/notifications/:id - Deletes one of the user's own notifications.
+ * @param {import('express').Request} req - Express request; uses `req.user.companyId`, `req.user.userId`, and `req.params.id`.
+ * @param {import('express').Response} res - Express response.
+ * @param {import('express').NextFunction} next - Express next function.
+ * @returns {Promise<void>}
+ */
+exports.deleteNotification = async (req, res, next) => {
+    try {
+        await notificationService.deleteNotification(req.user.companyId, req.user.userId, req.params.id);
+        res.status(204).end();
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
  * POST /api/notifications/read-all - Marks every unread notification of the user read.
  * @param {import('express').Request} req - Express request; uses `req.user.companyId` and `req.user.userId`.
  * @param {import('express').Response} res - Express response.

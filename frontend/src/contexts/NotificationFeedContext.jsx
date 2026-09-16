@@ -97,6 +97,20 @@ export function NotificationFeedProvider({ children }) {
         refresh({ showLoading: true });
     }, [canFetch, user?.id, user?._id, refresh]);
 
+    // Keep the home-screen app icon badge (Badging API) in sync with the
+    // unread count. Covers every path that changes it while the app is in
+    // the foreground -- initial load, polling, mark read/all-read -- as a
+    // companion to push-sw.js's own sync for pushes received in the
+    // background. Feature-detected and best-effort: unsupported browsers
+    // (notably iOS Safari outside an installed PWA) just skip it.
+    useEffect(() => {
+        if (!('setAppBadge' in navigator)) return;
+        const sync = unreadCount > 0
+            ? navigator.setAppBadge(unreadCount)
+            : navigator.clearAppBadge();
+        sync.catch(() => {});
+    }, [unreadCount]);
+
     // Poll the badge while the tab is visible, and do a full refetch when it
     // becomes visible again -- that's when a push notification has just
     // brought the user back and the list is most likely stale.
@@ -153,6 +167,30 @@ export function NotificationFeedProvider({ children }) {
         }
     }, [refresh]);
 
+    /**
+     * Deletes one notification, removing it from the list (and the unread
+     * count, if it was unread) optimistically -- same rationale as
+     * {@link markRead} for reading `wasUnread` from the ref.
+     */
+    const deleteNotification = useCallback(async (id) => {
+        const target = notificationsRef.current.find(n => n._id === id);
+        const wasUnread = Boolean(target) && !target.readAt;
+
+        setNotifications(prev => prev.filter(n => n._id !== id));
+        if (wasUnread) {
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+
+        try {
+            await notificationsService.deleteNotification(id);
+        } catch (err) {
+            console.warn('Failed to delete notification:', err);
+            // The server is the authority on what still exists; re-sync
+            // rather than trying to re-insert the removed row in place.
+            refresh();
+        }
+    }, [refresh]);
+
     /** Marks everything read, again optimistically. */
     const markAllRead = useCallback(async () => {
         const now = new Date().toISOString();
@@ -175,8 +213,9 @@ export function NotificationFeedProvider({ children }) {
         refresh,
         refreshUnreadCount,
         markRead,
+        deleteNotification,
         markAllRead,
-    }), [notifications, unreadCount, loading, error, refresh, refreshUnreadCount, markRead, markAllRead]);
+    }), [notifications, unreadCount, loading, error, refresh, refreshUnreadCount, markRead, deleteNotification, markAllRead]);
 
     return (
         <NotificationFeedContext.Provider value={value}>
@@ -204,6 +243,7 @@ const EMPTY_FEED = Object.freeze({
     refresh: noop,
     refreshUnreadCount: noop,
     markRead: noop,
+    deleteNotification: noop,
     markAllRead: noop,
 });
 

@@ -1,8 +1,11 @@
 // src/components/Notifications/NotificationItem.jsx
 import React from 'react';
 import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
 import ListItemButton from '@mui/material/ListItemButton';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { alpha } from '@mui/material/styles';
 import { notificationDisplay, formatRelativeTime } from './notificationPresentation';
 
@@ -15,8 +18,11 @@ import { notificationDisplay, formatRelativeTime } from './notificationPresentat
  * and a dot, which is the only difference between the two states -- the
  * text itself stays at full contrast so a read notification is still
  * comfortably legible.
+ *
+ * `onDelete` is optional: omitting it (as the bell popover does, to keep
+ * the preview compact) hides the delete button entirely.
  */
-export default function NotificationItem({ notification, onSelect, dense = false }) {
+export default function NotificationItem({ notification, onSelect, onDelete, dense = false }) {
     const { icon, color, label } = notificationDisplay(notification.type);
     const unread = !notification.readAt;
 
@@ -107,6 +113,24 @@ export default function NotificationItem({ notification, onSelect, dense = false
                         mt: 1.25,
                     }}
                 />
+            )}
+
+            {onDelete && (
+                <Tooltip title="Delete">
+                    <IconButton
+                        size="small"
+                        aria-label="Delete notification"
+                        onClick={(event) => {
+                            // Otherwise this bubbles into the row's onSelect
+                            // and marks-read/navigates before deleting it.
+                            event.stopPropagation();
+                            onDelete(notification);
+                        }}
+                        sx={{ flexShrink: 0, mt: -0.25 }}
+                    >
+                        <DeleteIcon fontSize="small" />
+                    </IconButton>
+                </Tooltip>
             )}
         </ListItemButton>
     );

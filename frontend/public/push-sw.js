@@ -36,6 +36,32 @@ function readPayload(event) {
     }
 }
 
+/**
+ * Syncs the home-screen app icon badge (the Badging API) to the server's
+ * unread count. Called on every push so the badge is accurate even if this
+ * device missed earlier pushes -- it reflects the true count, not a local
+ * increment that could drift.
+ *
+ * Best-effort and silent: unsupported browsers (notably iOS Safari, as of
+ * this writing) and any network/auth hiccup must never surface as an error,
+ * since the notification itself already showed.
+ */
+async function syncAppBadge() {
+    if (!('setAppBadge' in navigator)) return;
+    try {
+        const res = await fetch('/api/notifications/unread-count', { credentials: 'include' });
+        if (!res.ok) return;
+        const { unreadCount } = await res.json();
+        if (unreadCount > 0) {
+            await navigator.setAppBadge(unreadCount);
+        } else {
+            await navigator.clearAppBadge();
+        }
+    } catch {
+        // Best-effort only -- see comment above.
+    }
+}
+
 self.addEventListener('push', (event) => {
     const payload = readPayload(event);
     const title = payload.title || DEFAULT_TITLE;
@@ -52,7 +78,10 @@ self.addEventListener('push', (event) => {
         renotify: true,
     };
 
-    event.waitUntil(self.registration.showNotification(title, options));
+    event.waitUntil(Promise.all([
+        self.registration.showNotification(title, options),
+        syncAppBadge(),
+    ]));
 });
 
 self.addEventListener('notificationclick', (event) => {
