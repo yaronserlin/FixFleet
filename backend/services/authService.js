@@ -14,6 +14,10 @@ const {
     BCRYPT_SALT_ROUNDS,
     REFRESH_REUSE_GRACE_MS,
 } = require('../constants/auth');
+
+// Version of the legal documents (frontend/src/content/legalDocuments.js)
+// presented at signup. Bump when the published terms/privacy version changes.
+const CURRENT_TERMS_VERSION = '1.3';
 const { httpError } = require('../utils/httpError');
 const mediaStorage = require('../utils/mediaStorage');
 
@@ -197,6 +201,7 @@ async function register(body) {
             companyId: company._id,
             termsAccepted: true,
             termsAcceptedAt: new Date(),
+            termsVersion: CURRENT_TERMS_VERSION,
         });
 
         const tokens = await generateTokens(user, company._id);

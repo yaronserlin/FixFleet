@@ -148,6 +148,7 @@ function AppLayout() {
                 <Route path={ROUTES.TERMS} element={<LegalPage />} />
                 <Route path={ROUTES.PRIVACY} element={<LegalPage />} />
                 <Route path={ROUTES.LEGAL} element={<LegalPage />} />
+                <Route path={ROUTES.ACCESSIBILITY} element={<LegalPage />} />
                 <Route
                     path={ROUTES.FORCE_PASSWORD_CHANGE}
                     element={

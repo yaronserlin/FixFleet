@@ -38,6 +38,10 @@ export default function LegalFooter() {
                 <Link component="button" type="button" variant="caption" color="inherit" onClick={() => showLegal('privacy')}>
                     Privacy Policy
                 </Link>
+                <Typography variant="caption" color="text.disabled">•</Typography>
+                <Link component="button" type="button" variant="caption" color="inherit" onClick={() => showLegal('accessibility')}>
+                    Accessibility
+                </Link>
             </Box>
             <Typography variant="caption" sx={{ display: { xs: 'block', sm: 'none' } }}>
                 Fleet maintenance operations platform

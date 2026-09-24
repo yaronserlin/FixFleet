@@ -17,10 +17,13 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import GavelIcon from '@mui/icons-material/Gavel';
 import SecurityIcon from '@mui/icons-material/Security';
-import { TERMS_OF_SERVICE, PRIVACY_POLICY } from '../../content/legalDocuments';
+import AccessibleIcon from '@mui/icons-material/Accessible';
+import { LEGAL_DOCS } from '../../content/legalDocuments';
+import LanguageToggle from './LanguageToggle';
 
 export default function LegalModal({ open, onClose, defaultTab = 'terms' }) {
     const [currentTab, setCurrentTab] = useState(defaultTab);
+    const [lang, setLang] = useState('en');
 
     useEffect(() => {
         if (open && defaultTab) {
@@ -28,7 +31,14 @@ export default function LegalModal({ open, onClose, defaultTab = 'terms' }) {
         }
     }, [open, defaultTab]);
 
-    const activeDoc = currentTab === 'privacy' ? PRIVACY_POLICY : TERMS_OF_SERVICE;
+    const docSet = LEGAL_DOCS[currentTab] || LEGAL_DOCS.terms;
+    const activeDoc = docSet[lang] || docSet.en;
+    const isRtl = activeDoc.dir === 'rtl';
+
+    const tabIcon = (tab) =>
+        tab === 'privacy' ? <SecurityIcon fontSize="small" />
+        : tab === 'accessibility' ? <AccessibleIcon fontSize="small" />
+        : <GavelIcon fontSize="small" />;
 
     return (
         <Dialog
@@ -54,6 +64,7 @@ export default function LegalModal({ open, onClose, defaultTab = 'terms' }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
+                    gap: 1,
                 }}
             >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -66,7 +77,7 @@ export default function LegalModal({ open, onClose, defaultTab = 'terms' }) {
                             display: 'flex',
                         }}
                     >
-                        {currentTab === 'privacy' ? <SecurityIcon fontSize="small" /> : <GavelIcon fontSize="small" />}
+                        {tabIcon(currentTab)}
                     </Box>
                     <Box>
                         <Typography variant="h6" fontWeight={700}>
@@ -77,9 +88,12 @@ export default function LegalModal({ open, onClose, defaultTab = 'terms' }) {
                         </Typography>
                     </Box>
                 </Box>
-                <IconButton onClick={onClose} aria-label="Close dialog" size="small">
-                    <CloseIcon />
-                </IconButton>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LanguageToggle lang={lang} onChange={setLang} />
+                    <IconButton onClick={onClose} aria-label="Close dialog" size="small">
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
             </DialogTitle>
 
             <Box sx={{ px: 3, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}>
@@ -104,12 +118,20 @@ export default function LegalModal({ open, onClose, defaultTab = 'terms' }) {
                         iconPosition="start"
                         sx={{ minHeight: 48, textTransform: 'none', fontWeight: 600 }}
                     />
+                    <Tab
+                        value="accessibility"
+                        label="Accessibility"
+                        icon={<AccessibleIcon fontSize="small" />}
+                        iconPosition="start"
+                        sx={{ minHeight: 48, textTransform: 'none', fontWeight: 600 }}
+                    />
                 </Tabs>
             </Box>
 
             <DialogContent dividers sx={{ p: 3 }}>
                 <Paper
                     elevation={0}
+                    dir={isRtl ? 'rtl' : 'ltr'}
                     sx={{
                         p: { xs: 1, sm: 2 },
                         bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'background.default' : '#fafafa'),

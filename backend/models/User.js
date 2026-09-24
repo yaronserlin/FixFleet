@@ -42,6 +42,7 @@ const formatUserName = (name) => {
  * @property {boolean} [mustChangePassword=false] - When true, the user is restricted to `/auth/me/change-password`, `/auth/logout`, and `GET /auth/me` until they set a new password (see middleware/authMiddleware.js `verifyToken`). Set true for users created by an admin (services/userService.js `createUser`).
  * @property {boolean} [termsAccepted=false] - Whether the user has accepted the Terms of Service / Privacy Policy.
  * @property {Date|null} [termsAcceptedAt=null] - Timestamp of terms acceptance, or null if not yet accepted.
+ * @property {string|null} [termsVersion=null] - Version of the Terms of Service the user accepted.
  * @property {Date} createdAt - Set automatically (`timestamps: true`).
  * @property {Date} updatedAt - Set automatically (`timestamps: true`).
  */
@@ -55,6 +56,7 @@ const UserSchema = new mongoose.Schema({
     mustChangePassword: { type: Boolean, default: false },
     termsAccepted: { type: Boolean, default: false },
     termsAcceptedAt: { type: Date, default: null },
+    termsVersion: { type: String, default: null },
 }, { timestamps: true });
 
 UserSchema.pre('save', function (next) {

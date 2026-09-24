@@ -12,6 +12,7 @@ export const ROUTES = Object.freeze({
     TERMS: '/terms',
     PRIVACY: '/privacy',
     LEGAL: '/legal',
+    ACCESSIBILITY: '/accessibility',
     FORCE_PASSWORD_CHANGE: '/force-password-change',
     DASHBOARD: '/dashboard',
     EQUIPMENT: '/equipment',
