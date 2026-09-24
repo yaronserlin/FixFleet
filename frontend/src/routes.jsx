@@ -18,6 +18,7 @@ import PullToRefresh from './components/PullToRefresh/PullToRefresh';
 import { PageSkeleton } from './components/Skeletons/Skeletons';
 import LoadingComponent from './components/LoadingComponent/LoadingComponent';
 import LegalFooter from './components/Legal/LegalFooter';
+import AccessibilityMenu from './components/AccessibilityMenu/AccessibilityMenu';
 import { ROUTES } from './constants/routes';
 import { ROLES } from './constants/roles';
 
@@ -337,6 +338,7 @@ export default function AppRoutes() {
                         <PageRefreshProvider>
                             <NotificationFeedProvider>
                                 <AppLayout />
+                                <AccessibilityMenu />
                             </NotificationFeedProvider>
                         </PageRefreshProvider>
                     </FaultProvider>

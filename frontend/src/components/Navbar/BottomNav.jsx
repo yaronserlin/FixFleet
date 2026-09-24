@@ -92,6 +92,7 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
         <>
             <Paper
                 elevation={0}
+                data-a11y-obstacle=""
                 sx={{
                     display,
                     position: 'fixed',

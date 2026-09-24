@@ -80,3 +80,18 @@ a, button, [role="button"] {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* Accessibility menu (src/components/AccessibilityMenu) */
+.a11y-high-contrast body {
+  filter: contrast(1.25);
+}
+
+.a11y-high-contrast img,
+.a11y-high-contrast video {
+  filter: contrast(0.9);
+}
+
+.a11y-underline-links a,
+.a11y-underline-links .MuiLink-root {
+  text-decoration: underline !important;
+}
