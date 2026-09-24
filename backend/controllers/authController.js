@@ -1,6 +1,6 @@
 // controllers/authController.js
 const authService = require('../services/authService');
-const { REFRESH_COOKIE_MAX_AGE, ACCESS_COOKIE_MAX_AGE } = require('../constants/auth');
+const { REFRESH_COOKIE_MAX_AGE } = require('../constants/auth');
 
 /**
  * Builds the options object for an auth cookie.
@@ -21,34 +21,48 @@ const { REFRESH_COOKIE_MAX_AGE, ACCESS_COOKIE_MAX_AGE } = require('../constants/
 const getCookieOptions = (maxAge, path = '/') => ({
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    // 'none' is only needed (and only safe to need) for the one deployment
+    // shape where the SPA and the API live on different subdomains and the
+    // browser treats their XHR as third-party (e.g. Safari ITP) -- that is
+    // exactly the case COOKIE_DOMAIN exists for. Everywhere else 'lax'
+    // keeps the refresh cookie off cross-site requests entirely, which is
+    // the whole point: cookie-auth is no longer accepted for the API (see
+    // authMiddleware), so a cross-site request can no longer ride these
+    // cookies into a state-changing call.
+    sameSite: process.env.NODE_ENV === 'production' && process.env.COOKIE_DOMAIN ? 'none' : 'lax',
     ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
     maxAge,
     path,
 });
 
 /**
- * Sets the `token`, `accessToken`, and `refreshToken` auth cookies on a response.
+ * Sets the `refreshToken` auth cookie on a response. This is now the ONLY
+ * auth cookie: access tokens travel in the `Authorization: Bearer` header
+ * (the SPA keeps them in memory/localStorage), so no cookie can ever
+ * authenticate a state-changing API request -- closing the CSRF gap that
+ * cookie-based access auth with SameSite=None used to open. The refresh
+ * cookie stays path-scoped to /api/auth, so the only route a browser ever
+ * attaches it to is the refresh/logout flow itself.
  * @param {import('express').Response} res - Express response.
- * @param {string} accessToken - Signed JWT access token.
  * @param {string} refreshToken - Signed JWT refresh token.
  * @returns {void}
  */
-const setAuthCookies = (res, accessToken, refreshToken) => {
-    res.cookie('token', accessToken, getCookieOptions(ACCESS_COOKIE_MAX_AGE, '/'));
-    res.cookie('accessToken', accessToken, getCookieOptions(ACCESS_COOKIE_MAX_AGE, '/'));
+const setRefreshCookie = (res, refreshToken) => {
     res.cookie('refreshToken', refreshToken, getCookieOptions(REFRESH_COOKIE_MAX_AGE, '/api/auth'));
 };
 
 /**
- * Clears the `token`, `accessToken`, and `refreshToken` auth cookies on a response.
+ * Clears the `refreshToken` cookie, plus the legacy `token`/`accessToken`
+ * cookies so clients migrated from cookie-based access auth are cleaned up.
  * @param {import('express').Response} res - Express response.
  * @returns {void}
  */
 const clearAuthCookies = (res) => {
+    res.clearCookie('refreshToken', getCookieOptions(0, '/api/auth'));
+    // Legacy cookie names, removed from responses but possibly still stored
+    // by older clients -- clear them on every flow that resets auth state.
     res.clearCookie('token', getCookieOptions(0, '/'));
     res.clearCookie('accessToken', getCookieOptions(0, '/'));
-    res.clearCookie('refreshToken', getCookieOptions(0, '/api/auth'));
 };
 
 /**
@@ -61,13 +75,14 @@ const clearAuthCookies = (res) => {
 exports.register = async (req, res, next) => {
     try {
         const { user, tokens } = await authService.register(req.body);
-        setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+        setRefreshCookie(res, tokens.refreshToken);
 
+        // The refresh token is deliberately NOT returned in the body: it is
+        // an HTTP-only cookie so client JS never has a reason to store it.
         res.status(201).json({
             message: 'Company and admin account created successfully',
             accessToken: tokens.accessToken,
             token: tokens.token,
-            refreshToken: tokens.refreshToken,
             user,
         });
     } catch (err) {
@@ -85,12 +100,13 @@ exports.register = async (req, res, next) => {
 exports.login = async (req, res, next) => {
     try {
         const { user, tokens } = await authService.login(req.body);
-        setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+        setRefreshCookie(res, tokens.refreshToken);
 
+        // The refresh token is deliberately NOT returned in the body: it is
+        // an HTTP-only cookie so client JS never has a reason to store it.
         res.json({
             accessToken: tokens.accessToken,
             token: tokens.token,
-            refreshToken: tokens.refreshToken,
             user,
         });
     } catch (err) {
@@ -109,12 +125,13 @@ exports.refreshToken = async (req, res, next) => {
     try {
         const rawRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
         const { tokens } = await authService.rotateRefreshToken(rawRefreshToken);
-        setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+        setRefreshCookie(res, tokens.refreshToken);
 
+        // Refresh token goes back out as an HTTP-only cookie only, never in
+        // the body.
         res.json({
             accessToken: tokens.accessToken,
             token: tokens.token,
-            refreshToken: tokens.refreshToken,
         });
     } catch (err) {
         // A detected token-reuse attack revokes the whole session family; also

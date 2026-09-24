@@ -1,5 +1,6 @@
 // seeders/seeder.js
 require('dotenv').config();
+const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const connectDB = require('../config/db');
 const Company = require('../models/Company');
@@ -39,6 +40,13 @@ const linkFaults = async (faults) => {
 
 const seed = async () => {
     try {
+        // Hard guard: this script wipes every collection and creates
+        // publicly documented demo accounts. It must be impossible to run
+        // it against a production deployment by accident.
+        if (process.env.NODE_ENV === 'production') {
+            console.error('Refusing to seed: NODE_ENV=production. The seeder wipes all data and creates demo users; it is for local development only.');
+            process.exit(1);
+        }
         await connectDB();
         await Promise.all([
             Company.deleteMany(),
@@ -49,7 +57,10 @@ const seed = async () => {
             Fault.deleteMany(),
         ]);
 
-        const password = await bcrypt.hash('password123', 10);
+        // Random per-run password, printed once below -- never a
+        // hard-coded, repo-public credential.
+        const seedPassword = crypto.randomBytes(12).toString('base64url');
+        const password = await bcrypt.hash(seedPassword, 10);
 
         const valley = await Company.create({
             name: 'Green Valley Forage & Dairy',
@@ -224,9 +235,10 @@ const seed = async () => {
         await linkFaults(prairieFaults);
 
         console.log('Database seeded successfully with agricultural operations data:');
-        console.log('  1. Green Valley Forage & Dairy (admin@greenvalleyfarm.com / mechanic@greenvalleyfarm.com / operator@greenvalleyfarm.com | password123)');
+        console.log(`  Password for ALL seeded users below (generated this run): ${seedPassword}`);
+        console.log('  1. Green Valley Forage & Dairy (admin@greenvalleyfarm.com / mechanic@greenvalleyfarm.com / operator@greenvalleyfarm.com)');
         console.log(`     -> ${valleyEquipment.length} equipment items, ${valleyFaults.length} faults, ${valleyParts.length} parts`);
-        console.log('  2. Prairie Crest Grain & Hay (admin@prairiecrestfarm.com / mechanic@prairiecrestfarm.com / operator@prairiecrestfarm.com | password123)');
+        console.log('  2. Prairie Crest Grain & Hay (admin@prairiecrestfarm.com / mechanic@prairiecrestfarm.com / operator@prairiecrestfarm.com)');
         console.log(`     -> ${prairieEquipment.length} equipment items, ${prairieFaults.length} faults, ${prairieParts.length} parts`);
         void valleyAdmin;
         void prairieAdmin;

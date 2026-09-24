@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { connectTestDB, closeTestDB, registerCompanyAdmin, uniqueEmail } = require('./helpers/setup');
+const { connectTestDB, closeTestDB, registerCompanyAdmin, uniqueEmail, extractRefreshToken } = require('./helpers/setup');
 const RefreshToken = require('../models/RefreshToken');
 const crypto = require('crypto');
 
@@ -53,12 +53,12 @@ describe('Auth Controller', () => {
             expect(res.body.message).toMatch(/valid email/i);
         });
 
-        it('rejects a password shorter than 6 characters', async () => {
+        it('rejects a password shorter than 8 characters', async () => {
             const res = await request(server).post('/api/auth/register').send({
                 companyName: 'Valid Co',
                 name: 'Valid Name',
                 email: uniqueEmail(),
-                password: '123',
+                password: '1234567',
             });
             expect(res.status).toBe(400);
             expect(res.body.message).toMatch(/password must be/i);
@@ -304,12 +304,12 @@ describe('Auth Controller', () => {
             expect(res.body.message).toMatch(/current and new password/i);
         });
 
-        it('rejects a new password shorter than 6 characters', async () => {
+        it('rejects a new password shorter than 8 characters', async () => {
             const { token } = await registerCompanyAdmin(server);
             const res = await request(server)
                 .post('/api/auth/me/change-password')
                 .set('Authorization', `Bearer ${token}`)
-                .send({ currentPassword: 'password123', newPassword: '123' });
+                .send({ currentPassword: 'password123', newPassword: '1234567' });
             expect(res.status).toBe(400);
             expect(res.body.message).toMatch(/new password must be/i);
         });
@@ -417,6 +417,49 @@ describe('Auth Controller', () => {
         });
     });
 
+    describe('Transport security regressions', () => {
+        it('never returns the refresh token in register/login response bodies (HTTP-only cookie only)', async () => {
+            const { res, email, password } = await registerCompanyAdmin(server);
+            expect(res.status).toBe(201);
+            expect(res.body.refreshToken).toBeUndefined();
+            expect(extractRefreshToken(res.headers['set-cookie'])).toBeDefined();
+
+            const loginRes = await request(server)
+                .post('/api/auth/login')
+                .send({ email, password });
+            expect(loginRes.status).toBe(200);
+            expect(loginRes.body.refreshToken).toBeUndefined();
+            expect(extractRefreshToken(loginRes.headers['set-cookie'])).toBeDefined();
+        });
+
+        it('rejects cookie-only authentication on a protected route even with a valid access token (CSRF hardening)', async () => {
+            // A browser attaches cookies to cross-site requests, so if the
+            // API accepted cookie-based access auth, any malicious page
+            // could act as a logged-in user. The Bearer header is the only
+            // accepted transport.
+            const { accessToken } = await registerCompanyAdmin(server);
+            expect(accessToken).toBeDefined();
+
+            const res = await request(server)
+                .get('/api/auth/me')
+                .set('Cookie', [`accessToken=${accessToken}`]);
+            expect(res.status).toBe(401);
+
+            const resWithHeader = await request(server)
+                .get('/api/auth/me')
+                .set('Authorization', `Bearer ${accessToken}`);
+            expect(resWithHeader.status).toBe(200);
+        });
+
+        it('no longer sets the legacy duplicate token/accessToken cookies', async () => {
+            const { res } = await registerCompanyAdmin(server);
+            const cookies = res.headers['set-cookie'] || [];
+            expect(cookies.find(c => c.startsWith('token='))).toBeUndefined();
+            expect(cookies.find(c => c.startsWith('accessToken='))).toBeUndefined();
+            expect(cookies.find(c => c.startsWith('refreshToken='))).toBeDefined();
+        });
+    });
+
     describe('POST /api/auth/refresh', () => {
         it('rejects a request with no refresh token provided', async () => {
             const res = await request(server).post('/api/auth/refresh').send({});
@@ -443,8 +486,11 @@ describe('Auth Controller', () => {
             expect(refreshRes.status).toBe(200);
             expect(refreshRes.body.accessToken).toBeDefined();
             expect(refreshRes.body.token).toBeDefined();
-            expect(refreshRes.body.refreshToken).toBeDefined();
-            expect(refreshRes.body.refreshToken).not.toBe(initialRefreshToken);
+            // The rotated refresh token arrives as an HTTP-only cookie, never in the body
+            expect(refreshRes.body.refreshToken).toBeUndefined();
+            const rotatedRefreshToken = extractRefreshToken(refreshRes.headers['set-cookie']);
+            expect(rotatedRefreshToken).toBeDefined();
+            expect(rotatedRefreshToken).not.toBe(initialRefreshToken);
 
             // New access token works to access protected route
             const meRes = await request(server)
@@ -467,7 +513,8 @@ describe('Auth Controller', () => {
 
             expect(refreshRes.status).toBe(200);
             expect(refreshRes.body.accessToken).toBeDefined();
-            expect(refreshRes.body.refreshToken).toBeDefined();
+            expect(refreshRes.body.refreshToken).toBeUndefined();
+            expect(extractRefreshToken(refreshRes.headers['set-cookie'])).toBeDefined();
         });
 
         it('tolerates near-simultaneous reuse of a just-rotated refresh token (concurrent-tab race)', async () => {
@@ -495,19 +542,18 @@ describe('Auth Controller', () => {
                 .send({ refreshToken: initialRefreshToken });
             expect(racingReuse.status).toBe(200);
             expect(racingReuse.body.accessToken).toBeDefined();
-            expect(racingReuse.body.refreshToken).toBeDefined();
 
             // Both tabs end up with independently valid, usable sessions --
             // neither the original refresh's nor the racing refresh's new
             // token was punished by family-wide revocation.
             const afterFirst = await request(server)
                 .post('/api/auth/refresh')
-                .send({ refreshToken: firstRefresh.body.refreshToken });
+                .send({ refreshToken: extractRefreshToken(firstRefresh.headers['set-cookie']) });
             expect(afterFirst.status).toBe(200);
 
             const afterRacing = await request(server)
                 .post('/api/auth/refresh')
-                .send({ refreshToken: racingReuse.body.refreshToken });
+                .send({ refreshToken: extractRefreshToken(racingReuse.headers['set-cookie']) });
             expect(afterRacing.status).toBe(200);
         });
 
@@ -540,7 +586,7 @@ describe('Auth Controller', () => {
             // to the genuine (stale) reuse.
             const attemptWithRotated = await request(server)
                 .post('/api/auth/refresh')
-                .send({ refreshToken: firstRefresh.body.refreshToken });
+                .send({ refreshToken: extractRefreshToken(firstRefresh.headers['set-cookie']) });
             expect(attemptWithRotated.status).toBe(403);
             expect(attemptWithRotated.body.code).toBe('TOKEN_REUSE_DETECTED');
         });

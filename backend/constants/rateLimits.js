@@ -14,4 +14,15 @@ const AUTH_RATE_LIMIT = Object.freeze({
     max: 20,
 });
 
-module.exports = { AUTH_RATE_LIMIT };
+/**
+ * Baseline limiter applied to every API route, not just auth: generous
+ * enough for a busy SPA session (which fires bursts of reads per screen)
+ * but caps scripted hammering of the data and upload endpoints.
+ * @type {{ windowMs: number, max: number }}
+ */
+const GENERAL_RATE_LIMIT = Object.freeze({
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+});
+
+module.exports = { AUTH_RATE_LIMIT, GENERAL_RATE_LIMIT };

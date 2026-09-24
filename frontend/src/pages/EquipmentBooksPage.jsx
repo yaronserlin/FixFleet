@@ -144,13 +144,13 @@ export default function EquipmentBooksPage() {
                     placeholder="Search by equipment name, model, serial number, or manual title..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    InputProps={{
+                    slotProps={{ input: {
                         startAdornment: (
                             <InputAdornment position="start">
                                 <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                             </InputAdornment>
                         ),
-                    }}
+                    } }}
                 />
             </Paper>
 

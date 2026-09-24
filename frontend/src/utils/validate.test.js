@@ -43,7 +43,7 @@ describe('validatePassword', () => {
     });
 
     it('rejects short passwords', () => {
-        expect(validatePassword('123')).toMatch(/at least 6/i);
+        expect(validatePassword('1234567')).toMatch(/at least 8/i);
     });
 
     it('accepts a password of sufficient length', () => {

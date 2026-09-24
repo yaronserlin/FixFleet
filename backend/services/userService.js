@@ -46,8 +46,8 @@ async function createUser(companyId, body) {
     if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
         throw httpError(400, 'A valid email address is required');
     }
-    if (!password || typeof password !== 'string' || password.length < 6) {
-        throw httpError(400, 'Password must be at least 6 characters');
+    if (!password || typeof password !== 'string' || password.length < 8) {
+        throw httpError(400, 'Password must be at least 8 characters');
     }
 
     const normalizedEmail = email.trim().toLowerCase();

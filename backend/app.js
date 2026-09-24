@@ -1,6 +1,7 @@
 // app.js
 require('dotenv').config();
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
@@ -26,6 +27,7 @@ const partRoutes = require('./routes/partRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const logger = require('./utils/logger');
+const { GENERAL_RATE_LIMIT } = require('./constants/rateLimits');
 
 const app = express();
 
@@ -83,6 +85,16 @@ app.use(express.urlencoded({ extended: true }));
 // NoSQL injection defense-in-depth: strip any `$`-prefixed or dotted key
 // from user-controlled input before it reaches route handlers.
 app.use(sanitizeRequest);
+
+// Baseline rate limit on every route (auth routes add their own, stricter
+// limiter on top -- see routes/authRoutes.js). Skipped in tests, which
+// fire hundreds of requests per suite.
+app.use(rateLimit({
+    ...GENERAL_RATE_LIMIT,
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'test',
+}));
 
 // HTTP Request Logger
 app.use((req, res, next) => {

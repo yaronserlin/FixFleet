@@ -38,6 +38,14 @@ async function closeTestDB() {
     }
 }
 
+// Pulls the raw refresh token out of a response's Set-Cookie header array.
+// The refresh token is only ever transported in this HTTP-only cookie now.
+function extractRefreshToken(setCookies) {
+    const cookie = (setCookies || []).find(c => c.startsWith('refreshToken='));
+    if (!cookie) return undefined;
+    return decodeURIComponent(cookie.split(';')[0].slice('refreshToken='.length));
+}
+
 let counter = 0;
 function uniqueEmail(prefix = 'user') {
     counter += 1;
@@ -60,7 +68,9 @@ async function registerCompanyAdmin(app, overrides = {}) {
         res,
         token: res.body.token,
         accessToken: res.body.accessToken,
-        refreshToken: res.body.refreshToken,
+        // The API no longer returns the refresh token in response bodies --
+        // it is an HTTP-only cookie -- so tests read it from Set-Cookie.
+        refreshToken: extractRefreshToken(res.headers['set-cookie']),
         cookie: res.headers['set-cookie'] ? res.headers['set-cookie'][0] : undefined,
         cookies: res.headers['set-cookie'],
         userId: res.body.user && res.body.user._id,
@@ -108,4 +118,5 @@ module.exports = {
     uniqueEmail,
     registerCompanyAdmin,
     createCompanyAndUser,
+    extractRefreshToken,
 };

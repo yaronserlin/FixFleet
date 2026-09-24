@@ -42,6 +42,14 @@ describe('LoginForm', () => {
         expect(container.querySelector('button[type="submit"]')).toBeDisabled();
     });
 
+    test('renders the email field start-adornment icon (slotProps migration)', () => {
+        // Regression: after the MUI v9 upgrade, `InputProps` was silently
+        // dropped to the DOM and this icon disappeared. It must be passed
+        // via slotProps.input so it actually renders.
+        render(<LoginForm />);
+        expect(screen.getByTestId('EmailIcon')).toBeInTheDocument();
+    });
+
     test('calls handleSubmit on form submission', () => {
         render(<LoginForm />);
         fireEvent.submit(screen.getByRole('button', { name: /sign in|login/i }));

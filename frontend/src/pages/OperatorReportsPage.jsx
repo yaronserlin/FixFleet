@@ -190,13 +190,13 @@ export default function OperatorReportsPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     sx={{ width: { xs: '100%', md: 320 } }}
-                    InputProps={{
+                    slotProps={{ input: {
                         startAdornment: (
                             <InputAdornment position="start">
                                 <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                             </InputAdornment>
                         ),
-                    }}
+                    } }}
                 />
             </Paper>
 

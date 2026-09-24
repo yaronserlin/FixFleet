@@ -89,13 +89,13 @@ export default function ToolsPanel({ tools = [], loading, error, onCreate, onUpd
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 fullWidth
-                InputProps={{
+                slotProps={{ input: {
                     startAdornment: (
                         <InputAdornment position="start">
                             <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                         </InputAdornment>
                     ),
-                }}
+                } }}
                 sx={{ mb: 2 }}
             />
             {/* Mobile Card View (< sm) */}

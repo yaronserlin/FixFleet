@@ -38,8 +38,8 @@ export default function ForcePasswordChangeDialog() {
         e.preventDefault();
         setError('');
 
-        if (!newPassword || newPassword.length < 6) {
-            setError('New password must be at least 6 characters');
+        if (!newPassword || newPassword.length < 8) {
+            setError('New password must be at least 8 characters');
             return;
         }
         if (newPassword !== confirmPassword) {
@@ -122,7 +122,7 @@ export default function ForcePasswordChangeDialog() {
 
                     <PasswordField
                         fullWidth
-                        label="New Password (min 6 characters)"
+                        label="New Password (min 8 characters)"
                         name="newPassword"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}

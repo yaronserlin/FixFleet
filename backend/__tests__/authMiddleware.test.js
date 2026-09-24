@@ -56,8 +56,12 @@ describe('authMiddleware.verifyToken', () => {
         expect(next).not.toHaveBeenCalled();
     });
 
-    it('authenticates via the `token` cookie', async () => {
-        const { user, company } = await createCompanyAndUser();
+    it('rejects cookie-only auth via the legacy `token` cookie (CSRF hardening: Bearer only)', async () => {
+        // Regression: access tokens used to be accepted from cookies. A
+        // cookie rides cross-site requests, so that made every mutating
+        // route CSRF-able. Cookie-only requests must now fail even with a
+        // perfectly valid token inside.
+        const { user } = await createCompanyAndUser();
         const token = signAccessToken(user._id.toString());
         const req = { cookies: { token }, headers: {} };
         const res = mockRes();
@@ -65,12 +69,12 @@ describe('authMiddleware.verifyToken', () => {
 
         await verifyToken(req, res, next);
 
-        expect(next).toHaveBeenCalledTimes(1);
-        expect(req.user.userId).toBe(user._id.toString());
-        expect(req.user.companyId.toString()).toBe(company._id.toString());
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ message: 'No token provided' });
+        expect(next).not.toHaveBeenCalled();
     });
 
-    it('authenticates via the `accessToken` cookie when `token` cookie is absent', async () => {
+    it('rejects cookie-only auth via the legacy `accessToken` cookie (CSRF hardening: Bearer only)', async () => {
         const { user } = await createCompanyAndUser();
         const accessToken = signAccessToken(user._id.toString());
         const req = { cookies: { accessToken }, headers: {} };
@@ -79,8 +83,9 @@ describe('authMiddleware.verifyToken', () => {
 
         await verifyToken(req, res, next);
 
-        expect(next).toHaveBeenCalledTimes(1);
-        expect(req.user.userId).toBe(user._id.toString());
+        expect(res.status).toHaveBeenCalledWith(401);
+        expect(res.json).toHaveBeenCalledWith({ message: 'No token provided' });
+        expect(next).not.toHaveBeenCalled();
     });
 
     it('authenticates via a Bearer Authorization header', async () => {
@@ -102,7 +107,7 @@ describe('authMiddleware.verifyToken', () => {
         const token = signAccessToken(user._id.toString());
         await user.deleteOne();
 
-        const req = { cookies: { token }, headers: {} };
+        const req = { cookies: {}, headers: { authorization: `Bearer ${token}` } };
         const res = mockRes();
         const next = jest.fn();
 
@@ -118,7 +123,7 @@ describe('authMiddleware.verifyToken', () => {
         await Company.findByIdAndDelete(company._id);
         const token = signAccessToken(user._id.toString());
 
-        const req = { cookies: { token }, headers: {} };
+        const req = { cookies: {}, headers: { authorization: `Bearer ${token}` } };
         const res = mockRes();
         const next = jest.fn();
 
@@ -133,7 +138,7 @@ describe('authMiddleware.verifyToken', () => {
         const { user } = await createCompanyAndUser({ companyIsActive: false });
         const token = signAccessToken(user._id.toString());
 
-        const req = { cookies: { token }, headers: {} };
+        const req = { cookies: {}, headers: { authorization: `Bearer ${token}` } };
         const res = mockRes();
         const next = jest.fn();
 
@@ -148,7 +153,7 @@ describe('authMiddleware.verifyToken', () => {
         const { user } = await createCompanyAndUser();
         const token = signAccessToken(user._id.toString(), { expiresIn: '-10s' });
 
-        const req = { cookies: { token }, headers: {} };
+        const req = { cookies: {}, headers: { authorization: `Bearer ${token}` } };
         const res = mockRes();
         const next = jest.fn();
 
@@ -163,7 +168,7 @@ describe('authMiddleware.verifyToken', () => {
         const { user } = await createCompanyAndUser();
         const badToken = jwt.sign({ userId: user._id.toString() }, 'totally-wrong-secret', { algorithm: 'HS256' });
 
-        const req = { cookies: { token: badToken }, headers: {} };
+        const req = { cookies: {}, headers: { authorization: `Bearer ${badToken}` } };
         const res = mockRes();
         const next = jest.fn();
 
@@ -175,7 +180,7 @@ describe('authMiddleware.verifyToken', () => {
     });
 
     it('rejects a garbage token string that fails to parse', async () => {
-        const req = { cookies: { token: 'not.a.jwt' }, headers: {} };
+        const req = { cookies: {}, headers: { authorization: 'Bearer not.a.jwt' } };
         const res = mockRes();
         const next = jest.fn();
 
@@ -190,7 +195,7 @@ describe('authMiddleware.verifyToken', () => {
             const { user } = await createCompanyAndUser({ mustChangePassword: true });
             const token = signAccessToken(user._id.toString());
 
-            const req = { cookies: { token }, headers: {}, originalUrl: '/api/tools', method: 'GET' };
+            const req = { cookies: {}, headers: { authorization: `Bearer ${token}` }, originalUrl: '/api/tools', method: 'GET' };
             const res = mockRes();
             const next = jest.fn();
 
@@ -212,7 +217,7 @@ describe('authMiddleware.verifyToken', () => {
             const { user } = await createCompanyAndUser({ mustChangePassword: true });
             const token = signAccessToken(user._id.toString());
 
-            const req = { cookies: { token }, headers: {}, originalUrl: `${path}?x=1`, method };
+            const req = { cookies: {}, headers: { authorization: `Bearer ${token}` }, originalUrl: `${path}?x=1`, method };
             const res = mockRes();
             const next = jest.fn();
 
@@ -227,7 +232,7 @@ describe('authMiddleware.verifyToken', () => {
             const token = signAccessToken(user._id.toString());
 
             // /auth/me is only exempt on GET; anything else must still be blocked.
-            const req = { cookies: { token }, headers: {}, originalUrl: '/api/auth/me', method: 'PUT' };
+            const req = { cookies: {}, headers: { authorization: `Bearer ${token}` }, originalUrl: '/api/auth/me', method: 'PUT' };
             const res = mockRes();
             const next = jest.fn();
 

@@ -219,8 +219,8 @@ export default function AccountPage() {
     // Calculate password strength
     const getStrength = (val) => {
         if (!val) return 0;
-        if (val.length < 6) return 1;
-        if (val.length < 8) return 2;
+        if (val.length < 8) return 1;
+        if (val.length < 10) return 2;
         if (val.length < 12) return 3;
         return 4;
     };

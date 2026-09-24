@@ -195,13 +195,13 @@ export default function UserPanel({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     fullWidth
-                    InputProps={{
+                    slotProps={{ input: {
                         startAdornment: (
                             <InputAdornment position="start">
                                 <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                             </InputAdornment>
                         ),
-                    }}
+                    } }}
                     sx={{ mb: 2 }}
                 />
 
@@ -362,13 +362,13 @@ export default function UserPanel({
 
                 {/* Desktop Table View (>= sm) */}
                 <TableContainer sx={{ display: { xs: 'none', sm: 'block' }, width: '100%', overflowX: 'auto', borderRadius: 2 }}>
-                    <Table size="small">
+                    <Table size="small" sx={{ tableLayout: 'fixed', width: '100%' }}>
                         <TableHead sx={{ bgcolor: 'background.subtle' }}>
                             <TableRow>
                                 <TableCell sx={{ fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Name</TableCell>
                                 <TableCell sx={{ fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Email</TableCell>
-                                <TableCell sx={{ fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Role</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Actions</TableCell>
+                                <TableCell sx={{ fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em', width: 170 }}>Role</TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.04em', width: 64 }}>Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -382,7 +382,7 @@ export default function UserPanel({
                                 return (
                                     <TableRow key={u._id} hover sx={{ height: 56 }}>
                                         <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                                                 <Typography variant="body2" fontWeight={600}>
                                                     {formatUserName(u.name)}
                                                 </Typography>
@@ -400,13 +400,13 @@ export default function UserPanel({
                                                         size="small"
                                                         color="warning"
                                                         variant="outlined"
-                                                        sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }}
+                                                        sx={{ height: 'auto', fontSize: '0.65rem', fontWeight: 600, '& .MuiChip-label': { whiteSpace: 'normal', px: 0.75, py: 0.25 } }}
                                                     />
                                                 )}
                                             </Box>
                                         </TableCell>
                                         <TableCell>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" color="text.secondary" sx={{ wordBreak: 'break-all' }}>
                                                 {u.email}
                                             </Typography>
                                         </TableCell>
@@ -418,7 +418,7 @@ export default function UserPanel({
                                                     disableHoverListener={!isSelf}
                                                 >
                                                     <span>
-                                                        <FormControl variant="outlined" size="small" sx={{ minWidth: 110 }}>
+                                                        <FormControl variant="outlined" size="small" sx={{ minWidth: 140 }}>
                                                             <Select
                                                                 value={selectedRole}
                                                                 disabled={isSelf || isSaving}

@@ -39,8 +39,8 @@ export default function ForcePasswordChangePage() {
         e.preventDefault();
         setError('');
 
-        if (!newPassword || newPassword.length < 6) {
-            setError('New password must be at least 6 characters');
+        if (!newPassword || newPassword.length < 8) {
+            setError('New password must be at least 8 characters');
             return;
         }
         if (newPassword !== confirmPassword) {
@@ -136,7 +136,7 @@ export default function ForcePasswordChangePage() {
                             onChange={(e) => setNewPassword(e.target.value)}
                             required
                             disabled={loading}
-                            helperText="Minimum 6 characters"
+                            helperText="Minimum 8 characters"
                             startAdornment={<LockOutlinedIcon sx={{ color: 'text.disabled', fontSize: 20 }} />}
                         />
 

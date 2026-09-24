@@ -76,13 +76,13 @@ export default function LoginForm() {
                 fullWidth
                 error={Boolean(errors.email)}
                 helperText={errors.email}
-                InputProps={{
+                slotProps={{ input: {
                     startAdornment: (
                         <InputAdornment position="start">
                             <EmailIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
                         </InputAdornment>
                     ),
-                }}
+                } }}
             />
 
             {/* Password */}

@@ -157,8 +157,8 @@ async function register(body) {
     if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
         throw httpError(400, 'A valid email address is required');
     }
-    if (!password || typeof password !== 'string' || password.length < 6) {
-        throw httpError(400, 'Password must be at least 6 characters');
+    if (!password || typeof password !== 'string' || password.length < 8) {
+        throw httpError(400, 'Password must be at least 8 characters');
     }
     if (agreeToTerms !== true && termsAccepted !== true) {
         throw httpError(400, 'You must agree to the Terms of Service and Privacy Policy to register');
@@ -501,8 +501,8 @@ async function changePassword(userId, body) {
     if (!newPassword || typeof newPassword !== 'string' || (!user.mustChangePassword && (!currentPassword || typeof currentPassword !== 'string'))) {
         throw httpError(400, 'Current and new password are required');
     }
-    if (newPassword.length < 6) {
-        throw httpError(400, 'New password must be at least 6 characters');
+    if (newPassword.length < 8) {
+        throw httpError(400, 'New password must be at least 8 characters');
     }
 
     if (user.mustChangePassword) {

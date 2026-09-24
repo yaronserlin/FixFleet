@@ -175,13 +175,13 @@ export default function EquipmentsPage() {
                         placeholder="Search equipment, serial, model..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        InputProps={{
+                        slotProps={{ input: {
                             startAdornment: (
                                 <InputAdornment position="start">
                                     <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                                 </InputAdornment>
                             ),
-                        }}
+                        } }}
                         sx={{ width: { xs: '100%', sm: 260 } }}
                     />
 

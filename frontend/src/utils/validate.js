@@ -36,7 +36,7 @@ export function validateEmail(email) {
 
 /**
  * Validate password strength:
- * - at least 6 chars
+ * - at least 8 chars
  * @param {string} pwd
  * @returns {string} error message or empty string
  */
@@ -44,8 +44,8 @@ export function validatePassword(pwd) {
     let err = isRequired(pwd, 'Password');
     if (err) return err;
 
-    if (pwd.length < 6) {
-        return 'Password must be at least 6 characters.';
+    if (pwd.length < 8) {
+        return 'Password must be at least 8 characters.';
     }
     return '';
 }

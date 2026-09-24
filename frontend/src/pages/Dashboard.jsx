@@ -177,13 +177,13 @@ function FilterBar({ total, openCount, closedCount, statusFilter, setStatusFilte
                 placeholder={placeholder || 'Search faults...'}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                InputProps={{
+                slotProps={{ input: {
                     startAdornment: (
                         <InputAdornment position="start">
                             <SearchIcon fontSize="small" sx={{ color: 'text.secondary' }} />
                         </InputAdornment>
                     ),
-                }}
+                } }}
                 sx={{ width: { xs: '100%', sm: 220 } }}
             />
         </Box>
@@ -646,14 +646,14 @@ export default function Dashboard() {
                 </Box>
             </Box>
 
-            {/* KPI Cards -- hidden on phone: at that width the four stat cards
-                push the trend chart and the fault list (what a technician
-                actually acts on) below the fold, so narrow screens go
-                straight to chart + faults. */}
-            <Grid container spacing={2} sx={{ mb: 4, display: { xs: 'none', sm: 'flex' } }}>
-                {[
+            {/* KPI cards: full stat cards from `sm` up; on phones a compact
+                one-row strip carries the same four numbers without pushing
+                the chart and fault list below the fold. */}
+            {(() => {
+                const kpiCards = [
                     {
                         label: 'TOTAL REPORTED',
+                        shortLabel: 'Reported',
                         value: stats.total,
                         caption: 'All logged maintenance incidents',
                         accentColor: '#2563EB',
@@ -662,6 +662,7 @@ export default function Dashboard() {
                     },
                     {
                         label: 'ACTIVE FAULTS',
+                        shortLabel: 'Active',
                         value: stats.open,
                         caption: 'Requiring mechanic attention',
                         accentColor: '#DC2626',
@@ -670,6 +671,7 @@ export default function Dashboard() {
                     },
                     {
                         label: 'RESOLVED',
+                        shortLabel: 'Resolved',
                         value: stats.closed,
                         caption: 'Closed with engine hours logged',
                         accentColor: '#16A34A',
@@ -678,18 +680,54 @@ export default function Dashboard() {
                     },
                     {
                         label: 'FLEET AVAILABILITY',
+                        shortLabel: 'Fleet',
                         value: `${operationalRate}%`,
                         caption: `${stats.fleetOperational} of ${stats.fleetTotal} machines operational`,
                         accentColor: '#0891B2',
                         icon: <SpeedIcon sx={{ fontSize: 18 }} />,
                         iconBg: alpha('#0891B2', isDark ? 0.2 : 0.1),
                     },
-                ].map(k => (
-                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={k.label}>
-                        <KpiCard {...k} />
-                    </Grid>
-                ))}
-            </Grid>
+                ];
+                return (
+                    <>
+                        {/* Compact KPI strip -- phones only */}
+                        <Box sx={{ display: { xs: 'flex', sm: 'none' }, gap: 1, mb: 3, flexWrap: 'wrap' }}>
+                            {kpiCards.map(k => (
+                                <Box
+                                    key={k.label}
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'baseline',
+                                        gap: 0.75,
+                                        px: 1.25,
+                                        py: 0.75,
+                                        borderRadius: 2,
+                                        bgcolor: 'background.paper',
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        borderLeft: `3px solid ${k.accentColor}`,
+                                    }}
+                                >
+                                    <Typography fontWeight={800} fontSize="1.05rem" sx={{ color: k.accentColor, lineHeight: 1 }}>
+                                        {k.value}
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                        {k.shortLabel}
+                                    </Typography>
+                                </Box>
+                            ))}
+                        </Box>
+                        {/* Full KPI cards -- sm and up */}
+                        <Grid container spacing={2} sx={{ mb: 4, display: { xs: 'none', sm: 'flex' } }}>
+                            {kpiCards.map(k => (
+                                <Grid size={{ xs: 12, sm: 6, md: 3 }} key={k.label}>
+                                    <KpiCard {...k} />
+                                </Grid>
+                            ))}
+                        </Grid>
+                    </>
+                );
+            })()}
 
             {/* 14-Day Activity Chart */}
             <Card sx={{ mb: 4, borderRadius: 3 }}>

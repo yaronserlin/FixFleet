@@ -79,7 +79,8 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
             expect(res.headers['set-cookie']).toBeDefined();
 
             companyAToken = res.body.token;
-            companyACookie = res.headers['set-cookie'][0];
+            companyACookie = res.headers['set-cookie'] && res.headers['set-cookie'][0];
+            void companyACookie;
         });
 
         it('registers Company B independently with its own admin', async () => {
@@ -115,14 +116,22 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
             expect(res.body.message).toMatch(/already exists/i);
         });
 
-        it('authenticates and returns profile using cookie auth', async () => {
+        it('authenticates and returns profile using Bearer auth', async () => {
             const res = await request(server)
                 .get('/api/auth/me')
-                .set('Cookie', companyACookie);
+                .set('Authorization', `Bearer ${companyAToken}`);
 
             expect(res.status).toBe(200);
             expect(res.body.email).toBe('alice@acme.com');
             expect(res.body.company.name).toBe('Acme Corp');
+        });
+
+        it('rejects the same request with cookie-only auth (CSRF hardening)', async () => {
+            const res = await request(server)
+                .get('/api/auth/me')
+                .set('Cookie', `accessToken=${companyAToken}`);
+
+            expect(res.status).toBe(401);
         });
     });
 

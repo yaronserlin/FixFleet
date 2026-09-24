@@ -27,7 +27,7 @@ describe('CreateUserForm', () => {
         const { container } = render(<CreateUserForm onSubmit={jest.fn()} />);
         fireEvent.change(screen.getByLabelText(/^Name/i), { target: { name: 'name', value: 'Jane Doe' } });
         fireEvent.change(screen.getByLabelText(/^Email/i), { target: { name: 'email', value: 'not-an-email' } });
-        fireEvent.change(screen.getByLabelText(/^Password/i), { target: { name: 'password', value: 'secret1' } });
+        fireEvent.change(screen.getByLabelText(/^Password/i), { target: { name: 'password', value: 'secret123' } });
         fireEvent.submit(container.querySelector('form'));
         expect(screen.getByText(/valid email address/i)).toBeInTheDocument();
     });
@@ -38,7 +38,7 @@ describe('CreateUserForm', () => {
         fireEvent.change(screen.getByLabelText(/^Email/i), { target: { name: 'email', value: 'jane@acme.com' } });
         fireEvent.change(screen.getByLabelText(/^Password/i), { target: { name: 'password', value: '123' } });
         fireEvent.submit(container.querySelector('form'));
-        expect(screen.getByText(/at least 6 characters/i)).toBeInTheDocument();
+        expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
     });
 
     it('submits valid values and resets the form afterward', async () => {
@@ -46,11 +46,11 @@ describe('CreateUserForm', () => {
         render(<CreateUserForm onSubmit={onSubmit} />);
         fireEvent.change(screen.getByLabelText(/^Name/i), { target: { name: 'name', value: 'Jane Doe' } });
         fireEvent.change(screen.getByLabelText(/^Email/i), { target: { name: 'email', value: 'jane@acme.com' } });
-        fireEvent.change(screen.getByLabelText(/^Password/i), { target: { name: 'password', value: 'secret1' } });
+        fireEvent.change(screen.getByLabelText(/^Password/i), { target: { name: 'password', value: 'secret123' } });
         fireEvent.click(screen.getByRole('button', { name: /^Create$/i }));
 
         await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
-            name: 'Jane Doe', email: 'jane@acme.com', password: 'secret1', role: 'operator',
+            name: 'Jane Doe', email: 'jane@acme.com', password: 'secret123', role: 'operator',
         })));
         await waitFor(() => expect(screen.getByLabelText(/^Name/i)).toHaveValue(''));
     });
@@ -60,7 +60,7 @@ describe('CreateUserForm', () => {
         render(<CreateUserForm onSubmit={onSubmit} />);
         fireEvent.change(screen.getByLabelText(/^Name/i), { target: { name: 'name', value: 'Jane Doe' } });
         fireEvent.change(screen.getByLabelText(/^Email/i), { target: { name: 'email', value: 'jane@acme.com' } });
-        fireEvent.change(screen.getByLabelText(/^Password/i), { target: { name: 'password', value: 'secret1' } });
+        fireEvent.change(screen.getByLabelText(/^Password/i), { target: { name: 'password', value: 'secret123' } });
         fireEvent.click(screen.getByRole('button', { name: /^Create$/i }));
         expect(await screen.findByText('Email already in use')).toBeInTheDocument();
     });
@@ -97,6 +97,6 @@ describe('UpdateUserForm', () => {
         const { container } = render(<UpdateUserForm initialValues={initialValues} onSubmit={jest.fn()} />);
         fireEvent.change(screen.getByLabelText(/^Password/i), { target: { name: 'password', value: '123' } });
         fireEvent.submit(container.querySelector('form'));
-        expect(screen.getByText(/at least 6 characters/i)).toBeInTheDocument();
+        expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
     });
 });

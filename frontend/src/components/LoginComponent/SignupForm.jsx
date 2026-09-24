@@ -93,13 +93,13 @@ export default function SignupForm() {
                 fullWidth
                 error={Boolean(errors.companyName)}
                 helperText={errors.companyName}
-                InputProps={{
+                slotProps={{ input: {
                     startAdornment: (
                         <InputAdornment position="start">
                             <BusinessIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
                         </InputAdornment>
                     ),
-                }}
+                } }}
             />
 
             {/* Full Name */}
@@ -113,13 +113,13 @@ export default function SignupForm() {
                 fullWidth
                 error={Boolean(errors.name)}
                 helperText={errors.name}
-                InputProps={{
+                slotProps={{ input: {
                     startAdornment: (
                         <InputAdornment position="start">
                             <PersonIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
                         </InputAdornment>
                     ),
-                }}
+                } }}
             />
 
             {/* Email */}
@@ -134,13 +134,13 @@ export default function SignupForm() {
                 fullWidth
                 error={Boolean(errors.email)}
                 helperText={errors.email}
-                InputProps={{
+                slotProps={{ input: {
                     startAdornment: (
                         <InputAdornment position="start">
                             <EmailIcon sx={{ fontSize: 18, color: 'text.disabled' }} />
                         </InputAdornment>
                     ),
-                }}
+                } }}
             />
 
             {/* Password */}

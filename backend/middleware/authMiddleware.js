@@ -4,11 +4,11 @@ const User = require('../models/User');
 const { ROLES, MECHANIC_OR_ADMIN_ROLES } = require('../constants/roles');
 
 /**
- * Authenticates the request: extracts a JWT access token from the `token`
- * or `accessToken` cookie (or an `Authorization: Bearer <token>` header),
- * verifies it, loads the corresponding user (with their company
- * populated), and attaches a plain `req.user` summary for downstream
- * middleware/controllers.
+ * Authenticates the request: extracts a JWT access token from the
+ * `Authorization: Bearer <token>` header (the only accepted transport --
+ * see the comment in the function body), verifies it, loads the
+ * corresponding user (with their company populated), and attaches a plain
+ * `req.user` summary for downstream middleware/controllers.
  *
  * Also enforces the first-login forced-password-change gate: if
  * `user.mustChangePassword` is true, every route is blocked with a 403
@@ -23,11 +23,13 @@ const { ROLES, MECHANIC_OR_ADMIN_ROLES } = require('../constants/roles');
 exports.verifyToken = async (req, res, next) => {
     let token = null;
 
-    if (req.cookies && req.cookies.token) {
-        token = req.cookies.token;
-    } else if (req.cookies && req.cookies.accessToken) {
-        token = req.cookies.accessToken;
-    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    // Access tokens are accepted ONLY via the Authorization header -- never
+    // via cookies. A cookie is attached by the browser to cross-site
+    // requests, so cookie-based access auth makes every state-changing route
+    // here CSRF-able (a cross-site form POST parses fine through
+    // express.urlencoded and needs no CORS approval to *send*). A Bearer
+    // header, by contrast, can only be set by first-party JavaScript.
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
         token = req.headers.authorization.split(' ')[1];
     }
 

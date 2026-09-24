@@ -121,7 +121,7 @@ describe('Dashboard', () => {
             const resolvedCard = screen.getByText('RESOLVED').closest('.MuiCard-root');
             expect(within(resolvedCard).getByText('1')).toBeInTheDocument();
 
-            expect(screen.getByText('67%')).toBeInTheDocument(); // 2 of 3 operational
+            expect(screen.getAllByText('67%').length).toBeGreaterThan(0); // 2 of 3 operational (compact strip + KPI card)
             expect(screen.getByText('2 of 3 machines operational')).toBeInTheDocument();
         });
 
