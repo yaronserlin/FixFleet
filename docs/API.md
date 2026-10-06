@@ -37,6 +37,8 @@ This document provides the complete API specification for the MaintenanceSystemA
 | `POST` | `/api/auth/register` | No | None | Register new user account (Rate limited: 20 req/15min) |
 | `POST` | `/api/auth/login` | No | None | Authenticate user credentials and set auth cookie (Rate limited) |
 | `POST` | `/api/auth/refresh` | No | None | Rotate access/refresh tokens from the `refreshToken` cookie (Rate limited); revokes the session family on reuse-attack detection |
+| `POST` | `/api/auth/forgot-password` | No | None | Email a password reset link (`{ email }`); always 200 with a generic message so it can't reveal which emails have accounts (Rate limited) |
+| `POST` | `/api/auth/reset-password` | No | None | Set a new password with a reset token (`{ token, newPassword }`); the token is single-use and expires after 30 minutes; revokes all sessions (Rate limited) |
 | `POST` | `/api/auth/logout` | No | None | Clear authentication cookie |
 | `GET` | `/api/auth/me` | Yes | Any | Retrieve current authenticated user profile |
 | `PUT` | `/api/auth/me` | Yes | Any | Update current user profile (name, phone, language, etc.) |

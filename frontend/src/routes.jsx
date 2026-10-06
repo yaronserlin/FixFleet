@@ -35,6 +35,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const OperatorReportsPage = lazy(() => import('./pages/OperatorReportsPage'));
 const EquipmentBooksPage = lazy(() => import('./pages/EquipmentBooksPage'));
 const ForcePasswordChangePage = lazy(() => import('./pages/ForcePasswordChangePage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 import ForcePasswordChangeDialog from './components/Auth/ForcePasswordChangeDialog';
@@ -66,7 +67,7 @@ function RouteFallback() {
 }
 
 // Pages that use a full-screen layout (no Navbar)
-const HIDE_NAVBAR_PATHS = [ROUTES.LOGIN, ROUTES.FORCE_PASSWORD_CHANGE];
+const HIDE_NAVBAR_PATHS = [ROUTES.LOGIN, ROUTES.FORCE_PASSWORD_CHANGE, ROUTES.RESET_PASSWORD];
 
 function RequirePasswordChange({ children }) {
     const { user, loading } = useAuth();
@@ -146,6 +147,7 @@ function AppLayout() {
 
                 {/* Public routes */}
                 <Route path={ROUTES.LOGIN} element={<Login />} />
+                <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
                 <Route path={ROUTES.TERMS} element={<LegalPage />} />
                 <Route path={ROUTES.PRIVACY} element={<LegalPage />} />
                 <Route path={ROUTES.LEGAL} element={<LegalPage />} />

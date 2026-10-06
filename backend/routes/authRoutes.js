@@ -12,6 +12,8 @@ const {
     deleteAccount,
     uploadAvatar,
     changePassword,
+    forgotPassword,
+    resetPassword,
 } = require('../controllers/authController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
@@ -29,6 +31,8 @@ const authLimiter = rateLimit({
 router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
 router.post('/refresh', authLimiter, refreshToken);
+router.post('/forgot-password', authLimiter, forgotPassword);
+router.post('/reset-password', authLimiter, resetPassword);
 router.post('/logout', logout);
 
 // Protected routes

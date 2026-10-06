@@ -43,6 +43,8 @@ const formatUserName = (name) => {
  * @property {boolean} [termsAccepted=false] - Whether the user has accepted the Terms of Service / Privacy Policy.
  * @property {Date|null} [termsAcceptedAt=null] - Timestamp of terms acceptance, or null if not yet accepted.
  * @property {string|null} [termsVersion=null] - Version of the Terms of Service the user accepted.
+ * @property {string|null} [passwordResetTokenHash=null] - SHA-256 hash of the pending forgot-password token (services/authService.js `requestPasswordReset`), or null. Not selected by default.
+ * @property {Date|null} [passwordResetExpires=null] - Expiry of the pending forgot-password token, or null. Not selected by default.
  * @property {Date} createdAt - Set automatically (`timestamps: true`).
  * @property {Date} updatedAt - Set automatically (`timestamps: true`).
  */
@@ -57,6 +59,8 @@ const UserSchema = new mongoose.Schema({
     termsAccepted: { type: Boolean, default: false },
     termsAcceptedAt: { type: Date, default: null },
     termsVersion: { type: String, default: null },
+    passwordResetTokenHash: { type: String, default: null, index: true, select: false },
+    passwordResetExpires: { type: Date, default: null, select: false },
 }, { timestamps: true });
 
 UserSchema.pre('save', function (next) {

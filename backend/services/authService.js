@@ -13,6 +13,7 @@ const {
     REFRESH_COOKIE_MAX_AGE,
     BCRYPT_SALT_ROUNDS,
     REFRESH_REUSE_GRACE_MS,
+    PASSWORD_RESET_TOKEN_TTL_MS,
 } = require('../constants/auth');
 
 // Version of the legal documents (frontend/src/content/legalDocuments.js)
@@ -20,6 +21,8 @@ const {
 const CURRENT_TERMS_VERSION = '1.3';
 const { httpError } = require('../utils/httpError');
 const mediaStorage = require('../utils/mediaStorage');
+const mailer = require('../utils/mailer');
+const logger = require('../utils/logger');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -549,8 +552,85 @@ async function changePassword(userId, body) {
     };
 }
 
+/**
+ * Starts a forgot-password flow: if a user with this email exists, stores
+ * the hash of a fresh single-use token on them and emails a reset link.
+ * Always resolves the same way whether or not the email exists, and sends
+ * the email without awaiting it, so neither the response nor its timing
+ * reveals which emails have accounts.
+ *
+ * The link base is the first `FRONTEND_URL` entry -- never the request's
+ * Host header, which an attacker could spoof to steal the token.
+ *
+ * @param {{ email?: string }} body - Raw request body.
+ * @throws {Error & { status: number }} 400 for a missing/invalid email.
+ * @returns {Promise<void>}
+ */
+async function requestPasswordReset(body) {
+    const { email } = body || {};
+    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+        throw httpError(400, 'A valid email address is required');
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user) return;
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    user.passwordResetTokenHash = hashToken(rawToken);
+    user.passwordResetExpires = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS);
+    await user.save();
+
+    const appBase = (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0].trim();
+    const link = `${appBase}/reset-password?token=${rawToken}`;
+    mailer.sendMail({
+        to: user.email,
+        subject: 'Reset your password',
+        text: `Hi ${user.name},\n\nUse this link to set a new password (valid for 30 minutes):\n${link}\n\nIf you didn't request this, you can ignore this email.`,
+    }).catch((err) => logger.error('Failed to send password reset email', { error: err.message }));
+}
+
+/**
+ * Completes a forgot-password flow: sets a new password for the user whose
+ * unexpired reset token matches, consumes the token (single use), and
+ * revokes every refresh token for the user. Clears `mustChangePassword`
+ * only when terms were already accepted, so the forced-change page still
+ * collects terms acceptance otherwise.
+ *
+ * @param {{ token?: string, newPassword?: string }} body - Raw request body.
+ * @throws {Error & { status: number }} 400 for a short password or an invalid/expired/used token.
+ * @returns {Promise<void>}
+ */
+async function resetPassword(body) {
+    const { token, newPassword } = body || {};
+    if (!token || typeof token !== 'string') {
+        throw httpError(400, 'Reset link is invalid or has expired');
+    }
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
+        throw httpError(400, 'New password must be at least 8 characters');
+    }
+
+    // Consume the token atomically, so two concurrent requests can't both use it.
+    const user = await User.findOneAndUpdate(
+        { passwordResetTokenHash: hashToken(token), passwordResetExpires: { $gt: new Date() } },
+        { $set: { passwordResetTokenHash: null, passwordResetExpires: null } }
+    );
+    if (!user) {
+        throw httpError(400, 'Reset link is invalid or has expired');
+    }
+
+    user.password = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
+    if (user.termsAccepted) {
+        user.mustChangePassword = false;
+    }
+    await user.save();
+
+    await RefreshToken.updateMany({ userId: user._id }, { isRevoked: true });
+}
+
 module.exports = {
     register,
+    requestPasswordReset,
+    resetPassword,
     login,
     rotateRefreshToken,
     logout,

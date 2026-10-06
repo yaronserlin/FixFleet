@@ -2,6 +2,10 @@ const request = require('supertest');
 const { connectTestDB, closeTestDB, registerCompanyAdmin, uniqueEmail, extractRefreshToken } = require('./helpers/setup');
 const RefreshToken = require('../models/RefreshToken');
 const crypto = require('crypto');
+const User = require('../models/User');
+
+jest.mock('../utils/mailer', () => ({ sendMail: jest.fn().mockResolvedValue() }));
+const mailer = require('../utils/mailer');
 
 const app = require('../app');
 let server;
@@ -621,6 +625,75 @@ describe('Auth Controller', () => {
                 .post('/api/auth/refresh')
                 .send({ refreshToken });
             expect(refreshRes.status).toBe(403);
+        });
+    });
+
+    describe('Forgot / reset password', () => {
+        // Requests a reset for `email` and returns the raw token from the emailed link.
+        async function requestResetToken(email) {
+            mailer.sendMail.mockClear();
+            const res = await request(server).post('/api/auth/forgot-password').send({ email });
+            expect(res.status).toBe(200);
+            expect(mailer.sendMail).toHaveBeenCalledTimes(1);
+            return mailer.sendMail.mock.calls[0][0].text.match(/token=([a-f0-9]+)/)[1];
+        }
+
+        it('responds 200 without sending email for an unknown address', async () => {
+            mailer.sendMail.mockClear();
+            const res = await request(server).post('/api/auth/forgot-password').send({ email: uniqueEmail('nobody') });
+            expect(res.status).toBe(200);
+            expect(mailer.sendMail).not.toHaveBeenCalled();
+        });
+
+        it('rejects an invalid email', async () => {
+            const res = await request(server).post('/api/auth/forgot-password').send({ email: { $gt: '' } });
+            expect(res.status).toBe(400);
+        });
+
+        it('resets the password with a valid token, revokes sessions, and consumes the token', async () => {
+            const { email, refreshToken } = await registerCompanyAdmin(server, { password: 'oldPassword1' });
+            const token = await requestResetToken(email);
+
+            const resetRes = await request(server).post('/api/auth/reset-password').send({ token, newPassword: 'newPassword1' });
+            expect(resetRes.status).toBe(200);
+
+            const oldLogin = await request(server).post('/api/auth/login').send({ email, password: 'oldPassword1' });
+            expect(oldLogin.status).toBe(400);
+            const newLogin = await request(server).post('/api/auth/login').send({ email, password: 'newPassword1' });
+            expect(newLogin.status).toBe(200);
+
+            const tokenDoc = await RefreshToken.findOne({ tokenHash: crypto.createHash('sha256').update(refreshToken).digest('hex') });
+            expect(tokenDoc.isRevoked).toBe(true);
+
+            const reuse = await request(server).post('/api/auth/reset-password').send({ token, newPassword: 'another123' });
+            expect(reuse.status).toBe(400);
+        });
+
+        it('rejects an expired token', async () => {
+            const { email } = await registerCompanyAdmin(server);
+            const token = await requestResetToken(email);
+            await User.updateOne({ email }, { passwordResetExpires: new Date(Date.now() - 1000) });
+
+            const res = await request(server).post('/api/auth/reset-password').send({ token, newPassword: 'newPassword1' });
+            expect(res.status).toBe(400);
+            expect(res.body.message).toMatch(/invalid or has expired/i);
+        });
+
+        it('rejects a short password or a non-string token', async () => {
+            const { email } = await registerCompanyAdmin(server);
+            const token = await requestResetToken(email);
+
+            const short = await request(server).post('/api/auth/reset-password').send({ token, newPassword: '123' });
+            expect(short.status).toBe(400);
+            const objToken = await request(server).post('/api/auth/reset-password').send({ token: { $ne: '' }, newPassword: 'newPassword1' });
+            expect(objToken.status).toBe(400);
+        });
+
+        it('never returns reset fields from user queries', async () => {
+            const { email } = await registerCompanyAdmin(server);
+            await requestResetToken(email);
+            const user = await User.findOne({ email }).lean();
+            expect(user.passwordResetTokenHash).toBeUndefined();
         });
     });
 });

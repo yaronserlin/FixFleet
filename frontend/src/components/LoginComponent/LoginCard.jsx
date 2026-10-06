@@ -6,10 +6,12 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
+import ForgotPasswordForm from './ForgotPasswordForm';
 
 export default function LoginCard() {
-    const [mode, setMode] = useState('login'); // 'login' | 'signup'
+    const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'forgot'
     const isLogin = mode === 'login';
+    const isForgot = mode === 'forgot';
 
     return (
         <Box>
@@ -22,10 +24,12 @@ export default function LoginCard() {
                     gutterBottom
                     sx={{ color: 'text.primary', lineHeight: 1.2 }}
                 >
-                    {isLogin ? 'Welcome back' : 'Create an account'}
+                    {isForgot ? 'Forgot password' : isLogin ? 'Welcome back' : 'Create an account'}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                    {isLogin
+                    {isForgot
+                        ? "Enter your account email and we'll send you a link to reset your password."
+                        : isLogin
                         ? 'Sign in to access your fleet management dashboard.'
                         : 'Set up your company account to get started.'
                     }
@@ -33,13 +37,17 @@ export default function LoginCard() {
             </Box>
 
             {/* Form */}
-            {isLogin ? <LoginForm /> : <SignupForm />}
+            {isForgot
+                ? <ForgotPasswordForm />
+                : isLogin
+                ? <LoginForm onForgotPassword={() => setMode('forgot')} />
+                : <SignupForm />}
 
             {/* Toggle */}
             <Divider sx={{ my: 3 }} />
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.75 }}>
                 <Typography variant="body2" color="text.secondary">
-                    {isLogin ? "Don't have an account?" : 'Already have an account?'}
+                    {isForgot ? 'Remembered it?' : isLogin ? "Don't have an account?" : 'Already have an account?'}
                 </Typography>
                 <Button
                     size="small"

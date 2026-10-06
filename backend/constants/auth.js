@@ -54,6 +54,12 @@ const BCRYPT_SALT_ROUNDS = 10;
  */
 const REFRESH_REUSE_GRACE_MS = 30 * 1000;
 
+/**
+ * Lifetime, in milliseconds, of a forgot-password reset link (30 minutes).
+ * @type {number}
+ */
+const PASSWORD_RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+
 module.exports = {
     ACCESS_TOKEN_EXPIRY,
     REFRESH_TOKEN_EXPIRY,
@@ -61,4 +67,5 @@ module.exports = {
     REFRESH_COOKIE_MAX_AGE,
     BCRYPT_SALT_ROUNDS,
     REFRESH_REUSE_GRACE_MS,
+    PASSWORD_RESET_TOKEN_TTL_MS,
 };

@@ -22,7 +22,7 @@ function validate(vals) {
     return errs;
 }
 
-export default function LoginForm() {
+export default function LoginForm({ onForgotPassword }) {
     const { login, loading } = useAuth();
     const [serverError, setServerError] = useState('');
 
@@ -98,6 +98,17 @@ export default function LoginForm() {
                 helperText={errors.password}
                 startAdornment={<LockIcon sx={{ fontSize: 18, color: 'text.disabled' }} />}
             />
+
+            {onForgotPassword && (
+                <Button
+                    size="small"
+                    variant="text"
+                    onClick={onForgotPassword}
+                    sx={{ alignSelf: 'flex-end', mt: -1.5, p: '2px 6px', minHeight: 'auto', fontWeight: 600 }}
+                >
+                    Forgot password?
+                </Button>
+            )}
 
             {/* Submit */}
             <Button

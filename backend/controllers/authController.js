@@ -234,3 +234,36 @@ exports.changePassword = async (req, res, next) => {
         next(err);
     }
 };
+
+/**
+ * POST /api/auth/forgot-password - Emails a password reset link if the address has an account.
+ * Always responds 200 with the same message so it can't be used to probe for accounts.
+ * @param {import('express').Request} req - Express request; uses `req.body.email`.
+ * @param {import('express').Response} res - Express response.
+ * @param {import('express').NextFunction} next - Express next function.
+ * @returns {Promise<void>}
+ */
+exports.forgotPassword = async (req, res, next) => {
+    try {
+        await authService.requestPasswordReset(req.body);
+        res.json({ message: 'If an account exists for that email, a reset link has been sent.' });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * POST /api/auth/reset-password - Sets a new password using a forgot-password token.
+ * @param {import('express').Request} req - Express request; uses `req.body.token` and `req.body.newPassword`.
+ * @param {import('express').Response} res - Express response.
+ * @param {import('express').NextFunction} next - Express next function.
+ * @returns {Promise<void>}
+ */
+exports.resetPassword = async (req, res, next) => {
+    try {
+        await authService.resetPassword(req.body);
+        res.json({ message: 'Password has been reset. You can now sign in.' });
+    } catch (err) {
+        next(err);
+    }
+};

@@ -28,6 +28,21 @@ const userService = {
     changePassword: (payload) => apiClient.post('/auth/me/change-password', payload),
 
     /**
+     * Request a password reset link by email (always succeeds for a valid email)
+     * @param {string} email
+     * @returns {Promise} Axios response
+     */
+    forgotPassword: (email) => apiClient.post('/auth/forgot-password', { email }),
+
+    /**
+     * Set a new password using the token from a reset link
+     * @param {string} token
+     * @param {string} newPassword
+     * @returns {Promise} Axios response
+     */
+    resetPassword: (token, newPassword) => apiClient.post('/auth/reset-password', { token, newPassword }),
+
+    /**
      * Upload an avatar image for the current user
      * @param {File} file
      * @returns {Promise} Axios response with updated user data
