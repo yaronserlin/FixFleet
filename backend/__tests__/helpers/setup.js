@@ -28,6 +28,9 @@ async function createMongoMemoryServerWithRetry(attempts = 2) {
 
 async function connectTestDB() {
     mongoServer = await createMongoMemoryServerWithRetry();
+    // Mirror production (config/db.js), so a raw `$` operator in a server-built
+    // filter fails here too instead of only in prod.
+    mongoose.set('sanitizeFilter', true);
     await mongoose.connect(mongoServer.getUri());
 }
 

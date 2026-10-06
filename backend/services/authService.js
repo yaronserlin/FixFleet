@@ -2,6 +2,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Company = require('../models/Company');
 const RefreshToken = require('../models/RefreshToken');
@@ -611,8 +612,10 @@ async function resetPassword(body) {
     }
 
     // Consume the token atomically, so two concurrent requests can't both use it.
+    // mongoose.trusted(): `$gt` is server-built, not request input, but the
+    // global `sanitizeFilter` (config/db.js) would otherwise strip it.
     const user = await User.findOneAndUpdate(
-        { passwordResetTokenHash: hashToken(token), passwordResetExpires: { $gt: new Date() } },
+        { passwordResetTokenHash: hashToken(token), passwordResetExpires: mongoose.trusted({ $gt: new Date() }) },
         { $set: { passwordResetTokenHash: null, passwordResetExpires: null } }
     );
     if (!user) {
