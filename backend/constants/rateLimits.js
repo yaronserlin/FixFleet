@@ -25,4 +25,16 @@ const GENERAL_RATE_LIMIT = Object.freeze({
     max: 500,
 });
 
-module.exports = { AUTH_RATE_LIMIT, GENERAL_RATE_LIMIT };
+/**
+ * Per-email cap on forgot-password requests (routes/authRoutes.js), on top
+ * of the per-IP {@link AUTH_RATE_LIMIT}: stops anyone flooding one inbox
+ * with reset emails, even from many IPs. Applies whether or not the email
+ * has an account, so hitting it reveals nothing.
+ * @type {{ windowMs: number, max: number }}
+ */
+const PASSWORD_RESET_RATE_LIMIT = Object.freeze({
+    windowMs: 15 * 60 * 1000,
+    max: 3,
+});
+
+module.exports = { AUTH_RATE_LIMIT, GENERAL_RATE_LIMIT, PASSWORD_RESET_RATE_LIMIT };

@@ -1,5 +1,5 @@
 // src/components/LoginComponent/ForgotPasswordForm.jsx
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Alert from '@mui/material/Alert';
@@ -11,6 +11,8 @@ import useForm from '../../hooks/useForm';
 import { validateEmail } from '../../utils/validate';
 import userService from '../../services/userService';
 
+const RESEND_COOLDOWN_SECONDS = 60;
+
 function validate(vals) {
     const emailErr = validateEmail(vals.email);
     return emailErr ? { email: emailErr } : {};
@@ -19,6 +21,14 @@ function validate(vals) {
 export default function ForgotPasswordForm() {
     const [sent, setSent] = useState(false);
     const [serverError, setServerError] = useState('');
+    const [cooldown, setCooldown] = useState(0);
+    const [resending, setResending] = useState(false);
+
+    useEffect(() => {
+        if (cooldown <= 0) return undefined;
+        const timer = setTimeout(() => setCooldown((c) => c - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [cooldown]);
 
     const { values, errors, isSubmitting, handleChange, handleSubmit } = useForm({
         initialValues: { email: '' },
@@ -28,17 +38,48 @@ export default function ForgotPasswordForm() {
             try {
                 await userService.forgotPassword(vals.email);
                 setSent(true);
+                setCooldown(RESEND_COOLDOWN_SECONDS);
             } catch (err) {
                 setServerError(err.response?.data?.message || 'Something went wrong. Please try again.');
             }
         },
     });
 
+    const handleResend = async () => {
+        setServerError('');
+        setResending(true);
+        try {
+            await userService.forgotPassword(values.email);
+            setCooldown(RESEND_COOLDOWN_SECONDS);
+        } catch (err) {
+            setServerError(err.response?.data?.message || 'Something went wrong. Please try again.');
+        } finally {
+            setResending(false);
+        }
+    };
+
     if (sent) {
         return (
-            <Alert severity="success" sx={{ borderRadius: 2 }}>
-                If an account exists for <strong>{values.email}</strong>, we&apos;ve sent a link to reset your password. It expires in 30 minutes.
-            </Alert>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <Alert severity="success" sx={{ borderRadius: 2 }}>
+                    If an account exists for <strong>{values.email}</strong>, we&apos;ve sent a link to reset your password. It expires in 30 minutes, and only the most recent link works.
+                </Alert>
+                {serverError && (
+                    <Alert severity="error" onClose={() => setServerError('')} sx={{ borderRadius: 2 }}>
+                        {serverError}
+                    </Alert>
+                )}
+                <Button
+                    variant="outlined"
+                    onClick={handleResend}
+                    disabled={cooldown > 0 || resending}
+                    fullWidth
+                    sx={{ minHeight: 44, fontWeight: 700 }}
+                >
+                    {resending ? <CircularProgress size={20} thickness={5} color="inherit" />
+                        : cooldown > 0 ? `Resend email (${cooldown}s)` : 'Resend email'}
+                </Button>
+            </Box>
         );
     }
 
