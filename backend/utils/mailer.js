@@ -7,16 +7,18 @@ const EMAILJS_SEND_URL = 'https://api.emailjs.com/api/v1.0/email/send';
  * Sends a plain-text email through EmailJS's HTTPS API. Plain HTTPS rather
  * than SMTP because hosts like Render block outbound SMTP ports.
  *
- * The EmailJS template must use `{{to_email}}` as its "To Email" and
- * `{{subject}}` / `{{message}}` in its subject/body. With the EmailJS env
+ * The EmailJS template receives `{{email}}` (also `{{to_email}}`, the
+ * recipient -- set it as the template's "To Email"), `{{subject}}`,
+ * `{{message}}` (the plain-text body), plus any extra `params` such as
+ * `{{link}}`. With the EmailJS env
  * vars unset in dev/test, the message is logged instead of sent, so flows
  * like password reset still work end to end; in production it throws
  * instead, since the body may hold a live reset link.
  *
- * @param {{ to: string, subject: string, text: string }} message
+ * @param {{ to: string, subject: string, text: string, params?: Object<string, string> }} message
  * @returns {Promise<void>}
  */
-async function sendMail({ to, subject, text }) {
+async function sendMail({ to, subject, text, params = {} }) {
     const { EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY, EMAILJS_PRIVATE_KEY } = process.env;
 
     if (!EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID || !EMAILJS_PUBLIC_KEY || !EMAILJS_PRIVATE_KEY) {
@@ -36,7 +38,7 @@ async function sendMail({ to, subject, text }) {
             template_id: EMAILJS_TEMPLATE_ID,
             user_id: EMAILJS_PUBLIC_KEY,
             accessToken: EMAILJS_PRIVATE_KEY,
-            template_params: { to_email: to, subject, message: text },
+            template_params: { email: to, to_email: to, subject, message: text, ...params },
         }),
     });
     if (!res.ok) {
