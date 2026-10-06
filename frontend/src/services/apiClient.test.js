@@ -38,6 +38,14 @@ describe('apiClient', () => {
         expect(apiClient.interceptors.response.use).toHaveBeenCalledTimes(1);
     });
 
+    it('only redirects to login from non-public pages', () => {
+        const { shouldRedirectToLogin } = require('./apiClient');
+        expect(shouldRedirectToLogin('/dashboard')).toBe(true);
+        expect(shouldRedirectToLogin('/login')).toBe(false);
+        expect(shouldRedirectToLogin('/reset-password')).toBe(false);
+        expect(shouldRedirectToLogin('/terms')).toBe(false);
+    });
+
     describe('401 interceptor behavior', () => {
         // jsdom does not implement real navigation, and jsdom 26+ makes
         // `window.location` non-configurable, so the href-assignment side

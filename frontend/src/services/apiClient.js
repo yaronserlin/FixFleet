@@ -1,5 +1,12 @@
 // src/services/apiClient.js
 import axios from 'axios';
+import { ROUTES } from '../constants/routes';
+
+// Pages a logged-out visitor may stay on: a failed session refresh (e.g. the
+// app's on-load /auth/me check) must not bounce them to the login page.
+const PUBLIC_PATHS = [ROUTES.LOGIN, ROUTES.RESET_PASSWORD, ROUTES.TERMS, ROUTES.PRIVACY, ROUTES.LEGAL];
+
+export const shouldRedirectToLogin = (pathname) => !PUBLIC_PATHS.includes(pathname);
 
 const apiClient = axios.create({
     baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -114,9 +121,8 @@ apiClient.interceptors.response.use(
                 apiClient.setToken(null);
 
                 if (typeof window !== 'undefined') {
-                    const currentPath = window.location.pathname;
-                    if (currentPath !== '/login') {
-                        window.location.href = '/login';
+                    if (shouldRedirectToLogin(window.location.pathname)) {
+                        window.location.href = ROUTES.LOGIN;
                     }
                 }
                 return Promise.reject(error);
