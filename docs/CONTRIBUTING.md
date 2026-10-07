@@ -73,6 +73,7 @@ npm run seed
 | `npm run preview` | `vite preview` | Locally preview the generated production build |
 | `npm run lint` | `eslint .` | Run ESLint static analysis across frontend source files |
 | `npm test` | `jest` | Run frontend component and unit test suite with jsdom environment |
+| `npm run prepare` | `git config core.hooksPath .githooks \|\| true` | Runs automatically on `npm install`; points git at the repo's `.githooks/` (enables the version-bump pre-commit hook) |
 <!-- AUTO-GENERATED:SCRIPTS_END -->
 
 ---
@@ -121,6 +122,9 @@ When creating new frontend tests:
   cd backend
   npm run build
   ```
+
+### Pre-commit Hook (Versioning)
+`npm install` in `frontend/` sets `core.hooksPath` to `.githooks/`. On `main`, `.githooks/pre-commit` bumps the shared frontend/backend patch version inside each commit. To do a minor/major release, bump `frontend/package.json` yourself (e.g. `cd frontend && npm version minor --no-git-tag-version`) and stage it; the hook keeps that version and copies it to the backend. Skip the hook with `git commit --no-verify`. CI (`.github/workflows/increment-build-version.yml`) only runs the frontend build.
 
 ---
 

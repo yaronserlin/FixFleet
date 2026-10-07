@@ -28,6 +28,8 @@ This document provides the complete API specification for the FixFleet backend s
 | `GET` | `/api/health` | No | None | Health check alias for cloud monitors and load balancers |
 | `GET` | `/uploads/:filename` | Yes | Authenticated | Protected media download; enforces company tenant ownership |
 
+*Every route shares a baseline rate limit of 500 req/15min per IP (`GENERAL_RATE_LIMIT`, `backend/constants/rateLimits.js`); auth routes add a stricter limiter on top.*
+
 ---
 
 ### 2. Authentication (`/api/auth`)
@@ -42,6 +44,7 @@ This document provides the complete API specification for the FixFleet backend s
 | `POST` | `/api/auth/logout` | No | None | Clear authentication cookie |
 | `GET` | `/api/auth/me` | Yes | Any | Retrieve current authenticated user profile |
 | `PUT` | `/api/auth/me` | Yes | Any | Update current user profile (name, phone, language, etc.) |
+| `DELETE` | `/api/auth/me` | Yes | Any | Delete own account (`{ confirmation: "delete <name>" }`, case-insensitive); removes sessions, push subscriptions, and avatar, then clears auth cookies |
 | `POST` | `/api/auth/me/avatar` | Yes | Any | Upload profile picture avatar (`multipart/form-data`, file key: `avatar`) |
 | `POST` | `/api/auth/me/change-password` | Yes | Any | Change account password (requires `oldPassword` and `newPassword`) |
 
@@ -49,7 +52,7 @@ This document provides the complete API specification for the FixFleet backend s
 
 ### 3. Equipment & Maintenance Schedules (`/api/equipment` & `/api/tools`)
 
-*Note: `/api/tools` is maintained as a backward-compatible alias for `/api/equipment`.*
+*Note: `/api/tools` is maintained as a backward-compatible alias for `/api/equipment`. `.../progress` also accepts `PUT` and `POST`.*
 
 | Method | Path | Auth Required | Minimum Role | Description |
 |--------|------|---------------|--------------|-------------|
@@ -80,7 +83,7 @@ This document provides the complete API specification for the FixFleet backend s
 | `POST` | `/api/faults` | Yes | Any | Report a new fault (supports up to 5 photos via `multipart/form-data`, key: `photos`) |
 | `PUT` | `/api/faults/:id` | Yes | Mechanic | Update fault details |
 | `PATCH` | `/api/faults/:id/close` | Yes | Mechanic | Mark fault as resolved and closed |
-| `PATCH` | `/api/faults/:id/reopen` | Yes | Mechanic | Reopen previously closed fault |
+| `PATCH` | `/api/faults/:id/reopen` | Yes | Mechanic | Reopen previously closed fault (`PUT` also accepted) |
 | `DELETE` | `/api/faults/:id` | Yes | Mechanic | Delete fault report |
 
 ---
@@ -137,7 +140,7 @@ feed continues to work unchanged.
 
 ### 8. Administration (`/api/admin`)
 
-*All admin endpoints require an authenticated user with `admin` role.*
+*All admin endpoints require an authenticated user with `admin` role. `/api/admin/tools` is a backward-compatible alias for `/api/admin/equipment`.*
 
 | Method | Path | Auth Required | Minimum Role | Description |
 |--------|------|---------------|--------------|-------------|

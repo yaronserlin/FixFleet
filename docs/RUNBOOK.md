@@ -58,6 +58,7 @@ This runbook covers operational procedures, deployment workflows, health monitor
 ```json
 {
   "status": "healthy",
+  "version": "<backend package.json version>",
   "timestamp": "2026-09-14T12:00:00.000Z",
   "database": "connected"
 }
@@ -67,6 +68,7 @@ This runbook covers operational procedures, deployment workflows, health monitor
 ```json
 {
   "status": "degraded",
+  "version": "<backend package.json version>",
   "timestamp": "2026-09-14T12:00:00.000Z",
   "database": "disconnected"
 }
