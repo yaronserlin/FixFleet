@@ -1,64 +1,64 @@
-name: Increment Build Version
+name: Increment Version
 
 on:
   push:
     branches:
-      - '**'
+      - main
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Which part of the version to increase
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: patch
+
+permissions:
+  contents: write
 
 concurrency:
   group: increment-build-version
   cancel-in-progress: false
 
 jobs:
-  increment-build:
+  increment-version:
+    # Pushes made with GITHUB_TOKEN don't retrigger workflows; this guards against a PAT ever being used.
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Check out the pushed branch
+      - name: Check out main
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set build version
-        id: version
-        working-directory: frontend
-        shell: bash
-        run: |
-          node <<'NODE'
-          const fs = require('node:fs');
-
-          const packagePath = 'package.json';
-          const lockPath = 'package-lock.json';
-          const packageJson = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
-          const versionParts = packageJson.version.split('.').map(Number);
-
-          if (
-            versionParts.length !== 3 ||
-            versionParts.some(part => !Number.isInteger(part) || part < 0)
-          ) {
-            throw new Error(`Expected major.minor.build version, received ${packageJson.version}`);
-          }
-
-          // GitHub run numbers increase for every run without changing the repository.
-          versionParts[2] = Number(process.env.GITHUB_RUN_NUMBER);
-          const nextVersion = versionParts.join('.');
-          packageJson.version = nextVersion;
-          fs.writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
-
-          const lockJson = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
-          lockJson.version = nextVersion;
-          lockJson.packages[''].version = nextVersion;
-          fs.writeFileSync(lockPath, `${JSON.stringify(lockJson, null, 2)}\n`);
-
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `version=${nextVersion}\n`);
-          NODE
 
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
 
+      # Build before bumping so a broken build never gets a version.
       - name: Build frontend
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
         working-directory: frontend
         run: npm run build
+
+      - name: Bump frontend and backend to the same version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump || 'patch' }}
+        run: |
+          VERSION=$(cd frontend && npm version "$BUMP" --no-git-tag-version)
+          VERSION=${VERSION#v}
+          (cd backend && npm version "$VERSION" --no-git-tag-version --allow-same-version)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Commit, tag and push
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add frontend/package.json frontend/package-lock.json backend/package.json backend/package-lock.json
+          git commit -m "chore: bump version to ${VERSION}"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git tag "v${VERSION}"
+          git push origin "HEAD:${GITHUB_REF_NAME}" "v${VERSION}"
