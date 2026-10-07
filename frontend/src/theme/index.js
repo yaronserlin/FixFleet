@@ -1,7 +1,7 @@
 import { createTheme, alpha } from '@mui/material/styles';
 
 /**
- * Industrial Blue Design System — Maintenance System App
+ * Industrial Blue Design System — FixFleet
  *
  * Design principles:
  *  – Blue (#2563EB) is the ONLY "clickable" color → all primary action buttons

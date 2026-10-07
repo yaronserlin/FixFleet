@@ -8,9 +8,9 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'MaintenanceSystemApp',
-        short_name: 'Maintenance',
-        description: 'Multi-Tenant Equipment & Fault Maintenance System',
+        name: 'FixFleet',
+        short_name: 'FixFleet',
+        description: 'FixFleet — Multi-Tenant Equipment & Fault Maintenance',
         theme_color: '#1976d2',
         background_color: '#ffffff',
         display: 'standalone',

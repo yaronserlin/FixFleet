@@ -36,7 +36,7 @@ describe('SidebarNav', () => {
     describe('variant="full"', () => {
         it('shows the brand text and a text label for every nav page', () => {
             setup({ variant: 'full' });
-            expect(screen.getByText('MAINTENANCE')).toBeInTheDocument();
+            expect(screen.getByText('FIXFLEET')).toBeInTheDocument();
             pages.forEach((page) => {
                 expect(screen.getByRole('link', { name: page })).toBeInTheDocument();
             });
@@ -58,7 +58,7 @@ describe('SidebarNav', () => {
         it('does not render visible text labels for nav pages (icon-only)', () => {
             setup({ variant: 'rail' });
             // The brand's text subtitle/title shouldn't render in rail mode either.
-            expect(screen.queryByText('MAINTENANCE')).not.toBeInTheDocument();
+            expect(screen.queryByText('FIXFLEET')).not.toBeInTheDocument();
             // Scope to the nav item list itself -- the footer UserMenu also
             // renders a role chip (e.g. "Admin") that would otherwise collide
             // with a same-named nav page in this text query.

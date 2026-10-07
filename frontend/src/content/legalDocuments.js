@@ -11,7 +11,7 @@ export const TERMS_OF_SERVICE = {
     sections: [
         {
             heading: '1. Acceptance of Terms',
-            content: `By registering for, accessing, or using the Maintenance System Application ("the Service"), you ("User", "Administrator", or "Company") agree to be bound by these Terms of Service. If you are registering an account on behalf of a company, organization, or other legal entity, you represent and warrant that you have full legal authority to bind that entity to these terms. If you do not agree to these terms, you must not access or use the Service.`
+            content: `By registering for, accessing, or using FixFleet ("the Service"), you ("User", "Administrator", or "Company") agree to be bound by these Terms of Service. If you are registering an account on behalf of a company, organization, or other legal entity, you represent and warrant that you have full legal authority to bind that entity to these terms. If you do not agree to these terms, you must not access or use the Service.`
         },
         {
             heading: '2. Description of the Service',
@@ -71,7 +71,7 @@ export const TERMS_OF_SERVICE_HE = {
     sections: [
         {
             heading: '1. קבלת התנאים',
-            content: `בהרשמה, בגישה או בשימוש באפליקציית ניהול התחזוקה ("השירות"), הנך ("משתמש", "מנהל" או "חברה") מסכים/ה להיות כפוף/ה לתנאי שימוש אלה. אם הנך נרשם/ת בשם חברה, ארגון או ישות משפטית אחרת, הנך מצהיר/ה ומתחייב/ת שיש לך סמכות חוקית מלאה להתחייב עבור אותה ישות לתנאים אלה. אם אינך מסכים/ה לתנאים אלה, אין לגשת לשירות או להשתמש בו.`
+            content: `בהרשמה, בגישה או בשימוש ב-FixFleet ("השירות"), הנך ("משתמש", "מנהל" או "חברה") מסכים/ה להיות כפוף/ה לתנאי שימוש אלה. אם הנך נרשם/ת בשם חברה, ארגון או ישות משפטית אחרת, הנך מצהיר/ה ומתחייב/ת שיש לך סמכות חוקית מלאה להתחייב עבור אותה ישות לתנאים אלה. אם אינך מסכים/ה לתנאים אלה, אין לגשת לשירות או להשתמש בו.`
         },
         {
             heading: '2. תיאור השירות',

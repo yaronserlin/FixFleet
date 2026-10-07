@@ -28,7 +28,7 @@ export default function LegalFooter() {
             }}
         >
             <Typography variant="caption">
-                Maintenance System · Version {APP_VERSION}
+                FixFleet · Version {APP_VERSION}
             </Typography>
             <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                 <Link component="button" type="button" variant="caption" color="inherit" onClick={() => showLegal('terms')}>

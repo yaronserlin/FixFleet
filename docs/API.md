@@ -1,6 +1,6 @@
 # REST API Specification
 
-This document provides the complete API specification for the MaintenanceSystemApp backend service, derived from the route controllers and middleware.
+This document provides the complete API specification for the FixFleet backend service, derived from the route controllers and middleware.
 
 ---
 

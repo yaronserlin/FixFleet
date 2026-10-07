@@ -1,6 +1,6 @@
 # Operations & Deployment Runbook
 
-This runbook covers operational procedures, deployment workflows, health monitoring, common incident remediations, and escalation paths for MaintenanceSystemApp.
+This runbook covers operational procedures, deployment workflows, health monitoring, common incident remediations, and escalation paths for FixFleet.
 
 ---
 

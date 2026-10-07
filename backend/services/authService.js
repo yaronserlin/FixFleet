@@ -585,7 +585,7 @@ async function requestPasswordReset(body) {
     const link = `${appBase}/reset-password?token=${rawToken}`;
     mailer.sendMail({
         to: user.email,
-        subject: 'Reset your password',
+        subject: 'Reset your FixFleet password',
         text: `Hi ${user.name},\n\nUse this link to set a new password (valid for 30 minutes):\n${link}\n\nIf you didn't request this, you can ignore this email.`,
         params: { link },
     }).catch((err) => logger.error('Failed to send password reset email', { error: err.message }));

@@ -17,7 +17,7 @@ describe('Logo Component', () => {
                 <Logo subtitle="Ops Manager" />
             </MemoryRouter>
         );
-        expect(screen.getByText('MAINTENANCE')).toBeInTheDocument();
+        expect(screen.getByText('FIXFLEET')).toBeInTheDocument();
         expect(screen.getByText('Ops Manager')).toBeInTheDocument();
     });
 
@@ -27,7 +27,7 @@ describe('Logo Component', () => {
                 <Logo variant="mark" />
             </MemoryRouter>
         );
-        expect(screen.queryByText('MAINTENANCE')).not.toBeInTheDocument();
+        expect(screen.queryByText('FIXFLEET')).not.toBeInTheDocument();
     });
 
     it('generates unique gradient/filter IDs per LogoMark instance so multiple simultaneous instances (e.g. mobile + desktop nav) all resolve their url(#id) fills', () => {

@@ -8,7 +8,8 @@
     "build": "vite build",
     "test": "jest",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

@@ -12,7 +12,7 @@
 // Payloads are produced by backend/services/pushService.js:
 //   { type, title, body, link }
 
-const DEFAULT_TITLE = 'Maintenance';
+const DEFAULT_TITLE = 'FixFleet';
 const NOTIFICATION_ICON = '/pwa-192x192.png';
 const NOTIFICATION_BADGE = '/pwa-192x192.png';
 

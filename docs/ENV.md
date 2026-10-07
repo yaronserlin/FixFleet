@@ -1,6 +1,6 @@
 # Environment Variables Reference
 
-This document outlines all environment variables utilized across the MaintenanceSystemApp backend and frontend applications.
+This document outlines all environment variables utilized across the FixFleet backend and frontend applications.
 
 ---
 

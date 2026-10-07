@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import { Link as RouterLink } from 'react-router-dom';
 
 /**
- * Modern SVG brand icon mark for the Maintenance system
+ * Modern SVG brand icon mark for FixFleet
  */
 export function LogoMark({ size = 36, sx = {} }) {
     const uid = useId();
@@ -144,7 +144,7 @@ export default function Logo({
                             color: textColor,
                         }}
                     >
-                        MAINTENANCE
+                        FIXFLEET
                     </Typography>
                     {subtitle && (
                         <Typography

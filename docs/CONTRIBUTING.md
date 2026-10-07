@@ -1,6 +1,6 @@
-# Contributing to MaintenanceSystemApp
+# Contributing to FixFleet
 
-Thank you for contributing to MaintenanceSystemApp! This guide details how to set up your local development environment, project scripts, testing guidelines, and submission workflow.
+Thank you for contributing to FixFleet! This guide details how to set up your local development environment, project scripts, testing guidelines, and submission workflow.
 
 ---
 
