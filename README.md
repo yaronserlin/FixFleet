@@ -7,7 +7,7 @@
 
 A modern, multi-tenant web application designed for comprehensive industrial and commercial equipment maintenance, fault tracking, preventive maintenance scheduling, and spare parts management.
 
-**Live demo:** https://maintenancesystemapp.onrender.com/ - first load may take ~30 seconds (free hosting).
+**Live demo:** https://fixfleet-app.onrender.com/ - first load may take ~30 seconds (free hosting).
 
 ## Screenshots
 

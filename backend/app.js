@@ -11,6 +11,7 @@ const { verifyToken } = require('./middleware/authMiddleware');
 const { errorHandler } = require('./middleware/errorMiddleware');
 const { sanitizeRequest } = require('./middleware/sanitizeMiddleware');
 const mediaStorage = require('./utils/mediaStorage');
+const { version } = require('./package.json');
 
 // Model imports for tenant-aware media access
 const Equipment = require('./models/Equipment');
@@ -168,6 +169,7 @@ const healthCheck = (req, res) => {
     const isDbConnected = mongoose.connection.readyState === 1;
     res.status(isDbConnected ? 200 : 503).json({
         status: isDbConnected ? 'healthy' : 'degraded',
+        version,
         timestamp: new Date().toISOString(),
         database: isDbConnected ? 'connected' : 'disconnected',
     });

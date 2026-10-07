@@ -26,6 +26,13 @@ async function createTool(token, overrides = {}) {
 }
 
 describe('App-level middleware and error handling', () => {
+    describe('Health check', () => {
+        it('reports the server version from package.json', async () => {
+            const res = await request(server).get('/api/health');
+            expect(res.body.version).toBe(require('../package.json').version);
+        });
+    });
+
     describe('CORS', () => {
         it('blocks a disallowed origin', async () => {
             const res = await request(server)
