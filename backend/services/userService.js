@@ -81,7 +81,7 @@ async function createUser(companyId, body) {
  * @param {string} targetUserId - The user whose role is being changed.
  * @param {{ role?: string }} body - Raw request body.
  * @throws {Error & { status: number }} 400 for a self-change attempt, invalid role, or demoting the last admin; 404 if the target user isn't found in this company.
- * @returns {Promise<Object>} The updated user (plain object, without `password`).
+ * @returns {Promise<{ user: Object, previousRole: string }>} The updated user (plain object, without `password`) and its role before the change.
  */
 async function updateUserRole(companyId, actingUserId, targetUserId, body) {
     // 1. Protection: Admins cannot change their own role via API
@@ -111,12 +111,13 @@ async function updateUserRole(companyId, actingUserId, targetUserId, body) {
         }
     }
 
+    const previousRole = targetUser.role;
     targetUser.role = targetRole;
     await targetUser.save();
 
     const userResponse = targetUser.toObject();
     delete userResponse.password;
-    return userResponse;
+    return { user: userResponse, previousRole };
 }
 
 /**
@@ -127,7 +128,7 @@ async function updateUserRole(companyId, actingUserId, targetUserId, body) {
  * @param {string} actingUserId - The id of the user making the request (used for the self-delete guard).
  * @param {string} targetUserId - The user to delete.
  * @throws {Error & { status: number }} 400 for a self-delete attempt or deleting the last admin; 404 if not found in this company.
- * @returns {Promise<void>}
+ * @returns {Promise<{ _id: *, name: string, email: string, role: string, companyId: * }>} The deleted user, for audit records.
  */
 async function deleteUser(companyId, actingUserId, targetUserId) {
     // 1. Protection: Cannot delete your own account via API
@@ -155,6 +156,9 @@ async function deleteUser(companyId, actingUserId, targetUserId) {
     if (avatarFileId) {
         await mediaStorage.deleteFile(avatarFileId);
     }
+
+    const { _id, name, email, role, companyId: userCompanyId } = targetUser;
+    return { _id, name, email, role, companyId: userCompanyId };
 }
 
 module.exports = {

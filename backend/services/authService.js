@@ -83,13 +83,13 @@ const generateSlug = (name) => name
  * existing `familyId` when rotating, or starts a new family otherwise.
  *
  * @param {Object} user - A User document (needs `_id` and `role`).
- * @param {string|import('mongoose').Types.ObjectId} companyId - The user's company id, embedded in the access token.
+ * @param {string|import('mongoose').Types.ObjectId|null} companyId - The user's company id, embedded in the access token (null for a superadmin).
  * @param {string} [familyId] - Existing refresh-token family id to continue (rotation), or a new one is generated.
  * @returns {Promise<{ accessToken: string, token: string, refreshToken: string }>}
  */
 async function generateTokens(user, companyId, familyId = null) {
     const userIdStr = user._id.toString();
-    const companyIdStr = companyId.toString();
+    const companyIdStr = companyId ? companyId.toString() : null;
 
     const accessToken = jwt.sign(
         { userId: userIdStr, role: user.role, companyId: companyIdStr },
@@ -106,6 +106,9 @@ async function generateTokens(user, companyId, familyId = null) {
     );
 
     const expiresAt = new Date(Date.now() + REFRESH_COOKIE_MAX_AGE);
+    // Every sign-in, signup and session refresh comes through here, so this
+    // one stamp is the user's "last active" time.
+    await User.updateOne({ _id: user._id }, { lastActiveAt: new Date() });
     await RefreshToken.create({
         userId: user._id,
         companyId,
@@ -247,11 +250,11 @@ async function login(body) {
         throw httpError(400, 'Invalid credentials');
     }
 
-    if (!user.companyId || !user.companyId.isActive) {
+    if (user.role !== ROLES.SUPERADMIN && (!user.companyId || !user.companyId.isActive)) {
         throw httpError(403, 'Company account is inactive');
     }
 
-    const tokens = await generateTokens(user, user.companyId._id);
+    const tokens = await generateTokens(user, user.companyId ? user.companyId._id : null);
 
     return { user: shapeUserProfile(user), tokens };
 }
@@ -323,7 +326,7 @@ async function rotateRefreshToken(rawRefreshToken) {
     if (!user) {
         throw httpError(401, 'User not found or deleted');
     }
-    if (!user.companyId || !user.companyId.isActive) {
+    if (user.role !== ROLES.SUPERADMIN && (!user.companyId || !user.companyId.isActive)) {
         throw httpError(403, 'Company account is inactive or not found');
     }
 
@@ -333,7 +336,7 @@ async function rotateRefreshToken(rawRefreshToken) {
     await existingTokenDoc.save();
 
     // Issue new access token + new rotated refresh token under the same familyId
-    const tokens = await generateTokens(user, user.companyId._id, existingTokenDoc.familyId);
+    const tokens = await generateTokens(user, user.companyId ? user.companyId._id : null, existingTokenDoc.familyId);
 
     return { tokens };
 }

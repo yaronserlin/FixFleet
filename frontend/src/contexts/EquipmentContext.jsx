@@ -10,6 +10,7 @@ import React, {
 import equipmentService from '../services/equipmentService';
 import { useNotify } from './NotificationContext';
 import { useAuth } from './AuthContext';
+import { canUseTenantApi } from '../constants/roles';
 import { retry, sortToolsByLocalSerial } from '../utils';
 
 const EquipmentContext = createContext();
@@ -75,7 +76,7 @@ export function EquipmentProvider({ children }) {
     }, [notify]);
 
     useEffect(() => {
-        if (user && !user.mustChangePassword) {
+        if (canUseTenantApi(user)) {
             fetchEquipment();
         } else {
             setEquipment([]);

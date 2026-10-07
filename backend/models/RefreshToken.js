@@ -11,7 +11,7 @@ const mongoose = require('mongoose');
  *
  * @typedef {Object} RefreshTokenDocument
  * @property {mongoose.Types.ObjectId} userId - The token's owner. Required, indexed.
- * @property {mongoose.Types.ObjectId} companyId - Tenant scope of the owning user. Required, indexed.
+ * @property {mongoose.Types.ObjectId} companyId - Tenant scope of the owning user, or null for a superadmin. Indexed.
  * @property {string} tokenHash - SHA-256 hex digest of the raw refresh token JWT. Required, indexed.
  * @property {string} familyId - Groups all tokens descended from one login (rotation lineage), for reuse detection. Required, indexed.
  * @property {boolean} [isRevoked=false] - Set true once this token has been rotated (exchanged for a new one) or explicitly revoked (logout, password change, detected reuse).
@@ -27,10 +27,11 @@ const RefreshTokenSchema = new mongoose.Schema({
         required: true,
         index: true,
     },
+    // Null for superadmin sessions (platform-level, no company).
     companyId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Company',
-        required: true,
+        default: null,
         index: true,
     },
     tokenHash: {

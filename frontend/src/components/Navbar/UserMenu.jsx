@@ -20,6 +20,7 @@ import { ROUTES } from '../../constants/routes';
 import { ROLES } from '../../constants/roles';
 
 const ROLE_CONFIG = {
+    [ROLES.SUPERADMIN]: { color: 'secondary', label: 'Superadmin', bgToken: 'secondary.main' },
     [ROLES.ADMIN]:    { color: 'error',   label: 'Admin',    bgToken: 'error.main'   },
     [ROLES.MECHANIC]: { color: 'primary', label: 'Mechanic', bgToken: 'primary.main' },
     [ROLES.OPERATOR]: { color: 'success', label: 'Operator', bgToken: 'success.main' },
@@ -85,11 +86,13 @@ export default function UserMenu({ user }) {
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
                 sx={{ mt: 1 }}
-                PaperProps={{
-                    sx: {
-                        minWidth: 230,
-                        borderRadius: 2,
-                        py: 0.5,
+                slotProps={{
+                    paper: {
+                        sx: {
+                            minWidth: 230,
+                            borderRadius: 2,
+                            py: 0.5,
+                        },
                     },
                 }}
             >
@@ -136,12 +139,15 @@ export default function UserMenu({ user }) {
                     <Typography variant="body2" fontWeight={500}>Account Settings</Typography>
                 </MenuItem>
 
-                <MenuItem onClick={() => goTo(ROUTES.PROFILE)}>
-                    <ListItemIcon>
-                        <HistoryIcon fontSize="small" />
-                    </ListItemIcon>
-                    <Typography variant="body2" fontWeight={500}>My Activity</Typography>
-                </MenuItem>
+                {/* Activity is tenant data; a superadmin has none. */}
+                {user.role !== ROLES.SUPERADMIN && (
+                    <MenuItem onClick={() => goTo(ROUTES.PROFILE)}>
+                        <ListItemIcon>
+                            <HistoryIcon fontSize="small" />
+                        </ListItemIcon>
+                        <Typography variant="body2" fontWeight={500}>My Activity</Typography>
+                    </MenuItem>
+                )}
 
                 <Divider sx={{ my: 0.5 }} />
 

@@ -19,7 +19,7 @@ import { PageSkeleton } from './components/Skeletons/Skeletons';
 import LoadingComponent from './components/LoadingComponent/LoadingComponent';
 import LegalFooter from './components/Legal/LegalFooter';
 import AccessibilityMenu from './components/AccessibilityMenu/AccessibilityMenu';
-import { ROUTES } from './constants/routes';
+import { ROUTES, homeRouteFor } from './constants/routes';
 import { ROLES } from './constants/roles';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -32,6 +32,7 @@ const EquipmentSchedulePage = lazy(() => import('./pages/EquipmentSchedulePage')
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const AccountPage = lazy(() => import('./pages/AccountPage'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard'));
 const OperatorReportsPage = lazy(() => import('./pages/OperatorReportsPage'));
 const EquipmentBooksPage = lazy(() => import('./pages/EquipmentBooksPage'));
 const ForcePasswordChangePage = lazy(() => import('./pages/ForcePasswordChangePage'));
@@ -49,6 +50,7 @@ const preloadRouteChunks = () => {
     import('./pages/ProfilePage');
     import('./pages/AccountPage');
     import('./pages/AdminDashboard');
+    import('./pages/SuperAdminDashboard');
     import('./pages/OperatorReportsPage');
     import('./pages/EquipmentBooksPage');
     import('./pages/NotificationsPage');
@@ -143,7 +145,7 @@ function AppLayout() {
         <Suspense fallback={<RouteFallback />}>
             <Routes>
                 {/* Default redirect */}
-                <Route path={ROUTES.HOME} element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+                <Route path={ROUTES.HOME} element={<Navigate to={homeRouteFor(user)} replace />} />
 
                 {/* Public routes */}
                 <Route path={ROUTES.LOGIN} element={<Login />} />
@@ -252,6 +254,16 @@ function AppLayout() {
                         <ProtectedRoute>
                             <RequireAdmin>
                                 <AdminDashboard />
+                            </RequireAdmin>
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path={ROUTES.SUPERADMIN}
+                    element={
+                        <ProtectedRoute>
+                            <RequireAdmin role={ROLES.SUPERADMIN}>
+                                <SuperAdminDashboard />
                             </RequireAdmin>
                         </ProtectedRoute>
                     }

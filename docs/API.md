@@ -152,4 +152,25 @@ feed continues to work unchanged.
 | `POST` | `/api/admin/equipment` | Yes | Admin | Create company equipment |
 | `PUT` | `/api/admin/equipment/:id` | Yes | Admin | Update company equipment |
 | `DELETE` | `/api/admin/equipment/:id` | Yes | Admin | Delete company equipment |
+
+---
+
+### 9. Platform Administration (`/api/superadmin`)
+
+*Requires the platform-level `superadmin` role. A superadmin has no company and is refused (403) on every tenant route; it may only use `/api/auth/*`, `/api/superadmin/*` and `/uploads/*`. Superadmins are created with `npm run create-superadmin -- --email <email>` (backend), never through the API.*
+
+| Method | Path | Auth Required | Minimum Role | Description |
+|--------|------|---------------|--------------|-------------|
+| `GET` | `/api/superadmin/stats` | Yes | Superadmin | Platform KPIs (companies, accounts, active users, storage), 12-month growth, largest companies, dormant/deactivated companies |
+| `GET` | `/api/superadmin/companies` | Yes | Superadmin | All companies with account count and last activity (`?search=`) |
+| `GET` | `/api/superadmin/companies/:id` | Yes | Superadmin | One company and its users |
+| `PATCH` | `/api/superadmin/companies/:id/status` | Yes | Superadmin | Activate/deactivate a company (`{ isActive }`); deactivating revokes its sessions |
+| `GET` | `/api/superadmin/users` | Yes | Superadmin | Tenant users across companies (`?search=&companyId=&role=&page=&limit=`) |
+| `PATCH` | `/api/superadmin/users/:id/role` | Yes | Superadmin | Change a tenant user's role (company last-admin guard applies) |
+| `POST` | `/api/superadmin/users/:id/reset-password` | Yes | Superadmin | Issue a one-time temporary password and force a change at next login |
+| `DELETE` | `/api/superadmin/users/:id` | Yes | Superadmin | Delete a tenant user (company last-admin guard applies) |
+| `POST` | `/api/superadmin/announcements` | Yes | Superadmin | Announce to all active companies, or `companyIds`, optionally filtered by `roles` |
+| `GET` | `/api/superadmin/audit-logs` | Yes | Superadmin | Audit trail, newest first (`?action=&companyId=&search=&page=&limit=`) |
+
+**Audit log.** Append-only, kept 365 days (TTL index). Recorded events: company registered / activated / deactivated; user created / role changed / deleted / password reset (by a company admin or a superadmin); account self-deleted; superadmin sign-in; failed sign-in (attempted email + IP). Ordinary tenant sign-ins are not recorded; they only update `User.lastActiveAt`.
 <!-- AUTO-GENERATED:API_END -->

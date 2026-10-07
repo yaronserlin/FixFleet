@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import faultService from '../services/faultsService';
 import { useNotify } from './NotificationContext';
 import { useAuth } from './AuthContext';
+import { canUseTenantApi } from '../constants/roles';
 import { retry, sortFaultsByOpenAndCreateDate } from '../utils';
 
 const FaultContext = createContext();
@@ -30,7 +31,7 @@ export function FaultProvider({ children }) {
     }, [user, notify]);
 
     useEffect(() => {
-        if (user && !user.mustChangePassword) {
+        if (canUseTenantApi(user)) {
             fetchFaults();
         } else {
             setFaults([]);

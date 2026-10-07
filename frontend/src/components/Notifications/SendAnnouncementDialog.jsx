@@ -10,6 +10,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
+import Autocomplete from '@mui/material/Autocomplete';
 import Typography from '@mui/material/Typography';
 import CloseIcon from '@mui/icons-material/Close';
 import CampaignIcon from '@mui/icons-material/Campaign';
@@ -28,6 +29,12 @@ const AUDIENCES = [
     { value: ROLES.OPERATOR, label: 'Operators', roles: [ROLES.OPERATOR] },
 ];
 
+/** A superadmin can also reach each company's admins. */
+const PLATFORM_AUDIENCES = [
+    ...AUDIENCES,
+    { value: ROLES.ADMIN, label: 'Admins', roles: [ROLES.ADMIN] },
+];
+
 /**
  * Admin composer for a broadcast announcement.
  *
@@ -35,12 +42,23 @@ const AUDIENCES = [
  * company; this dialog only narrows it further by role. The admin is never
  * a recipient of their own broadcast, which is why the copy says "your
  * team" rather than "all users".
+ *
+ * Platform mode (superadmin): pass `companies` to show a company picker
+ * (none picked = every active company) and `onSend` to post to the platform
+ * endpoint instead.
  */
-export default function SendAnnouncementDialog({ open, onClose }) {
+export default function SendAnnouncementDialog({
+    open,
+    onClose,
+    onSend = notificationsService.sendAnnouncement,
+    companies,
+}) {
     const notify = useNotify();
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
     const [audience, setAudience] = useState('all');
+    const [selectedCompanies, setSelectedCompanies] = useState([]);
+    const audiences = companies ? PLATFORM_AUDIENCES : AUDIENCES;
     const [sending, setSending] = useState(false);
     const [errors, setErrors] = useState({});
 
@@ -48,6 +66,7 @@ export default function SendAnnouncementDialog({ open, onClose }) {
         setTitle('');
         setBody('');
         setAudience('all');
+        setSelectedCompanies([]);
         setErrors({});
     };
 
@@ -68,11 +87,12 @@ export default function SendAnnouncementDialog({ open, onClose }) {
 
         setSending(true);
         try {
-            const selected = AUDIENCES.find(a => a.value === audience);
-            const { recipients } = await notificationsService.sendAnnouncement({
+            const selected = audiences.find(a => a.value === audience);
+            const { recipients } = await onSend({
                 title: title.trim(),
                 body: body.trim(),
                 ...(selected?.roles ? { roles: selected.roles } : {}),
+                ...(selectedCompanies.length > 0 ? { companyIds: selectedCompanies.map(c => c._id) } : {}),
             });
             notify.success(
                 `Announcement sent to ${recipients} ${recipients === 1 ? 'person' : 'people'}`
@@ -110,7 +130,7 @@ export default function SendAnnouncementDialog({ open, onClose }) {
                             SEND TO
                         </Typography>
                         <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-                            {AUDIENCES.map(option => (
+                            {audiences.map(option => (
                                 <Chip
                                     key={option.value}
                                     label={option.label}
@@ -122,6 +142,25 @@ export default function SendAnnouncementDialog({ open, onClose }) {
                             ))}
                         </Box>
                     </Box>
+
+                    {companies && (
+                        <Autocomplete
+                            multiple
+                            options={companies}
+                            value={selectedCompanies}
+                            onChange={(_, value) => setSelectedCompanies(value)}
+                            getOptionLabel={(c) => c.name}
+                            isOptionEqualToValue={(a, b) => a._id === b._id}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Companies"
+                                    placeholder={selectedCompanies.length ? '' : 'All active companies'}
+                                />
+                            )}
+                            sx={{ mb: 2.5 }}
+                        />
+                    )}
 
                     <TextField
                         fullWidth

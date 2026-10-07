@@ -9,6 +9,8 @@ const Equipment = require('../models/Equipment');
 const Part = require('../models/Part');
 const Maintenance = require('../models/Maintenance');
 const Fault = require('../models/Fault');
+const AuditLog = require('../models/AuditLog');
+const { AUDIT_ACTIONS } = require('../constants/audit');
 
 const daysAgo = (days) => new Date(Date.now() - days * 86400000);
 const daysFromNow = (days) => new Date(Date.now() + days * 86400000);
@@ -55,6 +57,7 @@ const seed = async () => {
             Part.deleteMany(),
             Maintenance.deleteMany(),
             Fault.deleteMany(),
+            AuditLog.deleteMany(),
         ]);
 
         // Random per-run password, printed once below -- never a
@@ -68,9 +71,9 @@ const seed = async () => {
             isActive: true,
         });
         const [valleyAdmin, valleyOperator, valleyMechanic] = await createUsers(valley, [
-            { name: 'Megan Carter', email: 'admin@greenvalleyfarm.com', role: 'admin', password },
+            { name: 'Megan Carter', email: 'admin@greenvalleyfarm.com', role: 'admin', password, lastActiveAt: daysAgo(0) },
             { name: 'Luke Bennett', email: 'operator@greenvalleyfarm.com', role: 'operator', password, mustChangePassword: true },
-            { name: 'Tom Alvarez', email: 'mechanic@greenvalleyfarm.com', role: 'mechanic', password },
+            { name: 'Tom Alvarez', email: 'mechanic@greenvalleyfarm.com', role: 'mechanic', password, lastActiveAt: daysAgo(1) },
         ]);
 
         const valleyEquipment = await Equipment.insertMany([
@@ -156,9 +159,9 @@ const seed = async () => {
 
         const prairie = await Company.create({ name: 'Prairie Crest Grain & Hay', slug: 'prairie-crest-grain-hay', isActive: true });
         const [prairieAdmin, prairieOperator, prairieMechanic] = await createUsers(prairie, [
-            { name: 'Daniel Morgan', email: 'admin@prairiecrestfarm.com', role: 'admin', password },
+            { name: 'Daniel Morgan', email: 'admin@prairiecrestfarm.com', role: 'admin', password, lastActiveAt: daysAgo(2) },
             { name: 'Sarah Wilson', email: 'operator@prairiecrestfarm.com', role: 'operator', password, mustChangePassword: true },
-            { name: 'Ethan Brooks', email: 'mechanic@prairiecrestfarm.com', role: 'mechanic', password },
+            { name: 'Ethan Brooks', email: 'mechanic@prairiecrestfarm.com', role: 'mechanic', password, lastActiveAt: daysAgo(3) },
         ]);
         const prairieEquipment = await Equipment.insertMany([
             {
@@ -234,14 +237,25 @@ const seed = async () => {
         ]);
         await linkFaults(prairieFaults);
 
+        // Platform-level superadmin: no company.
+        await User.create({ name: 'Platform Admin', email: 'superadmin@fixfleet.dev', role: 'superadmin', password, companyId: null });
+
+        // Seed the audit trail with each demo company's signup.
+        await AuditLog.insertMany([[valley, valleyAdmin], [prairie, prairieAdmin]].map(([company, admin]) => ({
+            action: AUDIT_ACTIONS.COMPANY_REGISTERED,
+            actor: { userId: admin._id, name: admin.name, email: admin.email, role: admin.role },
+            companyId: company._id,
+            target: { type: 'company', id: String(company._id), label: company.name },
+            createdAt: company.createdAt,
+        })));
+
         console.log('Database seeded successfully with agricultural operations data:');
         console.log(`  Password for ALL seeded users below (generated this run): ${seedPassword}`);
+        console.log('  0. Superadmin (superadmin@fixfleet.dev) -> /superadmin platform dashboard');
         console.log('  1. Green Valley Forage & Dairy (admin@greenvalleyfarm.com / mechanic@greenvalleyfarm.com / operator@greenvalleyfarm.com)');
         console.log(`     -> ${valleyEquipment.length} equipment items, ${valleyFaults.length} faults, ${valleyParts.length} parts`);
         console.log('  2. Prairie Crest Grain & Hay (admin@prairiecrestfarm.com / mechanic@prairiecrestfarm.com / operator@prairiecrestfarm.com)');
         console.log(`     -> ${prairieEquipment.length} equipment items, ${prairieFaults.length} faults, ${prairieParts.length} parts`);
-        void valleyAdmin;
-        void prairieAdmin;
         process.exit(0);
     } catch (error) {
         console.error('Seeding error:', error);

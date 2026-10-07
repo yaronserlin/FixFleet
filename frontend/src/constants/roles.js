@@ -6,16 +6,20 @@
  * Centralized here so role checks never drift due to a typo'd string
  * literal scattered across components.
  *
- * @type {{ OPERATOR: 'operator', MECHANIC: 'mechanic', ADMIN: 'admin' }}
+ * `SUPERADMIN` is platform-level (no company) and deliberately left out of
+ * {@link ALL_ROLES}, which lists the assignable tenant roles.
+ *
+ * @type {{ OPERATOR: 'operator', MECHANIC: 'mechanic', ADMIN: 'admin', SUPERADMIN: 'superadmin' }}
  */
 export const ROLES = Object.freeze({
     OPERATOR: 'operator',
     MECHANIC: 'mechanic',
     ADMIN: 'admin',
+    SUPERADMIN: 'superadmin',
 });
 
 /**
- * All valid role values.
+ * All tenant (company-scoped) role values. Excludes superadmin.
  * @type {string[]}
  */
 export const ALL_ROLES = Object.freeze([ROLES.OPERATOR, ROLES.MECHANIC, ROLES.ADMIN]);
@@ -40,3 +44,13 @@ export const DEFAULT_ROLE = ROLES.OPERATOR;
  * @returns {boolean}
  */
 export const isMechanicOrAdmin = (role) => MECHANIC_OR_ADMIN_ROLES.includes(role);
+
+/**
+ * True if `user` may call the tenant-scoped API (equipment, faults,
+ * notifications...): signed in, past the forced password change, and not a
+ * superadmin, whom the backend confines to /api/superadmin.
+ * @param {{ role?: string, mustChangePassword?: boolean }|null|undefined} user
+ * @returns {boolean}
+ */
+export const canUseTenantApi = (user) =>
+    Boolean(user) && !user.mustChangePassword && user.role !== ROLES.SUPERADMIN;

@@ -11,6 +11,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import PublicIcon from '@mui/icons-material/Public';
 import { ROUTES } from '../../constants/routes';
 
 export const PAGE_ICON_MAP = {
@@ -23,6 +24,7 @@ export const PAGE_ICON_MAP = {
     'profile':    <PersonIcon fontSize="small" />,
     'account':    <PersonIcon fontSize="small" />,
     'admin':      <AdminPanelSettingsIcon fontSize="small" />,
+    'platform':   <PublicIcon fontSize="small" />,
 };
 
 export function pageToPath(page) {
@@ -32,6 +34,7 @@ export function pageToPath(page) {
     if (lower === 'manuals' || lower === 'equipment manuals' || lower === 'books') return ROUTES.MANUALS;
     if (lower === 'equipment' || lower === 'tools') return ROUTES.EQUIPMENT;
     if (lower === 'admin') return ROUTES.ADMIN;
+    if (lower === 'platform') return ROUTES.SUPERADMIN;
     return `/${lower}`;
 }
 

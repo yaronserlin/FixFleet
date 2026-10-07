@@ -26,6 +26,7 @@ import PaletteIcon from '@mui/icons-material/Palette';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import { styled } from '@mui/material/styles';
 import { useAuth } from '../contexts/AuthContext';
+import { canUseTenantApi } from '../constants/roles';
 import { useThemeMode } from '../contexts/ThemeContext';
 import userService from '../services/userService';
 import { getMediaUrl } from '../utils/mediaUtils';
@@ -466,9 +467,11 @@ export default function AccountPage() {
                         label={mode === 'dark' ? 'Dark mode' : 'Light mode'}
                     />
                 </Paper>
-                <Box sx={{ mt: 2 }}>
-                    <PushNotificationSettings />
-                </Box>
+                {canUseTenantApi(user) && (
+                    <Box sx={{ mt: 2 }}>
+                        <PushNotificationSettings />
+                    </Box>
+                )}
             </Box>
 
             <Paper

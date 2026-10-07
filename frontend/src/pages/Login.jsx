@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoginComponent from '../components/LoginComponent';
-import { ROUTES } from '../constants/routes';
+import { ROUTES, homeRouteFor } from '../constants/routes';
 
 function Login() {
     const { user, loading } = useAuth();
@@ -13,7 +13,7 @@ function Login() {
             if (user.mustChangePassword) {
                 navigate(ROUTES.FORCE_PASSWORD_CHANGE, { replace: true });
             } else {
-                navigate(ROUTES.DASHBOARD, { replace: true });
+                navigate(homeRouteFor(user), { replace: true });
             }
         }
     }, [user, loading, navigate]);

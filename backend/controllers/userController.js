@@ -1,5 +1,7 @@
 // controllers/userController.js
 const userService = require('../services/userService');
+const { recordAudit, userTarget } = require('../utils/audit');
+const { AUDIT_ACTIONS } = require('../constants/audit');
 
 /**
  * GET /api/admin/users - Lists all users in the requesting admin's company.
@@ -27,6 +29,12 @@ exports.getAllUsers = async (req, res, next) => {
 exports.createUser = async (req, res, next) => {
     try {
         const user = await userService.createUser(req.user.companyId, req.body);
+        await recordAudit(req, {
+            action: AUDIT_ACTIONS.USER_CREATED,
+            companyId: req.user.companyId,
+            target: userTarget(user),
+            metadata: { role: user.role },
+        });
         res.status(201).json(user);
     } catch (err) {
         next(err);
@@ -42,7 +50,13 @@ exports.createUser = async (req, res, next) => {
  */
 exports.updateUserRole = async (req, res, next) => {
     try {
-        const user = await userService.updateUserRole(req.user.companyId, req.user.userId, req.params.id, req.body);
+        const { user, previousRole } = await userService.updateUserRole(req.user.companyId, req.user.userId, req.params.id, req.body);
+        await recordAudit(req, {
+            action: AUDIT_ACTIONS.USER_ROLE_CHANGED,
+            companyId: req.user.companyId,
+            target: userTarget(user),
+            metadata: { from: previousRole, to: user.role },
+        });
         res.json(user);
     } catch (err) {
         next(err);
@@ -58,7 +72,13 @@ exports.updateUserRole = async (req, res, next) => {
  */
 exports.deleteUser = async (req, res, next) => {
     try {
-        await userService.deleteUser(req.user.companyId, req.user.userId, req.params.id);
+        const deleted = await userService.deleteUser(req.user.companyId, req.user.userId, req.params.id);
+        await recordAudit(req, {
+            action: AUDIT_ACTIONS.USER_DELETED,
+            companyId: req.user.companyId,
+            target: userTarget(deleted),
+            metadata: { role: deleted.role },
+        });
         res.status(204).end();
     } catch (err) {
         next(err);

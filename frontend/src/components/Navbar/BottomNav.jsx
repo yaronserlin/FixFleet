@@ -27,8 +27,8 @@ import { BOTTOM_NAV_HEIGHT } from './navConstants';
 import { ROUTES } from '../../constants/routes';
 import { ROLES } from '../../constants/roles';
 
-const ROLE_COLOR = { [ROLES.ADMIN]: 'error', [ROLES.MECHANIC]: 'primary', [ROLES.OPERATOR]: 'success' };
-const ROLE_LABEL = { [ROLES.ADMIN]: 'Admin', [ROLES.MECHANIC]: 'Mechanic', [ROLES.OPERATOR]: 'Operator' };
+const ROLE_COLOR = { [ROLES.SUPERADMIN]: 'secondary', [ROLES.ADMIN]: 'error', [ROLES.MECHANIC]: 'primary', [ROLES.OPERATOR]: 'success' };
+const ROLE_LABEL = { [ROLES.SUPERADMIN]: 'Superadmin', [ROLES.ADMIN]: 'Admin', [ROLES.MECHANIC]: 'Mechanic', [ROLES.OPERATOR]: 'Operator' };
 
 /**
  * Native-app-style bottom tab bar for phone widths (< sm / 600px), with a
@@ -49,6 +49,8 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
     const { unreadCount } = useNotificationFeed();
 
     if (!user) return null;
+
+    const isTenantUser = user.role !== ROLES.SUPERADMIN;
 
     const mid = Math.ceil(pages.length / 2);
     const leftPages = pages.slice(0, mid);
@@ -126,6 +128,8 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
                             flexShrink: 0,
                         }}
                     >
+                        {/* Superadmins have no company to report faults in. */}
+                        {isTenantUser && (
                         <ButtonBase
                             onClick={onOpenCreateFault}
                             aria-label="Report a fault"
@@ -143,6 +147,7 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
                         >
                             <AddIcon />
                         </ButtonBase>
+                        )}
                     </Box>
 
                     <Box sx={{ flex: 1, display: 'flex', alignItems: 'stretch' }}>
@@ -192,11 +197,13 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
                 anchor="bottom"
                 open={accountOpen}
                 onClose={() => setAccountOpen(false)}
-                PaperProps={{
-                    sx: {
-                        borderTopLeftRadius: 16,
-                        borderTopRightRadius: 16,
-                        pb: 'env(safe-area-inset-bottom)',
+                slotProps={{
+                    paper: {
+                        sx: {
+                            borderTopLeftRadius: 16,
+                            borderTopRightRadius: 16,
+                            pb: 'env(safe-area-inset-bottom)',
+                        },
                     },
                 }}
             >
@@ -236,22 +243,27 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
                     ))}
                     {menuPages.length > 0 && <Divider sx={{ my: 0.5 }} />}
 
-                    <ListItemButton onClick={() => goTo(ROUTES.NOTIFICATIONS)} sx={{ minHeight: 48 }}>
-                        <ListItemIcon>
-                            <Badge badgeContent={unreadCount} color="error" max={99}>
-                                <NotificationsIcon fontSize="small" />
-                            </Badge>
-                        </ListItemIcon>
-                        <ListItemText primary="Notifications" />
-                    </ListItemButton>
+                    {/* Notifications and activity are tenant data; a superadmin has neither. */}
+                    {isTenantUser && (
+                        <ListItemButton onClick={() => goTo(ROUTES.NOTIFICATIONS)} sx={{ minHeight: 48 }}>
+                            <ListItemIcon>
+                                <Badge badgeContent={unreadCount} color="error" max={99}>
+                                    <NotificationsIcon fontSize="small" />
+                                </Badge>
+                            </ListItemIcon>
+                            <ListItemText primary="Notifications" />
+                        </ListItemButton>
+                    )}
                     <ListItemButton onClick={() => goTo(ROUTES.ACCOUNT)} sx={{ minHeight: 48 }}>
                         <ListItemIcon><ManageAccountsIcon fontSize="small" /></ListItemIcon>
                         <ListItemText primary="Account Settings" />
                     </ListItemButton>
-                    <ListItemButton onClick={() => goTo(ROUTES.PROFILE)} sx={{ minHeight: 48 }}>
-                        <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
-                        <ListItemText primary="My Activity" />
-                    </ListItemButton>
+                    {isTenantUser && (
+                        <ListItemButton onClick={() => goTo(ROUTES.PROFILE)} sx={{ minHeight: 48 }}>
+                            <ListItemIcon><HistoryIcon fontSize="small" /></ListItemIcon>
+                            <ListItemText primary="My Activity" />
+                        </ListItemButton>
+                    )}
                     <Divider sx={{ my: 0.5 }} />
 
                     <ListItemButton

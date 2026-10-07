@@ -2,6 +2,7 @@
 const mongoose = require('mongoose');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const Company = require('../models/Company');
 const pushService = require('./pushService');
 const logger = require('../utils/logger');
 const { httpError } = require('../utils/httpError');
@@ -127,21 +128,14 @@ async function notifyFaultReported(fault, reporter) {
 }
 
 /**
- * Broadcasts an admin-authored announcement to the users in the admin's own
- * company.
+ * Validates an announcement payload shared by the company-admin and the
+ * superadmin broadcast paths.
  *
- * "Everyone under them" is exactly the tenant boundary: an admin reaches
- * every user sharing their companyId and nobody outside it. `roles` narrows
- * that further (e.g. mechanics only); omitted, it means everyone. The
- * sending admin is excluded from their own broadcast.
- *
- * @param {string} companyId - Tenant scope; taken from the authenticated admin, never from the request body.
- * @param {{ userId: string, name?: string }} sender - The broadcasting admin.
  * @param {{ title?: string, body?: string, roles?: string[] }} payload - Raw request body.
- * @throws {Error & { status: number }} 400 if the title/body are missing, too long, or `roles` contains an unknown role.
- * @returns {Promise<{ recipients: number, notifications: Array<Object> }>}
+ * @throws {Error & { status: number }} 400 if the title/body are missing or too long, or `roles` is empty or contains an unknown role.
+ * @returns {{ title: string, body: string, roles: string[]|null }} Trimmed title/body, and the validated role filter (null means every role).
  */
-async function createAnnouncement(companyId, sender, payload = {}) {
+function parseAnnouncement(payload) {
     const { title, body, roles } = payload || {};
 
     if (!title || typeof title !== 'string' || !title.trim()) {
@@ -157,24 +151,48 @@ async function createAnnouncement(companyId, sender, payload = {}) {
         throw httpError(400, `Message must be ${ANNOUNCEMENT_LIMITS.BODY_MAX} characters or fewer`);
     }
 
+    if (roles === undefined) {
+        return { title: title.trim(), body: body.trim(), roles: null };
+    }
+
+    const requested = Array.isArray(roles) ? roles : [roles];
+    const cleaned = requested.filter(r => typeof r === 'string' && r.trim());
+    const invalid = cleaned.filter(r => !ALL_ROLES.includes(r));
+    if (invalid.length > 0) {
+        throw httpError(400, `Unknown role: ${invalid.join(', ')}`);
+    }
+    // An explicit empty selection means "nobody", which is a mistake
+    // worth reporting rather than silently sending to everyone.
+    if (cleaned.length === 0) {
+        throw httpError(400, 'Select at least one role to notify');
+    }
+    return { title: title.trim(), body: body.trim(), roles: cleaned };
+}
+
+/**
+ * Broadcasts an admin-authored announcement to the users in the admin's own
+ * company.
+ *
+ * "Everyone under them" is exactly the tenant boundary: an admin reaches
+ * every user sharing their companyId and nobody outside it. `roles` narrows
+ * that further (e.g. mechanics only); omitted, it means everyone. The
+ * sending admin is excluded from their own broadcast.
+ *
+ * @param {string} companyId - Tenant scope; taken from the authenticated admin, never from the request body.
+ * @param {{ userId: string, name?: string }} sender - The broadcasting admin.
+ * @param {{ title?: string, body?: string, roles?: string[] }} payload - Raw request body.
+ * @throws {Error & { status: number }} 400 if the title/body are missing, too long, or `roles` contains an unknown role.
+ * @returns {Promise<{ recipients: number, notifications: Array<Object> }>}
+ */
+async function createAnnouncement(companyId, sender, payload = {}) {
+    const { title, body, roles } = parseAnnouncement(payload);
+
     // See the mongoose.trusted() note in notifyFaultReported above --
     // sender?.userId is the authenticated admin's own id, not request input.
     const filter = { companyId, _id: mongoose.trusted({ $ne: sender?.userId }) };
-
-    if (roles !== undefined) {
-        const requested = Array.isArray(roles) ? roles : [roles];
-        const cleaned = requested.filter(r => typeof r === 'string' && r.trim());
-        const invalid = cleaned.filter(r => !ALL_ROLES.includes(r));
-        if (invalid.length > 0) {
-            throw httpError(400, `Unknown role: ${invalid.join(', ')}`);
-        }
-        // An explicit empty selection means "nobody", which is a mistake
-        // worth reporting rather than silently sending to everyone.
-        if (cleaned.length === 0) {
-            throw httpError(400, 'Select at least one role to notify');
-        }
-        // cleaned is validated above against ALL_ROLES, not raw request input.
-        filter.role = mongoose.trusted({ $in: cleaned });
+    if (roles) {
+        // roles is validated against ALL_ROLES, not raw request input.
+        filter.role = mongoose.trusted({ $in: roles });
     }
 
     const recipients = await User.find(filter).select('_id');
@@ -187,13 +205,74 @@ async function createAnnouncement(companyId, sender, payload = {}) {
         companyId,
         recipients,
         type: NOTIFICATION_TYPES.ANNOUNCEMENT,
-        title: title.trim(),
-        body: body.trim(),
+        title,
+        body,
         link: '/notifications',
         sender: sender?.userId || null,
     });
 
     return { recipients: recipients.length, notifications };
+}
+
+/**
+ * Broadcasts a superadmin-authored announcement across companies.
+ *
+ * Recipients are the tenant users of every active company, or only of
+ * `companyIds` when given, optionally narrowed by `roles`. Notifications are
+ * dispatched once per company so each one still carries its recipient's own
+ * `companyId` and stays inside that tenant's feed.
+ *
+ * @param {{ userId: string }} sender - The broadcasting superadmin.
+ * @param {{ title?: string, body?: string, roles?: string[], companyIds?: string[] }} payload - Raw request body.
+ * @throws {Error & { status: number }} 400 for an invalid payload, malformed company ids, or no matching recipients.
+ * @returns {Promise<{ recipients: number, companies: number }>}
+ */
+async function createPlatformAnnouncement(sender, payload = {}) {
+    const { title, body, roles } = parseAnnouncement(payload);
+    const { companyIds } = payload || {};
+
+    const companyFilter = { isActive: true };
+    if (companyIds !== undefined) {
+        const ids = Array.isArray(companyIds) ? companyIds : [companyIds];
+        if (ids.length === 0 || !ids.every(id => typeof id === 'string' && mongoose.isValidObjectId(id))) {
+            throw httpError(400, 'companyIds must be a non-empty list of company ids');
+        }
+        // ids are validated ObjectId strings above, not arbitrary request input.
+        companyFilter._id = mongoose.trusted({ $in: ids });
+    }
+    const companies = await Company.find(companyFilter).select('_id');
+
+    // Server-built filter (validated ids/roles only), hence mongoose.trusted().
+    const userFilter = {
+        companyId: mongoose.trusted({ $in: companies.map(c => c._id) }),
+        role: mongoose.trusted({ $in: roles || ALL_ROLES }),
+    };
+    const recipients = await User.find(userFilter).select('_id companyId');
+
+    if (recipients.length === 0) {
+        throw httpError(400, 'No users match the selected recipients');
+    }
+
+    const byCompany = new Map();
+    for (const user of recipients) {
+        const key = String(user.companyId);
+        if (!byCompany.has(key)) byCompany.set(key, []);
+        byCompany.get(key).push(user._id);
+    }
+
+    for (const [companyId, companyRecipients] of byCompany) {
+        await dispatch({
+            companyId,
+            recipients: companyRecipients,
+            type: NOTIFICATION_TYPES.ANNOUNCEMENT,
+            title,
+            body,
+            link: '/notifications',
+            sender: sender?.userId || null,
+        });
+    }
+
+    return { recipients: recipients.length, companies: byCompany.size };
 }
 
 /**
@@ -326,6 +405,7 @@ module.exports = {
     dispatch,
     notifyFaultReported,
     createAnnouncement,
+    createPlatformAnnouncement,
     listForUser,
     getUnreadCount,
     markRead,

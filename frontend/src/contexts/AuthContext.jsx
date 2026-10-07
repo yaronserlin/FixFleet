@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import { formatUserName } from '../utils/formatUtils';
-import { ROUTES } from '../constants/routes';
+import { ROUTES, homeRouteFor } from '../constants/routes';
 
 const sanitizeUser = (userData) => {
     if (!userData || typeof userData !== 'object') return userData;
@@ -75,7 +75,7 @@ export const AuthProvider = ({ children }) => {
             if (formattedUser?.mustChangePassword) {
                 navigate(ROUTES.FORCE_PASSWORD_CHANGE, { replace: true });
             } else {
-                navigate(ROUTES.DASHBOARD);
+                navigate(homeRouteFor(formattedUser));
             }
             return formattedUser;
         } catch (error) {
@@ -111,7 +111,7 @@ export const AuthProvider = ({ children }) => {
             if (formattedUser?.mustChangePassword) {
                 navigate(ROUTES.FORCE_PASSWORD_CHANGE, { replace: true });
             } else {
-                navigate(ROUTES.DASHBOARD);
+                navigate(homeRouteFor(formattedUser));
             }
             return formattedUser;
         } catch (error) {

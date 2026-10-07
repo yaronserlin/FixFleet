@@ -1,4 +1,5 @@
 // src/constants/routes.js
+import { ROLES } from './roles';
 
 /**
  * Static (non-parameterized) app route paths. Centralized so navigate()
@@ -21,6 +22,7 @@ export const ROUTES = Object.freeze({
     PROFILE: '/profile',
     ACCOUNT: '/account',
     ADMIN: '/admin',
+    SUPERADMIN: '/superadmin',
     MY_REPORTS: '/my-reports',
     NOTIFICATIONS: '/notifications',
     MANUALS: '/manuals',
@@ -35,3 +37,6 @@ export const equipmentScheduleRoute = (id, scheduleId) => `/equipment/${id}/sche
 
 /** Equipment detail page pre-selected to a given tab (see EquipmentPage's resolveTab). */
 export const equipmentDetailTabRoute = (id, tab) => `/equipment/${id}?tab=${tab}`;
+
+/** Where a signed-in user lands: the platform page for a superadmin, the dashboard for everyone else. */
+export const homeRouteFor = (user) => (user?.role === ROLES.SUPERADMIN ? ROUTES.SUPERADMIN : ROUTES.DASHBOARD);

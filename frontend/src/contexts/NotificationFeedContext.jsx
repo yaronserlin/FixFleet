@@ -10,6 +10,7 @@ import React, {
 } from 'react';
 import notificationsService from '../services/notificationsService';
 import { useAuth } from './AuthContext';
+import { canUseTenantApi } from '../constants/roles';
 import { usePageRefreshTrigger } from './PageRefreshContext';
 
 /**
@@ -50,9 +51,9 @@ export function NotificationFeedProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // A user who must still change their password is blocked from every
-    // other API route, so polling would just generate 403s.
-    const canFetch = Boolean(user) && !user?.mustChangePassword;
+    // A user who must still change their password, or a superadmin, is
+    // blocked from the tenant API, so polling would just generate 403s.
+    const canFetch = canUseTenantApi(user);
 
     // Read inside the poll timer without making it a dependency, so the
     // interval isn't torn down and recreated on every fetch.

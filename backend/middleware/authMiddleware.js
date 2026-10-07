@@ -3,6 +3,9 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { ROLES, MECHANIC_OR_ADMIN_ROLES } = require('../constants/roles');
 
+/** The only path prefixes a superadmin may reach (see verifyToken). */
+const SUPERADMIN_PATH_PREFIXES = Object.freeze(['/api/superadmin/', '/api/auth/', '/uploads/']);
+
 /**
  * Authenticates the request: extracts a JWT access token from the
  * `Authorization: Bearer <token>` header (the only accepted transport --
@@ -45,7 +48,9 @@ exports.verifyToken = async (req, res, next) => {
             return res.status(401).json({ message: 'User not found or deleted' });
         }
 
-        if (!user.companyId || !user.companyId.isActive) {
+        const isSuperAdmin = user.role === ROLES.SUPERADMIN;
+
+        if (!isSuperAdmin && (!user.companyId || !user.companyId.isActive)) {
             return res.status(403).json({ message: 'Company account is inactive or not found' });
         }
 
@@ -55,10 +60,21 @@ exports.verifyToken = async (req, res, next) => {
             name: user.name,
             email: user.email,
             role: user.role,
-            companyId: user.companyId._id,
-            company: user.companyId,
+            companyId: user.companyId ? user.companyId._id : null,
+            company: user.companyId || null,
             mustChangePassword: Boolean(user.mustChangePassword),
         };
+
+        // A superadmin has no company, so every tenant-scoped route would run
+        // with `companyId: null`. Confine them to the platform API, their own
+        // auth/profile routes, and media delivery.
+        if (isSuperAdmin) {
+            const requestPath = (req.originalUrl || req.url || '').split('?')[0];
+            const isSuperAdminPath = SUPERADMIN_PATH_PREFIXES.some(prefix => requestPath.startsWith(prefix));
+            if (!isSuperAdminPath) {
+                return res.status(403).json({ message: 'Forbidden: tenant routes are not available to superadmins' });
+            }
+        }
 
         if (user.mustChangePassword) {
             const rawPath = req.originalUrl || req.url || '';
@@ -114,6 +130,22 @@ exports.ensureAdmin = (req, res, next) => {
 exports.ensureMechanicOrAdmin = (req, res, next) => {
     if (!req.user || !MECHANIC_OR_ADMIN_ROLES.includes(req.user.role)) {
         return res.status(403).json({ message: 'Forbidden: Mechanics or Admins only' });
+    }
+    next();
+};
+
+/**
+ * Route guard: only allows requests from a platform-level `superadmin`.
+ * Must run after {@link exports.verifyToken} (reads `req.user`).
+ *
+ * @param {import('express').Request} req - Express request; reads `req.user.role`.
+ * @param {import('express').Response} res - Express response; responds 403 directly if the check fails.
+ * @param {import('express').NextFunction} next - Called if the user is a superadmin.
+ * @returns {void}
+ */
+exports.ensureSuperAdmin = (req, res, next) => {
+    if (!req.user || req.user.role !== ROLES.SUPERADMIN) {
+        return res.status(403).json({ message: 'Forbidden: Superadmins only' });
     }
     next();
 };

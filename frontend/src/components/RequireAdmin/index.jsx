@@ -4,14 +4,14 @@ import { useAuth } from '../../contexts/AuthContext';
 import { ROUTES } from '../../constants/routes';
 import { ROLES } from '../../constants/roles';
 
-export default function RequireAdmin({ children }) {
+export default function RequireAdmin({ children, role = ROLES.ADMIN }) {
     const { user } = useAuth();
 
     if (!user) {
         return <Navigate to={ROUTES.LOGIN} replace />;
     }
 
-    if (user.role !== ROLES.ADMIN) {
+    if (user.role !== role) {
         return <Navigate to={ROUTES.EQUIPMENT} replace />;
     }
 

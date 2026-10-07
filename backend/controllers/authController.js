@@ -1,5 +1,11 @@
 // controllers/authController.js
 const authService = require('../services/authService');
+const { recordAudit, companyTarget } = require('../utils/audit');
+const { AUDIT_ACTIONS } = require('../constants/audit');
+const { ROLES } = require('../constants/roles');
+
+/** Longest attempted email kept on a failed-login audit entry. */
+const MAX_AUDITED_EMAIL_LENGTH = 254;
 const { REFRESH_COOKIE_MAX_AGE } = require('../constants/auth');
 
 /**
@@ -75,6 +81,12 @@ const clearAuthCookies = (res) => {
 exports.register = async (req, res, next) => {
     try {
         const { user, tokens } = await authService.register(req.body);
+        await recordAudit(req, {
+            action: AUDIT_ACTIONS.COMPANY_REGISTERED,
+            actor: user,
+            companyId: user.company._id,
+            target: companyTarget(user.company),
+        });
         setRefreshCookie(res, tokens.refreshToken);
 
         // The refresh token is deliberately NOT returned in the body: it is
@@ -100,6 +112,9 @@ exports.register = async (req, res, next) => {
 exports.login = async (req, res, next) => {
     try {
         const { user, tokens } = await authService.login(req.body);
+        if (user.role === ROLES.SUPERADMIN) {
+            await recordAudit(req, { action: AUDIT_ACTIONS.SUPERADMIN_LOGIN, actor: user });
+        }
         setRefreshCookie(res, tokens.refreshToken);
 
         // The refresh token is deliberately NOT returned in the body: it is
@@ -110,6 +125,16 @@ exports.login = async (req, res, next) => {
             user,
         });
     } catch (err) {
+        // Wrong credentials or a blocked company: worth a trail for spotting
+        // brute force. Malformed requests (no email) aren't.
+        const email = req.body?.email;
+        if (typeof email === 'string' && email.trim() && err.status && err.status < 500) {
+            await recordAudit(req, {
+                action: AUDIT_ACTIONS.LOGIN_FAILED,
+                actor: null,
+                metadata: { email: email.trim().toLowerCase().slice(0, MAX_AUDITED_EMAIL_LENGTH), reason: err.message },
+            });
+        }
         next(err);
     }
 };
@@ -196,6 +221,11 @@ exports.updateProfile = async (req, res, next) => {
 exports.deleteAccount = async (req, res, next) => {
     try {
         await authService.deleteAccount(req.user.userId, req.body?.confirmation);
+        await recordAudit(req, {
+            action: AUDIT_ACTIONS.ACCOUNT_SELF_DELETED,
+            companyId: req.user.companyId,
+            target: { type: 'user', id: req.user.userId, label: req.user.email },
+        });
         clearAuthCookies(res);
         res.json({ message: 'Account deleted successfully' });
     } catch (err) {

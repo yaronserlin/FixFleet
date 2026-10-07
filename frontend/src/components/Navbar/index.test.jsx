@@ -88,6 +88,12 @@ describe('Navbar', () => {
         expect(screen.getByTestId('bottom-nav')).toHaveTextContent(expected);
     });
 
+    it('gives a superadmin only the Platform page', () => {
+        setup({ id: 'u1', role: 'superadmin' });
+        expect(screen.getByTestId('sidebar-full')).toHaveTextContent('pages:Platform');
+        expect(screen.getByTestId('bottom-nav')).toHaveTextContent('pages:Platform | menu:');
+    });
+
     it('passes the current user down to every variant', () => {
         setup({ id: 'u1', role: 'admin' });
         expect(screen.getByTestId('sidebar-full')).toHaveTextContent('user:admin');

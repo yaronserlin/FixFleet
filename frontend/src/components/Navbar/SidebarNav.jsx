@@ -15,8 +15,8 @@ import UserMenu from './UserMenu';
 import NotificationBell from '../Notifications/NotificationBell';
 import { pageToPath, pageIcon, isPageActive } from './navItems';
 import { SIDEBAR_FULL_WIDTH, SIDEBAR_RAIL_WIDTH } from './navConstants';
-import { ROUTES } from '../../constants/routes';
-import { ROLES } from '../../constants/roles';
+import { ROUTES, homeRouteFor } from '../../constants/routes';
+import { ROLES, canUseTenantApi } from '../../constants/roles';
 
 /**
  * Persistent left sidebar navigation.
@@ -71,7 +71,7 @@ export default function SidebarNav({ variant = 'full', display, user, pages }) {
                 {collapsed ? (
                     <Box
                         component={RouterLink}
-                        to={ROUTES.DASHBOARD}
+                        to={homeRouteFor(user)}
                         aria-label="Go to dashboard"
                         sx={{ display: 'inline-flex' }}
                     >
@@ -80,8 +80,8 @@ export default function SidebarNav({ variant = 'full', display, user, pages }) {
                 ) : (
                     <Logo
                         size={32}
-                        subtitle={user?.role === ROLES.OPERATOR ? 'Operator Portal' : 'Ops Manager'}
-                        to={ROUTES.DASHBOARD}
+                        subtitle={{ [ROLES.OPERATOR]: 'Operator Portal', [ROLES.SUPERADMIN]: 'Platform Admin' }[user?.role] || 'Ops Manager'}
+                        to={homeRouteFor(user)}
                     />
                 )}
             </Box>
@@ -132,7 +132,7 @@ export default function SidebarNav({ variant = 'full', display, user, pages }) {
                             {!collapsed && (
                                 <ListItemText
                                     primary={page}
-                                    primaryTypographyProps={{ fontWeight: active ? 700 : 500, fontSize: '0.875rem' }}
+                                    slotProps={{ primary: { fontWeight: active ? 700 : 500, fontSize: '0.875rem' } }}
                                 />
                             )}
                         </ListItemButton>
@@ -162,7 +162,7 @@ export default function SidebarNav({ variant = 'full', display, user, pages }) {
                     gap: 1,
                 }}
             >
-                <NotificationBell tooltipPlacement={collapsed ? 'right' : 'top'} />
+                {canUseTenantApi(user) && <NotificationBell tooltipPlacement={collapsed ? 'right' : 'top'} />}
 
                 <UserMenu user={user} />
             </Box>
