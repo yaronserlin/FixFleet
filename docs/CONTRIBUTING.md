@@ -16,8 +16,8 @@ The repository is organized into `backend/` and `frontend/` applications:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yaronserlin/MaintenanceSystemApp.git
-cd MaintenanceSystemApp
+git clone https://github.com/yaronserlin/FixFleet.git
+cd FixFleet
 
 # Install backend dependencies
 cd backend

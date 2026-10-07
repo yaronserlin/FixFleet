@@ -57,7 +57,7 @@ A modern, multi-tenant web application designed for comprehensive industrial and
 ## Project Structure
 
 ```
-MaintenanceSystemApp/
+FixFleet/
 ├── backend/                  # Express REST API
 │   ├── config/               # Database and server configuration
 │   ├── constants/            # Shared enums/config (roles, rate limits, fault/schedule status, auth)
@@ -100,8 +100,8 @@ MaintenanceSystemApp/
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yaronserlin/MaintenanceSystemApp.git
-cd MaintenanceSystemApp
+git clone https://github.com/yaronserlin/FixFleet.git
+cd FixFleet
 ```
 
 ### 2. Install Dependencies
