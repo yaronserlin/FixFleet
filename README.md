@@ -181,6 +181,7 @@ Navigate to `http://localhost:5173` in your browser.
 
 Comprehensive project documentation is maintained in the [`docs/`](docs/) directory:
 
+- 🧭 **[User Guide](docs/user-guide/index.html)**: Illustrated, step-by-step guide for operators, mechanics, and admins.
 - 📖 **[REST API Specification](docs/API.md)**: Full endpoint reference, authentication patterns, request parameters, and response structures.
 - ⚙️ **[Environment Variables](docs/ENV.md)**: Detailed reference table for backend and frontend environment configuration.
 - 🛠️ **[Contributing Guide](docs/CONTRIBUTING.md)**: Development workflow, environment setup, testing procedures, code style rules, and PR checklist.

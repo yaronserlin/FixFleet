@@ -1,0 +1,696 @@
+<title>FixFleet User Guide</title>
+<meta name="description" content="Illustrated guide to FixFleet for operators, mechanics and admins: reporting faults, running maintenance, managing equipment and users.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: navy cover band, then sticky contents rail + single reading column (stacks under 1000px).
+   Tokens mirror the app's "Industrial Blue" MUI theme (frontend/src/theme/index.js). */
+:root {
+  --navy: #0F172A;          /* brand identity: cover, headings */
+  --action: #2563EB;        /* the only "clickable" colour in the app */
+  --action-soft: #EFF4FF;
+  --mark: #E11D48;          /* screenshot callout colour, reused for step numbers */
+  --bg: #F1F5F9;
+  --paper: #FFFFFF;
+  --subtle: #F8FAFC;
+  --fg: #0F172A;
+  --fg-2: #475569;
+  --line: rgba(15, 23, 42, .09);
+  --info-bg: #E8F4FC;  --info-fg: #075985;  --info-line: #0284C7;
+  --tip-bg: #EAF7EF;   --tip-fg: #14532D;   --tip-line: #16A34A;
+  --warn-bg: #FEF5E7;  --warn-fg: #92400E;  --warn-line: #D97706;
+  --ok: #16A34A; --bad: #DC2626; --due: #D97706;
+  --shot-shadow: 0 1px 2px rgba(15,23,42,.06), 0 10px 30px -8px rgba(15,23,42,.18);
+  --cover-fg: #F8FAFC; --cover-fg-2: #94A3B8; --cover-lede: #CBD5E1;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --navy: #0B1220; --action: #60A5FA; --action-soft: #172554; --mark: #FB7185;
+    --bg: #0B0F19; --paper: #111827; --subtle: #1E293B; --fg: #F8FAFC; --fg-2: #94A3B8;
+    --line: rgba(255,255,255,.09);
+    --info-bg: #0C2536; --info-fg: #7DD3FC; --info-line: #38BDF8;
+    --tip-bg: #0D2A1A; --tip-fg: #86EFAC; --tip-line: #22C55E;
+    --warn-bg: #2E1F07; --warn-fg: #FCD34D; --warn-line: #F59E0B;
+    --ok: #22C55E; --bad: #F43F5E; --due: #F59E0B;
+    --shot-shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -8px rgba(0,0,0,.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --navy: #0B1220; --action: #60A5FA; --action-soft: #172554; --mark: #FB7185;
+  --bg: #0B0F19; --paper: #111827; --subtle: #1E293B; --fg: #F8FAFC; --fg-2: #94A3B8;
+  --line: rgba(255,255,255,.09);
+  --info-bg: #0C2536; --info-fg: #7DD3FC; --info-line: #38BDF8;
+  --tip-bg: #0D2A1A; --tip-fg: #86EFAC; --tip-line: #22C55E;
+  --warn-bg: #2E1F07; --warn-fg: #FCD34D; --warn-line: #F59E0B;
+  --ok: #22C55E; --bad: #F43F5E; --due: #F59E0B;
+  --shot-shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px -8px rgba(0,0,0,.6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 400 16px/1.65 var(--font); -webkit-font-smoothing: antialiased; }
+a { color: var(--action); text-underline-offset: 2px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--action); outline-offset: 3px; border-radius: 4px; }
+h1, h2, h3 { text-wrap: balance; letter-spacing: -0.02em; line-height: 1.2; }
+code { font: 500 .86em var(--mono); background: var(--subtle); border: 1px solid var(--line); border-radius: 5px; padding: .08em .35em; }
+b.ui { font-weight: 650; color: var(--fg); }
+
+/* ── Cover ─────────────────────────────── */
+.cover { background: radial-gradient(120% 140% at 85% 0%, #1E3A8A 0%, var(--navy) 55%); color: var(--cover-fg); padding-inline: 16px; }
+.cover-in { max-width: 1160px; margin: 0 auto; padding-block: 40px 44px; display: grid; gap: 28px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand img { width: 44px; height: 44px; }
+.brand b { display: block; font-weight: 800; font-size: 18px; letter-spacing: .02em; }
+.brand span { display: block; font-size: 11px; font-weight: 600; letter-spacing: .12em; color: var(--cover-fg-2); }
+.cover h1 { font-size: clamp(34px, 6vw, 56px); font-weight: 800; margin: 0; max-width: 16ch; }
+.cover p.lede { margin: 12px 0 0; max-width: 58ch; color: var(--cover-lede); font-size: 18px; }
+.cover-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 5px 11px; border-radius: 999px; border: 1px solid rgba(255,255,255,.18); color: var(--cover-fg); background: rgba(255,255,255,.05); }
+.chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+
+/* ── Shell ─────────────────────────────── */
+.shell { max-width: 1160px; margin: 0 auto; padding-inline: 16px; display: grid; gap: 40px; padding-block: 36px 64px; }
+@media (min-width: 1000px) { .shell { grid-template-columns: 230px minmax(0, 1fr); } }
+.toc { font-size: 14px; min-width: 0; }
+@media (min-width: 1000px) { .toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); align-self: start; max-height: calc(100vh - 40px); overflow-y: auto; } }
+.toc h2 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--fg-2); margin: 0 0 10px; }
+.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: toc; }
+.toc a { display: flex; gap: 10px; padding: 6px 10px; border-radius: 8px; color: var(--fg-2); text-decoration: none; font-weight: 500; }
+.toc a::before { counter-increment: toc; content: counter(toc, decimal-leading-zero); font: 500 12px/1.9 var(--mono); color: var(--fg-2); opacity: .7; font-variant-numeric: tabular-nums; }
+.toc a:hover { background: var(--paper); color: var(--fg); }
+@media (max-width: 999px) { .toc ol { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); } }
+
+main { min-width: 0; max-width: 780px; }
+section { padding-top: 12px; scroll-margin-top: 16px; }
+section + section { margin-top: 44px; border-top: 1px solid var(--line); padding-top: 40px; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--action); margin: 0 0 6px; }
+h2.sec { font-size: clamp(26px, 3.4vw, 32px); font-weight: 800; margin: 0 0 12px; }
+h3 { font-size: 20px; font-weight: 700; margin: 36px 0 10px; display: flex; align-items: center; gap: 10px; }
+h3 .ico { flex: none; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; background: var(--action-soft); color: var(--action); }
+h3 .ico svg { width: 17px; height: 17px; }
+p { margin: 0 0 14px; max-width: 68ch; }
+.who { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+.role { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--fg-2); }
+
+/* ── Steps: numbers match the red callouts in each screenshot ── */
+ol.steps { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 10px; counter-reset: s; max-width: 68ch; }
+ol.steps > li { counter-increment: s; position: relative; padding-left: 38px; min-height: 26px; }
+ol.steps > li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%; background: var(--mark); color: #fff; font: 700 12.5px/24px var(--font); text-align: center; box-shadow: 0 0 0 2px var(--paper); }
+
+/* ── Screenshots ───────────────────────── */
+figure.shot { margin: 18px 0 26px; }
+figure.shot img { display: block; width: 100%; height: auto; max-width: 100%; border-radius: 12px; border: 1px solid var(--line); box-shadow: var(--shot-shadow); background: var(--paper); }
+figure.shot.phone { max-width: 320px; }
+figure.shot figcaption { margin-top: 10px; font-size: 13.5px; color: var(--fg-2); display: flex; gap: 8px; }
+figure.shot figcaption b { color: var(--fg); font-weight: 600; white-space: nowrap; }
+
+/* ── Callouts ──────────────────────────── */
+.note { border-radius: 12px; padding: 14px 16px; margin: 0 0 18px; max-width: 68ch; font-size: 15px; border: 1px solid; }
+.note .lab { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+.note .lab svg { width: 15px; height: 15px; }
+.note.info { background: var(--info-bg); color: var(--info-fg); border-color: color-mix(in srgb, var(--info-line) 35%, transparent); }
+.note.tip  { background: var(--tip-bg);  color: var(--tip-fg);  border-color: color-mix(in srgb, var(--tip-line) 35%, transparent); }
+.note.warn { background: var(--warn-bg); color: var(--warn-fg); border-color: color-mix(in srgb, var(--warn-line) 35%, transparent); }
+.note b.ui { color: inherit; }
+
+/* ── Tables ────────────────────────────── */
+.tbl { overflow-x: auto; margin: 6px 0 22px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+thead th { background: var(--navy); color: var(--cover-fg); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; }
+tbody tr:last-child td { border-bottom: 0; }
+td.c { text-align: center; white-space: nowrap; }
+.y { color: var(--ok); font-weight: 700; }
+.n { color: var(--fg-2); }
+.status { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 6px; color: #fff; white-space: nowrap; }
+.status.open { background: var(--bad); }
+.status.closed { background: var(--ok); }
+.status.due { background: var(--due); }
+.status.normal { background: transparent; color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok); }
+
+/* ── FAQ ───────────────────────────────── */
+details { border: 1px solid var(--line); border-radius: 12px; background: var(--paper); margin-bottom: 10px; max-width: 68ch; }
+summary { cursor: pointer; padding: 13px 16px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; }
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; font: 500 18px/1 var(--mono); color: var(--action); }
+details[open] summary::after { content: "–"; }
+details > div { padding: 0 16px 14px; color: var(--fg-2); font-size: 15px; }
+details > div p { margin-bottom: 8px; }
+
+.legend { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--fg-2); margin: 0 0 18px; max-width: 68ch; }
+.legend i { width: 22px; height: 22px; border-radius: 50%; background: var(--mark); color: #fff; font: 700 12px/22px var(--font); text-align: center; font-style: normal; flex: none; }
+footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 13px; color: var(--fg-2); }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<header class="cover">
+  <div class="cover-in">
+    <div class="brand">
+      <img src="images/fixfleet-mark.svg" alt="FixFleet logo">
+      <div><b>FIXFLEET</b><span>OPS MANAGER</span></div>
+    </div>
+    <div>
+      <h1>FixFleet User Guide</h1>
+      <p class="lede">Report breakdowns, run preventive maintenance, and keep your equipment records in one place. This guide covers every step, from your first sign-in to closing out a service.</p>
+    </div>
+    <div class="cover-meta">
+      <span class="chip">Version 1.0.6</span>
+      <span class="chip"><i style="background:#60A5FA"></i>Admins</span>
+      <span class="chip"><i style="background:#FCD34D"></i>Mechanics</span>
+      <span class="chip"><i style="background:#86EFAC"></i>Operators</span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="toc" aria-label="Contents">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#start">Getting started</a></li>
+      <li><a href="#roles">Roles &amp; permissions</a></li>
+      <li><a href="#layout">Finding your way</a></li>
+      <li><a href="#faults">Reporting &amp; resolving faults</a></li>
+      <li><a href="#equipment">Equipment</a></li>
+      <li><a href="#maintenance">Preventive maintenance</a></li>
+      <li><a href="#manuals">Manuals &amp; books</a></li>
+      <li><a href="#operators">Operator portal</a></li>
+      <li><a href="#notifications">Notifications</a></li>
+      <li><a href="#admin">Administration</a></li>
+      <li><a href="#account">Your account</a></li>
+      <li><a href="#help">Troubleshooting &amp; FAQ</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <p class="legend"><i>1</i>The red numbered markers in each screenshot match the numbered steps above it. Example data comes from the FixFleet demo farm, and email addresses are blurred.</p>
+
+    <!-- ───────────── Getting started ───────────── -->
+    <section id="start">
+      <p class="eyebrow">Access</p>
+      <h2 class="sec">Getting started</h2>
+      <p>FixFleet runs in your web browser on a computer, tablet or phone. You don't need to install anything. Your company's admin gives you the web address and your sign-in details.</p>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg></span>Sign in</h3>
+      <ol class="steps">
+        <li>Type your work email in <b class="ui">Email address</b>.</li>
+        <li>Type your password in <b class="ui">Password</b>. Click the eye icon to check what you typed.</li>
+        <li>Click <b class="ui">Sign in</b>. FixFleet opens the home page for your role.</li>
+        <li>Forgot your password? Click <b class="ui">Forgot password?</b>, enter your email, and click <b class="ui">Send reset link</b>. Open the link in the email to choose a new password.</li>
+        <li>Setting up FixFleet for a new company? Click <b class="ui">Sign up</b> (see below).</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/login-screen.webp" alt="FixFleet sign-in screen with the email field, password field, Sign in button, Forgot password link and Sign up link marked 1 to 5" loading="lazy">
+        <figcaption><b>Step 1–5</b> The sign-in screen.</figcaption>
+      </figure>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg></span>Create a company account</h3>
+      <p>Only the first person from each company does this. That person becomes the company's <b class="ui">Admin</b> and adds everyone else.</p>
+      <ol class="steps">
+        <li>Enter your <b class="ui">Company name</b>.</li>
+        <li>Enter your own name in <b class="ui">Admin full name</b>.</li>
+        <li>Enter your work <b class="ui">Email address</b>.</li>
+        <li>Choose a <b class="ui">Password</b>.</li>
+        <li>Tick the box to agree to the Terms of Service and Privacy Policy.</li>
+        <li>Click <b class="ui">Create Company Account</b>.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/create-company-account.webp" alt="Create an account form with company name, admin name, email, password, terms checkbox and Create Company Account button marked 1 to 6" loading="lazy">
+        <figcaption><b>Step 1–6</b> Registering a new company.</figcaption>
+      </figure>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>First sign-in: set your own password</h3>
+      <p>When an admin creates your account, they choose a temporary password. The first time you sign in, FixFleet asks you to replace it before you can continue.</p>
+      <ol class="steps">
+        <li>Type a new password in <b class="ui">New Password</b>. It must be at least 8 characters.</li>
+        <li>Type it again in <b class="ui">Confirm New Password</b>.</li>
+        <li>Tick the box to agree to the Terms of Service and Privacy Policy.</li>
+        <li>Click <b class="ui">Set Password &amp; Continue</b>. Your home page opens.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/first-login-set-password.webp" alt="Set Your Password screen with new password, confirm password, terms checkbox and Set Password and Continue button marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> Replacing the temporary password on first sign-in.</figcaption>
+      </figure>
+      <div class="note tip"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Tip</div>
+        Signed in on the wrong account? Click <b class="ui">Log out and sign in with another account</b> at the bottom of this screen.</div>
+    </section>
+
+    <!-- ───────────── Roles ───────────── -->
+    <section id="roles">
+      <p class="eyebrow">Reference</p>
+      <h2 class="sec">Roles &amp; permissions</h2>
+      <p>Everyone in FixFleet has one of three roles. Your role decides which pages you see and what you can change. Admins can change anyone's role from the <a href="#admin">Admin</a> page.</p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Task</th><th>Operator</th><th>Mechanic</th><th>Admin</th></tr></thead>
+          <tbody>
+            <tr><td>Report a fault, with photos</td><td class="c y">Yes</td><td class="c y">Yes</td><td class="c y">Yes</td></tr>
+            <tr><td>See your own fault reports</td><td class="c y">Yes</td><td class="c y">Yes</td><td class="c y">Yes</td></tr>
+            <tr><td>Read and download manuals</td><td class="c y">Yes</td><td class="c y">Yes</td><td class="c y">Yes</td></tr>
+            <tr><td>See every fault and the fleet dashboard</td><td class="c n">No</td><td class="c y">Yes</td><td class="c y">Yes</td></tr>
+            <tr><td>Browse equipment and its history</td><td class="c n">No</td><td class="c y">Yes</td><td class="c y">Yes</td></tr>
+            <tr><td>Resolve, reopen or delete faults</td><td class="c n">No</td><td class="c y">Yes</td><td class="c y">Yes</td></tr>
+            <tr><td>Create maintenance routines and log services</td><td class="c n">No</td><td class="c y">Yes</td><td class="c y">Yes</td></tr>
+            <tr><td>Upload manuals</td><td class="c n">No</td><td class="c y">Yes</td><td class="c y">Yes</td></tr>
+            <tr><td>Add, edit or delete equipment</td><td class="c n">No</td><td class="c n">No</td><td class="c y">Yes</td></tr>
+            <tr><td>Create users and change roles</td><td class="c n">No</td><td class="c n">No</td><td class="c y">Yes</td></tr>
+            <tr><td>Send announcements</td><td class="c n">No</td><td class="c n">No</td><td class="c y">Yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note info"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Note</div>
+        New users always start as <b class="ui">Operators</b>. Each company only ever sees its own equipment, faults and people.</div>
+    </section>
+
+    <!-- ───────────── Layout ───────────── -->
+    <section id="layout">
+      <p class="eyebrow">Navigation</p>
+      <h2 class="sec">Finding your way</h2>
+      <p>Mechanics and admins land on the <b class="ui">Dashboard</b>, which gives a live picture of the whole fleet.</p>
+      <ol class="steps">
+        <li>The <b class="ui">sidebar</b> takes you to Dashboard, Equipment, Manuals and, for admins, Admin.</li>
+        <li>The <b class="ui">bell</b> opens your notifications. A number shows how many are unread.</li>
+        <li>Your <b class="ui">initials</b> open the account menu: settings, activity and log out.</li>
+        <li><b class="ui">Report Fault</b> opens the fault form.</li>
+        <li>The <b class="ui">four summary cards</b> show total faults, active faults, resolved faults and fleet availability (the share of machines with no open fault).</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/dashboard-overview.webp" alt="Dashboard with sidebar navigation, notification bell, account avatar, Report Fault button and four summary cards marked 1 to 5" loading="lazy">
+        <figcaption><b>Step 1–5</b> The dashboard. Below the cards, a 14-day chart compares faults reported with faults resolved.</figcaption>
+      </figure>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg></span>On a phone</h3>
+      <p>On a phone, the sidebar becomes a bar along the bottom of the screen.</p>
+      <ol class="steps">
+        <li>Dashboard and Equipment.</li>
+        <li>The round <b class="ui">+</b> button reports a fault from any screen.</li>
+        <li>Manuals.</li>
+        <li>Your initials. A red number here means you have unread notifications.</li>
+      </ol>
+      <figure class="shot phone">
+        <img src="images/mobile-bottom-nav.webp" alt="Phone layout with bottom navigation bar: dashboard and equipment, central plus button, manuals, and account with unread badge, marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> The bottom bar on a phone.</figcaption>
+      </figure>
+      <div class="note tip"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Tip</div>
+        Pull down on any screen to refresh it. You can also add FixFleet to your phone's home screen from your browser's share menu, so it opens like an app.</div>
+    </section>
+
+    <!-- ───────────── Faults ───────────── -->
+    <section id="faults">
+      <p class="eyebrow">Everyday work</p>
+      <h2 class="sec">Reporting &amp; resolving faults</h2>
+      <p>A <b class="ui">fault</b> is a problem with a machine. It stays <span class="status open">Open</span> until a mechanic fixes it and records the engine hours, then it becomes <span class="status closed">Closed</span>.</p>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg></span>Report a fault</h3>
+      <div class="who"><span class="role">Operator</span><span class="role">Mechanic</span><span class="role">Admin</span></div>
+      <p>Click <b class="ui">Report Fault</b> on the dashboard, <b class="ui">Report a Fault Now</b> in the operator portal, or the <b class="ui">+</b> button on a phone. Then:</p>
+      <ol class="steps">
+        <li>In <b class="ui">Select Equipment</b>, pick the machine. Each one is listed with its unit number in brackets, for example <code>(TELEHANDLER-01)</code>.</li>
+        <li>Enter a short <b class="ui">Fault Code</b> your team will recognise, such as <code>TELE-012</code>.</li>
+        <li>Enter the machine's current <b class="ui">Engine Hours</b> from its hour meter. Use 0 for machines without one, such as a wagon.</li>
+        <li>Describe what is wrong in <b class="ui">Description</b>: what happens, when, and under what load.</li>
+        <li>Optionally add photos. Click <b class="ui">Take Photo</b> on a phone, <b class="ui">Browse Files</b> on a computer, or drag photos into the box. You can add PNG, JPG or WEBP files up to 10 MB each.</li>
+        <li>Click <b class="ui">Submit Fault Report</b>.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/report-fault-dialog.webp" alt="Report New Fault form with equipment selector, fault code, engine hours, description, photo upload area and Submit Fault Report button marked 1 to 6" loading="lazy">
+        <figcaption><b>Step 1–6</b> A filled-in fault report.</figcaption>
+      </figure>
+      <p>FixFleet confirms with <b class="ui">Fault reported successfully</b>. The new fault appears first in the list with an <span class="status open">Open</span> badge, and the <b class="ui">Open</b> count goes up by one. Every mechanic and admin gets a notification straight away.</p>
+      <figure class="shot">
+        <img src="images/fault-reported-success.webp" alt="Recent Fault Reports list with the new TELE-012 card at the top marked 1 and the Open filter count marked 2" loading="lazy">
+        <figcaption><b>Result</b> The new report (1) appears first and the Open count (2) updates.</figcaption>
+      </figure>
+      <div class="note warn"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>Safety first</div>
+        If a fault makes a machine unsafe, stop using it and tell your supervisor in person. FixFleet records problems. It is not an emergency alarm.</div>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>Find and track faults</h3>
+      <div class="who"><span class="role">Mechanic</span><span class="role">Admin</span></div>
+      <p>Scroll down the dashboard to <b class="ui">Recent Fault Reports</b>.</p>
+      <ol class="steps">
+        <li>Filter with <b class="ui">All</b>, <b class="ui">Open</b> or <b class="ui">Closed</b>. Each shows how many faults it contains.</li>
+        <li>Type in <b class="ui">Search faults…</b> to find a fault by code, machine or description.</li>
+        <li>Click a fault card to see its full details and photos.</li>
+        <li><b class="ui">Resolve Fault</b> closes an open fault (next section).</li>
+        <li><b class="ui">Delete</b> removes a fault completely. Only use it for duplicates or mistakes.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/dashboard-fault-list.webp" alt="Recent Fault Reports with status filters, search box, a fault card, Resolve Fault button and Delete button marked 1 to 5" loading="lazy">
+        <figcaption><b>Step 1–5</b> The fault list. Red edges mean open faults; green edges mean closed ones.</figcaption>
+      </figure>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>Resolve a fault</h3>
+      <div class="who"><span class="role">Mechanic</span><span class="role">Admin</span></div>
+      <p>Click <b class="ui">Resolve Fault</b> on the card. The <b class="ui">Close Fault &amp; Update Hours</b> window opens.</p>
+      <ol class="steps">
+        <li>Read the blue note. Closing a fault updates the machine's hour meter, and hours-based maintenance due dates are worked out from that reading.</li>
+        <li>Enter the meter reading now, after the repair, in <b class="ui">Closing Engine Hours</b>. The box beside it shows the last reading on record.</li>
+        <li>In <b class="ui">Resolution Notes &amp; Further Information</b>, describe what you did and which parts you used. This is optional, but it builds the machine's history.</li>
+        <li>Click <b class="ui">Confirm &amp; Resolve</b>.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/resolve-fault-dialog.webp" alt="Close Fault and Update Hours window with info message, closing engine hours, resolution notes and Confirm and Resolve button marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> Closing a fault and recording the engine hours.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="images/fault-resolved-success.webp" alt="Fault list with TELE-012 now Closed and a green toast reading Fault marked as resolved" loading="lazy">
+        <figcaption><b>Result</b> “Fault marked as resolved”. The card turns green and its button changes to Reopen.</figcaption>
+      </figure>
+      <div class="note warn"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>Check the reading</div>
+        Read the closing hours off the machine's meter. Don't copy the number shown in <b class="ui">Current meter</b>. A wrong reading moves every hours-based service due date for that machine.</div>
+      <p>If the problem comes back, click <b class="ui">Reopen</b> on the closed card. The fault returns to <span class="status open">Open</span> and keeps its history.</p>
+    </section>
+
+    <!-- ───────────── Equipment ───────────── -->
+    <section id="equipment">
+      <p class="eyebrow">Fleet records</p>
+      <h2 class="sec">Equipment</h2>
+      <div class="who"><span class="role">Mechanic</span><span class="role">Admin</span></div>
+      <p>Click <b class="ui">Equipment</b> in the sidebar to see every machine. Cards with a green edge and a <b class="ui">Ready</b> badge have no open faults. Red cards show how many open faults they have.</p>
+      <ol class="steps">
+        <li><b class="ui">Add Equipment</b> registers a new machine (admins only).</li>
+        <li>Search by name, serial number or model.</li>
+        <li>Filter by <b class="ui">All</b>, <b class="ui">Operational</b> or <b class="ui">Needs Attention</b>.</li>
+        <li>Switch between the card grid and a compact table.</li>
+        <li>Each card shows the unit number, model, serial number and engine hours. The icons at the bottom count maintenance routines and manuals.</li>
+        <li>Click <b class="ui">Manage</b> to open the machine's page.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/equipment-fleet.webp" alt="Equipment Fleet page with Add Equipment, search, status filters, view toggle, an equipment card and Manage link marked 1 to 6" loading="lazy">
+        <figcaption><b>Step 1–6</b> The Equipment Fleet page.</figcaption>
+      </figure>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>Add a machine</h3>
+      <div class="who"><span class="role">Admin</span></div>
+      <ol class="steps">
+        <li><b class="ui">Name</b>: make and model as people say it, e.g. “Kuhn Venta 3030 Seed Drill”. This is the only required field.</li>
+        <li><b class="ui">Serial Number</b>: the manufacturer's serial or VIN from the data plate.</li>
+        <li><b class="ui">Local Serial Number</b>: your own unit number, e.g. <code>DRILL-02</code>. This appears in fault forms and on every card.</li>
+        <li><b class="ui">Model</b>: the model designation.</li>
+        <li><b class="ui">Description</b>: what the machine is and what it's used for.</li>
+        <li>Click <b class="ui">Create Equipment</b>. FixFleet confirms with “Equipment created successfully”.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/add-equipment-dialog.webp" alt="Register New Equipment form with name, serial number, local serial number, model, description and Create Equipment button marked 1 to 6" loading="lazy">
+        <figcaption><b>Step 1–6</b> Registering a new seed drill.</figcaption>
+      </figure>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg></span>A machine's page</h3>
+      <ol class="steps">
+        <li><b class="ui">Back to Fleet Directory</b> returns to the equipment list.</li>
+        <li>The header shows the machine's name, model, serial number and current operating hours.</li>
+        <li>The tabs hold <b class="ui">Reported Faults</b>, <b class="ui">Maintenance</b>, and <b class="ui">Manuals &amp; Books</b>. Each shows a count.</li>
+        <li><b class="ui">Create</b> reports a fault for this machine, with the machine already filled in.</li>
+        <li>Each row shows the fault's status, code, photo, hours and date, plus <b class="ui">Resolve</b> and <b class="ui">Delete</b>.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/equipment-detail-faults.webp" alt="John Deere 8R 410 Tractor page with back link, header details, tabs, Create button and a fault row marked 1 to 5" loading="lazy">
+        <figcaption><b>Step 1–5</b> The machine page, on the Reported Faults tab.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ───────────── Maintenance ───────────── -->
+    <section id="maintenance">
+      <p class="eyebrow">Planned work</p>
+      <h2 class="sec">Preventive maintenance</h2>
+      <div class="who"><span class="role">Mechanic</span><span class="role">Admin</span></div>
+      <p>A <b class="ui">maintenance routine</b> is a service that repeats, such as a 500-hour oil change or a daily pre-harvest check. A routine can repeat every set number of engine hours, every set number of days, or both. FixFleet tracks when each one is next due.</p>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Badge</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><span class="status normal">NORMAL (240 hrs left)</span></td><td>Not due yet. The badge shows how long is left.</td></tr>
+            <tr><td><span class="status due">DUE SOON (20 hrs)</span></td><td>Due within the next few hours or days. Plan the work now.</td></tr>
+            <tr><td><span class="status due">In Progress: 3/4 done</span></td><td>Someone has started the checklist but hasn't logged the service yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg></span>The Maintenance tab</h3>
+      <p>Open a machine and click the <b class="ui">Maintenance</b> tab.</p>
+      <ol class="steps">
+        <li><b class="ui">Current Meter</b> shows the latest engine hours on record.</li>
+        <li><b class="ui">Add</b> creates a new routine.</li>
+        <li>Each routine card shows how often it repeats, when it was last done, when it's next due, and its checklist. Click a card to open its checklist.</li>
+        <li><b class="ui">Complete</b> logs the service straight from the card.</li>
+        <li><b class="ui">Service &amp; Maintenance History</b> lists every service carried out on this machine.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/equipment-maintenance-tab.webp" alt="Maintenance tab with current meter, Add button, a routine card, Complete button and service history heading marked 1 to 5" loading="lazy">
+        <figcaption><b>Step 1–5</b> Routines, with the machine's service history below.</figcaption>
+      </figure>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg></span>Create a routine</h3>
+      <ol class="steps">
+        <li><b class="ui">Routine Title</b>: e.g. “250-hour hydraulic check”.</li>
+        <li><b class="ui">Description / Tasks</b>: optional background for whoever does the work.</li>
+        <li><b class="ui">Interval (Engine Hours)</b>: e.g. 250. Enter 0 if the routine only repeats by date.</li>
+        <li><b class="ui">Interval (Calendar Days)</b>: e.g. 1 for a daily check. Enter 0 if the routine only repeats by hours.</li>
+        <li>Type a checklist task and click <b class="ui">Add Task</b>. Repeat for each task.</li>
+        <li>Check the task list. Click the bin icon to remove a task.</li>
+        <li>Click <b class="ui">Add</b>. FixFleet confirms with “Maintenance schedule added”.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/add-maintenance-routine.webp" alt="Add Maintenance Routine form with title, description, hours interval, days interval, task entry, task list and Add button marked 1 to 7" loading="lazy">
+        <figcaption><b>Step 1–7</b> A 250-hour routine with two checklist tasks.</figcaption>
+      </figure>
+      <div class="note info"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Note</div>
+        A new routine counts from the machine's current meter reading. In this example the tractor reads 2,480 hrs, so the first 250-hour check is due at 2,730 hrs.</div>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/></svg></span>Carry out a service</h3>
+      <p>Click a routine card to open its checklist. Work through it at the machine. FixFleet saves each tick as you go, so you can stop and come back later.</p>
+      <ol class="steps">
+        <li>Tick each task as you finish it. The progress bar fills up.</li>
+        <li>Note anything you see in <b class="ui">Service Process Notes &amp; Observations</b>, such as wear or fluids topped up.</li>
+        <li>Click <b class="ui">Save Notes</b> to keep those notes while the job is still in progress.</li>
+        <li>When every task is done, click <b class="ui">Complete</b>.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/maintenance-checklist.webp" alt="Maintenance checklist with four ticked tasks, a notes box, Save Notes button and Complete button marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> A finished 500-hour service checklist (4 of 4, 100%).</figcaption>
+      </figure>
+      <p>The <b class="ui">Log Completed Service</b> window opens:</p>
+      <ol class="steps">
+        <li>Enter the engine hours on the meter now, in <b class="ui">Current Engine Hours at Service</b>.</li>
+        <li>List the work done and part numbers used in <b class="ui">Service Notes / Parts Used</b>.</li>
+        <li>Click <b class="ui">Complete</b>.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/log-completed-service.webp" alt="Log Completed Service window with engine hours, service notes and Complete button marked 1 to 3" loading="lazy">
+        <figcaption><b>Step 1–3</b> Logging the finished service.</figcaption>
+      </figure>
+      <p>FixFleet shows “Service logged and schedule updated”. The service goes to the top of the machine's history with the date, who did it, the hours and each completed task, and the routine's next due date moves forward.</p>
+      <figure class="shot">
+        <img src="images/service-logged-success.webp" alt="Service and Maintenance History with the new record marked 1, showing date, mechanic, 2490 hrs, notes and four completed checklist tasks" loading="lazy">
+        <figcaption><b>Result</b> The new service record (1) at the top of the machine's history.</figcaption>
+      </figure>
+      <div class="note warn"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>Copy your notes across</div>
+        In this version, notes saved under <b class="ui">Service Process Notes &amp; Observations</b> are not copied into the final record. Before you click <b class="ui">Complete</b>, paste anything important into <b class="ui">Service Notes / Parts Used</b>.</div>
+    </section>
+
+    <!-- ───────────── Manuals ───────────── -->
+    <section id="manuals">
+      <p class="eyebrow">Documentation</p>
+      <h2 class="sec">Manuals &amp; books</h2>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></span>Upload a manual</h3>
+      <div class="who"><span class="role">Mechanic</span><span class="role">Admin</span></div>
+      <p>Open the machine, click the <b class="ui">Manuals &amp; Books</b> tab, then click <b class="ui">Upload</b>.</p>
+      <ol class="steps">
+        <li>Give it a clear <b class="ui">Manual Title</b>, e.g. “8R 410 Operator's Manual”.</li>
+        <li>Click <b class="ui">Select PDF Document</b> and choose the file. Only PDFs are accepted, up to 50 MB each.</li>
+        <li>Click <b class="ui">Upload</b>.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/upload-manual-dialog.webp" alt="Upload Equipment Manual window with manual title, selected PDF file and Upload button marked 1 to 3" loading="lazy">
+        <figcaption><b>Step 1–3</b> Attaching an operator's manual to a tractor.</figcaption>
+      </figure>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg></span>Find a manual</h3>
+      <div class="who"><span class="role">Everyone</span></div>
+      <p>Click <b class="ui">Manuals</b> in the sidebar to see every manual in your company, grouped by machine.</p>
+      <ol class="steps">
+        <li>Search by machine name, model, serial number or manual title.</li>
+        <li>Each manual shows its title, file size and upload date.</li>
+        <li><b class="ui">View</b> opens the PDF in your browser.</li>
+        <li>The download arrow saves a copy, which is useful before working somewhere without signal.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/manuals-library.webp" alt="Equipment Manuals and Books page with search box, manual title, View button and download button marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> The company manual library.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ───────────── Operators ───────────── -->
+    <section id="operators">
+      <p class="eyebrow">For operators</p>
+      <h2 class="sec">Operator portal</h2>
+      <div class="who"><span class="role">Operator</span></div>
+      <p>Operators see a simpler <b class="ui">Operator Portal</b> built around one job: telling the workshop when something is wrong.</p>
+      <ol class="steps">
+        <li>The sidebar has <b class="ui">Dashboard</b>, <b class="ui">My Reports</b> and <b class="ui">Manuals</b>.</li>
+        <li><b class="ui">Report a Fault Now</b> opens the fault form described in <a href="#faults">Report a fault</a>.</li>
+        <li><b class="ui">View All</b> opens the full list of faults you've reported.</li>
+        <li>Your latest reports, each showing whether it is still Open or already Closed.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/operator-dashboard.webp" alt="Operator portal home with sidebar, Report a Fault Now button, View All link and a recent report card marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> The operator home page.</figcaption>
+      </figure>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></span>Track your reports</h3>
+      <ol class="steps">
+        <li><b class="ui">Report a Fault</b> opens the fault form.</li>
+        <li>Filter by <b class="ui">All</b>, <b class="ui">Open</b> or <b class="ui">Resolved</b>.</li>
+        <li>Search by code, description or machine.</li>
+        <li>Click a report to see its details.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/operator-my-reports.webp" alt="My Reported Faults page with Report a Fault button, status filters, search and a report card marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> My Reports.</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="images/fault-details.webp" alt="Fault Details window showing fault code, description, engine hours, reporter and timestamp" loading="lazy">
+        <figcaption><b>Detail</b> Opening a report shows everything that was recorded. Click Dismiss to close it.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ───────────── Notifications ───────────── -->
+    <section id="notifications">
+      <p class="eyebrow">Staying informed</p>
+      <h2 class="sec">Notifications &amp; announcements</h2>
+      <p>Mechanics and admins are notified as soon as anyone reports a fault. Admins can also send announcements to everyone, or just to mechanics or operators.</p>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></span>Read your notifications</h3>
+      <p>Click the bell at the bottom of the sidebar. On a phone, tap your initials.</p>
+      <ol class="steps">
+        <li><b class="ui">Mark all read</b> clears the unread count.</li>
+        <li>Announcements have a megaphone icon and show who sent them.</li>
+        <li>New fault alerts name the machine and repeat the report.</li>
+        <li><b class="ui">View all notifications</b> opens your full notification history.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/notifications-panel.webp" alt="Notifications panel with Mark all read, an announcement, a new fault alert and View all notifications link marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> A mechanic's notification panel. A blue dot means unread.</figcaption>
+      </figure>
+      <div class="note tip"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>Tip</div>
+        If your company has push notifications turned on, you'll see a push switch under <b class="ui">Account Settings → Appearance &amp; Notifications</b>. Turn it on for each phone or computer where you want alerts while FixFleet is closed.</div>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>Send an announcement</h3>
+      <div class="who"><span class="role">Admin</span></div>
+      <p>On the <b class="ui">Admin</b> page, click <b class="ui">Send Announcement</b>.</p>
+      <ol class="steps">
+        <li>Under <b class="ui">Send to</b>, choose <b class="ui">Everyone</b>, <b class="ui">Mechanics</b> or <b class="ui">Operators</b>.</li>
+        <li>Write a short <b class="ui">Title</b> (up to 120 characters).</li>
+        <li>Write the <b class="ui">Message</b> (up to 1,000 characters).</li>
+        <li>Click <b class="ui">Send</b>. FixFleet confirms how many people received it, e.g. “Announcement sent to 1 person”.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/send-announcement.webp" alt="Send Announcement window with audience buttons, title, message and Send button marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> An announcement to all mechanics.</figcaption>
+      </figure>
+    </section>
+
+    <!-- ───────────── Admin ───────────── -->
+    <section id="admin">
+      <p class="eyebrow">For admins</p>
+      <h2 class="sec">Administration</h2>
+      <div class="who"><span class="role">Admin</span></div>
+      <p>Click <b class="ui">Admin</b> in the sidebar to manage your team and fleet records.</p>
+      <ol class="steps">
+        <li><b class="ui">Send Announcement</b> (see <a href="#notifications">above</a>).</li>
+        <li><b class="ui">Create User</b> adds a new team member.</li>
+        <li>Filter users by name or email.</li>
+        <li>Use the role menu to change someone between Operator, Mechanic and Admin. The change takes effect immediately.</li>
+        <li>The bin icon removes a user. You can't remove yourself here.</li>
+        <li>The pencil icon edits a machine's details. The bin icon below it deletes the machine.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/admin-panel.webp" alt="System Administration page with Send Announcement, Create User, user filter, role selector, delete user button and edit equipment button marked 1 to 6" loading="lazy">
+        <figcaption><b>Step 1–6</b> The admin page. A Must Change Password tag means that person hasn't signed in yet.</figcaption>
+      </figure>
+
+      <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></span>Add a user</h3>
+      <ol class="steps">
+        <li>Enter their full <b class="ui">Name</b>.</li>
+        <li>Enter their work <b class="ui">Email</b>. This is what they sign in with.</li>
+        <li>Choose a temporary <b class="ui">Password</b>. They'll replace it the first time they sign in.</li>
+        <li>New accounts start as <b class="ui">Operators</b>. Change the role in the user table afterwards if needed.</li>
+        <li>Click <b class="ui">Create</b>. FixFleet confirms with “User created successfully”.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/create-user-dialog.webp" alt="Create New User window with name, email, password, default role notice and Create button marked 1 to 5" loading="lazy">
+        <figcaption><b>Step 1–5</b> Creating a new team member.</figcaption>
+      </figure>
+      <div class="note warn"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>Sharing passwords</div>
+        Give the temporary password to the new user in person or by phone. Don't send it in the same email or message as their sign-in address.</div>
+    </section>
+
+    <!-- ───────────── Account ───────────── -->
+    <section id="account">
+      <p class="eyebrow">Personal settings</p>
+      <h2 class="sec">Your account</h2>
+      <p>Click your initials to open the account menu.</p>
+      <ol class="steps">
+        <li><b class="ui">Account Settings</b>: your profile, photo, password, display and notifications.</li>
+        <li><b class="ui">My Activity</b>: your own recent activity in FixFleet.</li>
+        <li><b class="ui">Log out</b>: always do this on shared computers.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/account-menu.webp" alt="Account menu showing name, role badge, Account Settings, My Activity and Log out marked 1 to 3" loading="lazy">
+        <figcaption><b>Step 1–3</b> The account menu.</figcaption>
+      </figure>
+      <p>On <b class="ui">Account Settings</b>:</p>
+      <ol class="steps">
+        <li>Add a profile photo with <b class="ui">Take Photo</b> or <b class="ui">Upload Photo</b>. JPG, PNG or GIF files up to 5 MB.</li>
+        <li>Update your <b class="ui">Full Name</b> or <b class="ui">Email Address</b>.</li>
+        <li>Click <b class="ui">Save Changes</b>.</li>
+        <li>To change your password, enter your current password, then the new one twice, and click <b class="ui">Update Password</b>.</li>
+      </ol>
+      <figure class="shot">
+        <img src="images/account-settings.webp" alt="Account Settings page with photo buttons, name and email fields, Save Changes and password fields marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> Account Settings. Further down are the light/dark switch, push notifications (where available) and the Danger Zone.</figcaption>
+      </figure>
+      <div class="note warn"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>Danger Zone</div>
+        <b class="ui">Delete Account</b> permanently removes your account, sessions, push subscriptions and profile photo. FixFleet asks for your password first, and you can't undo it.</div>
+    </section>
+
+    <!-- ───────────── Help ───────────── -->
+    <section id="help">
+      <p class="eyebrow">Support</p>
+      <h2 class="sec">Troubleshooting &amp; FAQ</h2>
+
+      <details><summary>The page takes a long time to load the first time.</summary>
+        <div><p>On some hosting plans the server goes to sleep when nobody has used it for a while. The first visit wakes it up, which can take around 30 seconds. After that, pages load normally.</p></div></details>
+
+      <details><summary>I can't see the Equipment page.</summary>
+        <div><p>Equipment is for mechanics and admins. Operators see <b class="ui">My Reports</b> instead. If you need equipment access, ask an admin to change your role.</p></div></details>
+
+      <details><summary>There is no Resolve button on a fault.</summary>
+        <div><p>Only mechanics and admins can resolve faults. If you are a mechanic, check whether the fault is already <span class="status closed">Closed</span>. Closed faults show <b class="ui">Reopen</b> instead.</p></div></details>
+
+      <details><summary>I typed the wrong engine hours when closing a fault or logging a service.</summary>
+        <div><p>Enter the correct reading the next time you close a fault or log a service on that machine. Due dates are worked out again from the latest reading. If a due date is badly wrong, tell your admin.</p></div></details>
+
+      <details><summary>My photo or PDF won't upload.</summary>
+        <div><p>Fault photos must be PNG, JPG or WEBP files, up to 10 MB each. Manuals must be PDF files up to 50 MB. Profile photos must be JPG, PNG or GIF files up to 5 MB. On a phone, try <b class="ui">Browse Files</b> if <b class="ui">Take Photo</b> doesn't open the camera.</p></div></details>
+
+      <details><summary>I'm not getting alerts on my phone.</summary>
+        <div><p>Push alerts have to be turned on separately on each device, and only if your company has enabled them. Open <b class="ui">Account Settings</b> on the phone, turn on notifications, then allow them when the browser asks. Your notifications are always in the bell feed, whether or not push is on.</p></div></details>
+
+      <details><summary>Sign-in stopped working after several wrong passwords.</summary>
+        <div><p>FixFleet pauses sign-in after repeated failed attempts. Wait a few minutes before trying again, or use <b class="ui">Forgot password?</b> to set a new password.</p></div></details>
+
+      <details><summary>Can I use FixFleet in dark mode?</summary>
+        <div><p>Yes. Go to <b class="ui">Account Settings → Appearance &amp; Notifications</b> and use the light/dark switch. The setting applies only to the device you're using.</p></div></details>
+
+      <div class="note info" style="margin-top:20px"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Still stuck?</div>
+        Contact your company's FixFleet admin. They can reset your access, change your role, or correct a record.</div>
+
+      <footer class="end">FixFleet User Guide · written for version 1.0.6 · Screenshots show the FixFleet demo farm.</footer>
+    </section>
+  </main>
+</div>
