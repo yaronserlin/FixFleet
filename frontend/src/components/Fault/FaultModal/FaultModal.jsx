@@ -5,7 +5,9 @@ import Modal from '@mui/material/Modal';
 import Fade from '@mui/material/Fade';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import { Chip, Stack } from '@mui/material';
+import { Chip, Link, Stack } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+import { equipmentDetailRoute } from '../../../constants/routes';
 import SpeedIcon from '@mui/icons-material/Speed';
 import ReplayIcon from '@mui/icons-material/Replay';
 import CloseIcon from '@mui/icons-material/Close';
@@ -65,7 +67,11 @@ export default function FaultModal({
                     <Box sx={style}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
                             <Typography id="modal-title" variant="h6" component="h2" fontWeight="bold">
-                                {fault.tool?.name ?? 'Equipment'} — {fault.code || 'No Code'}
+                                {fault.tool?._id ? (
+                                    <Link component={RouterLink} to={equipmentDetailRoute(fault.tool._id)} onClick={handleClose} color="inherit">
+                                        {fault.tool.name ?? 'Equipment'}
+                                    </Link>
+                                ) : (fault.tool?.name ?? 'Equipment')} — {fault.code || 'No Code'}
                             </Typography>
                             {fault.status && (
                                 <Chip

@@ -38,5 +38,8 @@ export const equipmentScheduleRoute = (id, scheduleId) => `/equipment/${id}/sche
 /** Equipment detail page pre-selected to a given tab (see EquipmentPage's resolveTab). */
 export const equipmentDetailTabRoute = (id, tab) => `/equipment/${id}?tab=${tab}`;
 
+/** Superadmin section page; an empty `tab` is the overview. */
+export const superadminTabRoute = (tab) => (tab ? `${ROUTES.SUPERADMIN}/${tab}` : ROUTES.SUPERADMIN);
+
 /** Where a signed-in user lands: the platform page for a superadmin, the dashboard for everyone else. */
 export const homeRouteFor = (user) => (user?.role === ROLES.SUPERADMIN ? ROUTES.SUPERADMIN : ROUTES.DASHBOARD);

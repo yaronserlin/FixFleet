@@ -11,8 +11,10 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import AssignmentIcon from '@mui/icons-material/Assignment';
-import PublicIcon from '@mui/icons-material/Public';
-import { ROUTES } from '../../constants/routes';
+import BusinessIcon from '@mui/icons-material/Business';
+import PeopleIcon from '@mui/icons-material/People';
+import HistoryIcon from '@mui/icons-material/History';
+import { ROUTES, superadminTabRoute } from '../../constants/routes';
 
 export const PAGE_ICON_MAP = {
     'dashboard':  <DashboardIcon fontSize="small" />,
@@ -24,7 +26,10 @@ export const PAGE_ICON_MAP = {
     'profile':    <PersonIcon fontSize="small" />,
     'account':    <PersonIcon fontSize="small" />,
     'admin':      <AdminPanelSettingsIcon fontSize="small" />,
-    'platform':   <PublicIcon fontSize="small" />,
+    'overview':   <DashboardIcon fontSize="small" />,
+    'companies':  <BusinessIcon fontSize="small" />,
+    'users':      <PeopleIcon fontSize="small" />,
+    'audit log':  <HistoryIcon fontSize="small" />,
 };
 
 export function pageToPath(page) {
@@ -34,7 +39,10 @@ export function pageToPath(page) {
     if (lower === 'manuals' || lower === 'equipment manuals' || lower === 'books') return ROUTES.MANUALS;
     if (lower === 'equipment' || lower === 'tools') return ROUTES.EQUIPMENT;
     if (lower === 'admin') return ROUTES.ADMIN;
-    if (lower === 'platform') return ROUTES.SUPERADMIN;
+    if (lower === 'overview') return superadminTabRoute('');
+    if (lower === 'companies') return superadminTabRoute('companies');
+    if (lower === 'users') return superadminTabRoute('users');
+    if (lower === 'audit log') return superadminTabRoute('audit');
     return `/${lower}`;
 }
 
@@ -59,6 +67,7 @@ export function isPageActive(page, pathname) {
     const targetPath = pageToPath(page);
     return (
         pathname === targetPath ||
-        (targetPath !== ROUTES.DASHBOARD && pathname.startsWith(targetPath))
+        // Section roots would otherwise light up on every sub-page.
+        (targetPath !== ROUTES.DASHBOARD && targetPath !== ROUTES.SUPERADMIN && pathname.startsWith(targetPath))
     );
 }

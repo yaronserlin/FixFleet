@@ -11,12 +11,17 @@ import {
     Chip,
     Alert,
     IconButton,
+    Link,
 } from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+import { equipmentDetailRoute } from '../../../constants/routes';
 import SpeedIcon from '@mui/icons-material/Speed';
 import CloseIcon from '@mui/icons-material/Close';
 
 export default function CloseFaultDialog({ open, onClose, onConfirm, fault, tool, equipment }) {
     const activeEquipment = equipment || tool;
+    const equipmentId = activeEquipment?._id || fault?.tool?._id;
+    const equipmentName = activeEquipment?.name || fault?.tool?.name || 'Equipment';
     const lastReportedHours = activeEquipment?.currentEngineHours ?? fault?.engineHours ?? 0;
     const [engineHours, setEngineHours] = useState('');
     const [resolutionDescription, setResolutionDescription] = useState('');
@@ -71,7 +76,12 @@ export default function CloseFaultDialog({ open, onClose, onConfirm, fault, tool
                         {fault.code || 'Fault'} — {fault.description}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Equipment: {activeEquipment?.name || fault.tool?.name || 'Equipment'}
+                        Equipment:{' '}
+                        {equipmentId ? (
+                            <Link component={RouterLink} to={equipmentDetailRoute(equipmentId)} onClick={onClose}>
+                                {equipmentName}
+                            </Link>
+                        ) : equipmentName}
                     </Typography>
                 </Box>
 

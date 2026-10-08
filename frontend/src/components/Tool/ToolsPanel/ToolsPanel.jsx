@@ -26,11 +26,15 @@ import { TableSkeleton } from '../../Skeletons/Skeletons';
 import { skeletonA11yProps } from '../../Skeletons/skeletonA11y';
 import ErrorComponent from '../../ErrorComponent/ErrorComponent';
 import DialogComponent from '../../DialogComponent';
+import { useNavigate } from 'react-router-dom';
+import { equipmentDetailRoute } from '../../../constants/routes';
+import { clickableRowProps, stopRowClick } from '../../../utils/clickableRow';
 
 /**
  * ToolsPanel: Equipment list + CRUD dialogs for admin management.
  */
 export default function ToolsPanel({ tools = [], loading, error, onCreate, onUpdate, onDelete }) {
+    const navigate = useNavigate();
     const [dialog, setDialog] = useState({ type: null, tool: null });
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -109,7 +113,10 @@ export default function ToolsPanel({ tools = [], loading, error, onCreate, onUpd
                         <Paper
                             key={t._id}
                             variant="outlined"
+                            {...clickableRowProps(() => navigate(equipmentDetailRoute(t._id)), `Open ${t.name}`)}
+                            hover={undefined}
                             sx={{
+                                cursor: 'pointer',
                                 p: 1.75,
                                 borderRadius: 2,
                                 display: 'flex',
@@ -126,7 +133,7 @@ export default function ToolsPanel({ tools = [], loading, error, onCreate, onUpd
                                     {t.model ? ` • ${t.model}` : ''}
                                 </Typography>
                             </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }} {...stopRowClick}>
                                 <IconButton
                                     size="small"
                                     onClick={() => openDialog('update', t)}
@@ -162,7 +169,7 @@ export default function ToolsPanel({ tools = [], loading, error, onCreate, onUpd
                     </TableHead>
                     <TableBody>
                         {filteredTools.map((t) => (
-                            <TableRow key={t._id} hover>
+                            <TableRow key={t._id} {...clickableRowProps(() => navigate(equipmentDetailRoute(t._id)), `Open ${t.name}`)}>
                                 <TableCell>
                                     <Typography variant="body2" fontWeight={600}>
                                         {t.name}
@@ -180,7 +187,7 @@ export default function ToolsPanel({ tools = [], loading, error, onCreate, onUpd
                                         t.serialNumber || '-'
                                     )}
                                 </TableCell>
-                                <TableCell align="right">
+                                <TableCell align="right" {...stopRowClick}>
                                     <IconButton
                                         size="small"
                                         onClick={() => openDialog('update', t)}

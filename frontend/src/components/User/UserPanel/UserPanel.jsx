@@ -37,6 +37,7 @@ import { skeletonA11yProps } from '../../Skeletons/skeletonA11y';
 import ErrorComponent from '../../ErrorComponent/ErrorComponent';
 import DialogComponent from '../../DialogComponent';
 import { DEFAULT_ROLE, ROLES } from '../../../constants/roles';
+import { clickableRowProps, stopRowClick } from '../../../utils/clickableRow';
 
 const ROLE_COLOR_MAP = {
     [ROLES.ADMIN]: 'error',
@@ -60,6 +61,8 @@ export default function UserPanel({
     const [searchQuery, setSearchQuery] = useState('');
     // Store pending unsaved role changes per user id: { [userId]: 'newRole' }
     const [pendingRoles, setPendingRoles] = useState({});
+    // Row clicks open that row's role menu (the row's main action).
+    const [openRoleSelectId, setOpenRoleSelectId] = useState(null);
 
     const openDialog = useCallback((type, user = null) => {
         setDialog({ type, user });
@@ -380,7 +383,13 @@ export default function UserPanel({
                                 const hasChanged = selectedRole !== currentRole;
 
                                 return (
-                                    <TableRow key={u._id} hover sx={{ height: 56 }}>
+                                    <TableRow
+                                        key={u._id}
+                                        {...(isSelf || isSaving
+                                            ? { hover: true }
+                                            : clickableRowProps(() => setOpenRoleSelectId(u._id), `Change role for ${u.name}`))}
+                                        sx={{ height: 56, cursor: isSelf || isSaving ? undefined : 'pointer' }}
+                                    >
                                         <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                                                 <Typography variant="body2" fontWeight={600}>
@@ -410,7 +419,7 @@ export default function UserPanel({
                                                 {u.email}
                                             </Typography>
                                         </TableCell>
-                                        <TableCell>
+                                        <TableCell {...stopRowClick}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 <Tooltip
                                                     title={isSelf ? 'Admins cannot change their own role' : ''}
@@ -422,6 +431,9 @@ export default function UserPanel({
                                                             <Select
                                                                 value={selectedRole}
                                                                 disabled={isSelf || isSaving}
+                                                                open={openRoleSelectId === u._id}
+                                                                onOpen={() => setOpenRoleSelectId(u._id)}
+                                                                onClose={() => setOpenRoleSelectId(null)}
                                                                 onChange={(e) => handleRoleSelectChange(u._id, e.target.value)}
                                                                 sx={{
                                                                     fontSize: '0.8rem',
@@ -464,7 +476,7 @@ export default function UserPanel({
                                                 )}
                                             </Box>
                                         </TableCell>
-                                        <TableCell align="right">
+                                        <TableCell align="right" {...stopRowClick}>
                                             <Tooltip
                                                 title={isSelf ? 'You cannot delete your own account' : 'Delete user'}
                                                 arrow

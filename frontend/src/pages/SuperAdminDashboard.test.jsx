@@ -1,6 +1,7 @@
 // src/pages/SuperAdminDashboard.test.jsx
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import SuperAdminDashboard from './SuperAdminDashboard';
 import superadminService from '../services/superadminService';
 import { useNotify } from '../contexts/NotificationContext';
@@ -34,6 +35,15 @@ jest.mock('recharts', () => ({
     Tooltip: () => null,
     CartesianGrid: () => null,
 }));
+
+// Sections are routes now (driven by the sidebar), so render at a URL.
+const renderAt = (path = '/superadmin') => render(
+    <MemoryRouter initialEntries={[path]}>
+        <Routes>
+            <Route path="/superadmin/:tab?" element={<SuperAdminDashboard />} />
+        </Routes>
+    </MemoryRouter>
+);
 
 const notify = { success: jest.fn(), error: jest.fn(), info: jest.fn(), warning: jest.fn() };
 
@@ -89,7 +99,7 @@ beforeEach(() => {
     superadminService.getStats.mockResolvedValue(STATS);
     superadminService.getCompanies.mockResolvedValue(COMPANIES);
     superadminService.getUsers.mockResolvedValue({
-        users: [{ _id: 'u1', name: 'Tom Mechanic', email: 'tom@alpha.test', role: 'mechanic', lastActiveAt: null, companyId: { name: 'Alpha Farms', isActive: true } }],
+        users: [{ _id: 'u1', name: 'Tom Mechanic', email: 'tom@alpha.test', role: 'mechanic', lastActiveAt: null, companyId: { _id: 'c1', name: 'Alpha Farms', isActive: true } }],
         total: 1,
         page: 1,
         limit: 20,
@@ -101,7 +111,7 @@ beforeEach(() => {
 
 describe('SuperAdminDashboard', () => {
     it('renders platform KPIs, not tenant operations', async () => {
-        render(<SuperAdminDashboard />);
+        renderAt();
         expect(await screen.findByText('Platform Administration')).toBeInTheDocument();
         expect(screen.getByText('1 active · 1 new this month')).toBeInTheDocument();
         expect(screen.getByText('71% signed in within 30 days')).toBeInTheDocument();
@@ -110,18 +120,17 @@ describe('SuperAdminDashboard', () => {
     });
 
     it('shows platform health issues and recent audit activity', async () => {
-        render(<SuperAdminDashboard />);
+        renderAt();
         expect(await screen.findByText('1 deactivated company')).toBeInTheDocument();
         expect(screen.getByText('No sign-ins in 30 days: Alpha Farms')).toBeInTheDocument();
         expect(await screen.findByText("Megan Carter changed tom@alpha.test's role from mechanic to admin")).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'View all' }));
-        expect(screen.getByRole('tab', { name: 'Audit Log' })).toHaveAttribute('aria-selected', 'true');
+        expect(await screen.findByRole('combobox', { name: 'Filter by event' })).toBeInTheDocument();
     });
 
     it('lists and filters the audit log', async () => {
-        render(<SuperAdminDashboard />);
-        fireEvent.click(await screen.findByRole('tab', { name: 'Audit Log' }));
+        renderAt('/superadmin/audit');
 
         expect(await screen.findByText('Failed sign-in for intruder@example.com')).toBeInTheDocument();
         expect(screen.getByText('10.0.0.7')).toBeInTheDocument();
@@ -135,26 +144,23 @@ describe('SuperAdminDashboard', () => {
     });
 
     it('lists companies and asks for confirmation before deactivating one', async () => {
-        render(<SuperAdminDashboard />);
-        fireEvent.click(await screen.findByRole('tab', { name: 'Companies (2)' }));
+        renderAt('/superadmin/companies');
 
-        fireEvent.click(screen.getByRole('switch', { name: 'Deactivate Alpha Farms' }));
+        fireEvent.click(await screen.findByRole('switch', { name: 'Deactivate Alpha Farms' }));
         expect(superadminService.setCompanyActive).not.toHaveBeenCalled();
         fireEvent.click(screen.getByRole('button', { name: 'Deactivate' }));
         await waitFor(() => expect(superadminService.setCompanyActive).toHaveBeenCalledWith('c1', false));
     });
 
     it('reactivates a company without a confirmation', async () => {
-        render(<SuperAdminDashboard />);
-        fireEvent.click(await screen.findByRole('tab', { name: 'Companies (2)' }));
-        fireEvent.click(screen.getByRole('switch', { name: 'Activate Beta Farms' }));
+        renderAt('/superadmin/companies');
+        fireEvent.click(await screen.findByRole('switch', { name: 'Activate Beta Farms' }));
         await waitFor(() => expect(superadminService.setCompanyActive).toHaveBeenCalledWith('c2', true));
     });
 
     it('shows a reset password once after confirmation', async () => {
         superadminService.resetUserPassword.mockResolvedValue({ temporaryPassword: 'tmp-Secret-123' });
-        render(<SuperAdminDashboard />);
-        fireEvent.click(await screen.findByRole('tab', { name: 'Users' }));
+        renderAt('/superadmin/users');
 
         fireEvent.click(await screen.findByRole('button', { name: 'Reset password for Tom Mechanic' }));
         fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
@@ -163,9 +169,36 @@ describe('SuperAdminDashboard', () => {
         expect(superadminService.resetUserPassword).toHaveBeenCalledWith('u1');
     });
 
+    it('opens audit event details when a row is clicked', async () => {
+        renderAt('/superadmin/audit');
+        fireEvent.click(await screen.findByRole('button', { name: 'View Failed sign-in event details' }));
+        const dialog = await screen.findByRole('dialog');
+        expect(within(dialog).getByText('10.0.0.9')).toBeInTheDocument();
+        expect(within(dialog).getByText(/intruder@example.com/, { selector: 'pre' })).toBeInTheDocument();
+    });
+
+    it("opens a user's company when their row is clicked, but not from the row's controls", async () => {
+        superadminService.getCompany.mockResolvedValue({ company: { name: 'Alpha Farms' }, users: [] });
+        renderAt('/superadmin/users');
+        fireEvent.click(await screen.findByRole('button', { name: 'Reset password for Tom Mechanic' }));
+        expect(superadminService.getCompany).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        fireEvent.click(await screen.findByRole('button', { name: "View Tom Mechanic's company" }));
+        await waitFor(() => expect(superadminService.getCompany).toHaveBeenCalledWith('c1'));
+    });
+
+    it('seeds the users search from the URL', async () => {
+        renderAt('/superadmin/users?search=tom%40alpha.test');
+        expect(await screen.findByDisplayValue('tom@alpha.test')).toBeInTheDocument();
+        await waitFor(() => expect(superadminService.getUsers).toHaveBeenLastCalledWith(
+            expect.objectContaining({ search: 'tom@alpha.test' })
+        ));
+    });
+
     it('surfaces a load failure', async () => {
         superadminService.getStats.mockRejectedValue({ response: { data: { message: 'boom' } } });
-        render(<SuperAdminDashboard />);
+        renderAt();
         await waitFor(() => expect(notify.error).toHaveBeenCalledWith('boom'));
     });
 });

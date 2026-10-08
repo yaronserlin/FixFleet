@@ -88,10 +88,10 @@ describe('Navbar', () => {
         expect(screen.getByTestId('bottom-nav')).toHaveTextContent(expected);
     });
 
-    it('gives a superadmin only the Platform page', () => {
+    it('gives a superadmin the platform section pages', () => {
         setup({ id: 'u1', role: 'superadmin' });
-        expect(screen.getByTestId('sidebar-full')).toHaveTextContent('pages:Platform');
-        expect(screen.getByTestId('bottom-nav')).toHaveTextContent('pages:Platform | menu:');
+        expect(screen.getByTestId('sidebar-full')).toHaveTextContent('pages:Overview,Companies,Users,Audit Log');
+        expect(screen.getByTestId('bottom-nav')).toHaveTextContent('pages:Overview,Companies,Users,Audit Log | menu:');
     });
 
     it('passes the current user down to every variant', () => {

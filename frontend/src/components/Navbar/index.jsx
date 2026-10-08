@@ -34,7 +34,7 @@ export default function Navbar({ onOpenCreateFault }) {
 
     const navPages = useMemo(() => {
         if (user?.role === ROLES.SUPERADMIN) {
-            return ['Platform'];
+            return ['Overview', 'Companies', 'Users', 'Audit Log'];
         }
         if (user?.role === ROLES.OPERATOR) {
             return ['Dashboard', 'My Reports', 'Manuals'];

@@ -10,8 +10,6 @@ import {
     Button,
     Chip,
     Paper,
-    Tabs,
-    Tab,
     TextField,
     InputAdornment,
     Table,
@@ -63,6 +61,7 @@ import {
     CartesianGrid,
 } from 'recharts';
 
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import superadminService from '../services/superadminService';
 import KpiCard from '../components/Dashboard/KpiCard';
 import ConfirmDialog from '../components/ConfirmDialog/ConfirmDialog';
@@ -77,6 +76,8 @@ import { usePageRefresh } from '../contexts/PageRefreshContext';
 import { useNotify } from '../contexts/NotificationContext';
 import { ALL_ROLES } from '../constants/roles';
 import { AUDIT_ACTION_INFO, describeAudit } from '../constants/audit';
+import { superadminTabRoute } from '../constants/routes';
+import { clickableRowProps, stopRowClick } from '../utils/clickableRow';
 
 const ROLE_LABEL = { operator: 'Operator', mechanic: 'Mechanic', admin: 'Admin' };
 
@@ -110,7 +111,8 @@ const formatBytes = (bytes) => {
 
 const RECENT_SIGNUPS = 5;
 const RECENT_ACTIVITY = 6;
-const TABS = { OVERVIEW: 0, COMPANIES: 1, USERS: 2, AUDIT: 3 };
+// URL slugs under /superadmin; each is a sidebar entry (see Navbar/navItems).
+const TABS = { OVERVIEW: '', COMPANIES: 'companies', USERS: 'users', AUDIT: 'audit' };
 
 function useChartColors() {
     const theme = useTheme();
@@ -376,6 +378,7 @@ function OverviewTab({ stats, companies, refreshKey, onNavigate }) {
 // ─── Companies ───────────────────────────────────────────────────────────────
 function CompanyUsersDialog({ companyId, onClose }) {
     const notify = useNotify();
+    const navigate = useNavigate();
     const [data, setData] = useState(null);
 
     useEffect(() => {
@@ -409,7 +412,13 @@ function CompanyUsersDialog({ companyId, onClose }) {
                             </TableHead>
                             <TableBody>
                                 {data.users.map(u => (
-                                    <TableRow key={u._id}>
+                                    <TableRow
+                                        key={u._id}
+                                        {...clickableRowProps(() => {
+                                            onClose();
+                                            navigate(`${superadminTabRoute(TABS.USERS)}?search=${encodeURIComponent(u.email)}`);
+                                        }, `Manage ${u.name}`)}
+                                    >
                                         <TableCell>{u.name}</TableCell>
                                         <TableCell>{u.email}</TableCell>
                                         <TableCell>{ROLE_LABEL[u.role] || u.role}</TableCell>
@@ -449,7 +458,7 @@ function CompaniesTab({ companies, onToggleActive }) {
 
     return (
         <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
-            <Box sx={{ p: 2 }}>
+            <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
                 <TextField
                     size="small"
                     placeholder="Search companies"
@@ -458,6 +467,7 @@ function CompaniesTab({ companies, onToggleActive }) {
                     slotProps={{ input: { startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> } }}
                     sx={{ width: { xs: '100%', sm: 320 } }}
                 />
+                <Typography variant="body2" color="text.secondary">{companies.length} companies</Typography>
             </Box>
             <TableContainer>
                 <Table>
@@ -472,7 +482,7 @@ function CompaniesTab({ companies, onToggleActive }) {
                     </TableHead>
                     <TableBody>
                         {visible.map(co => (
-                            <TableRow key={co._id} hover sx={{ cursor: 'pointer' }} onClick={() => setOpenCompanyId(co._id)}>
+                            <TableRow key={co._id} {...clickableRowProps(() => setOpenCompanyId(co._id), `View ${co.name}`)}>
                                 <TableCell>
                                     <Typography fontWeight={600}>{co.name}</Typography>
                                     <Typography variant="caption" color="text.secondary">{co.slug}</Typography>
@@ -480,7 +490,7 @@ function CompaniesTab({ companies, onToggleActive }) {
                                 <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{formatDate(co.createdAt)}</TableCell>
                                 <TableCell align="right">{co.userCount}</TableCell>
                                 <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{lastActive(co.lastActiveAt)}</TableCell>
-                                <TableCell align="center" onClick={e => e.stopPropagation()}>
+                                <TableCell align="center" {...stopRowClick}>
                                     <Switch
                                         checked={co.isActive}
                                         onChange={() => handleSwitch(co)}
@@ -518,7 +528,10 @@ function CompaniesTab({ companies, onToggleActive }) {
 // ─── Users ───────────────────────────────────────────────────────────────────
 function UsersTab({ companies, refreshKey }) {
     const notify = useNotify();
-    const [search, setSearch] = useState('');
+    // ?search= lets other views (the company dialog) link straight to a user.
+    const urlSearch = useSearchParams()[0].get('search');
+    const [search, setSearch] = useState(urlSearch || '');
+    const [openCompanyId, setOpenCompanyId] = useState(null);
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [companyId, setCompanyId] = useState('');
     const [role, setRole] = useState('');
@@ -531,6 +544,10 @@ function UsersTab({ companies, refreshKey }) {
     // Only the latest request may update the table, so a slow response for
     // an older search/page can't overwrite a newer one.
     const latestRequest = useRef(0);
+
+    useEffect(() => {
+        if (urlSearch !== null) setSearch(urlSearch);
+    }, [urlSearch]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -652,7 +669,12 @@ function UsersTab({ companies, refreshKey }) {
                             </TableHead>
                             <TableBody>
                                 {result.users.map(u => (
-                                    <TableRow key={u._id} hover>
+                                    <TableRow
+                                        key={u._id}
+                                        {...(u.companyId?._id
+                                            ? clickableRowProps(() => setOpenCompanyId(u.companyId._id), `View ${u.name}'s company`)
+                                            : { hover: true })}
+                                    >
                                         <TableCell>
                                             <Typography fontWeight={600}>{u.name}</Typography>
                                             <Typography variant="caption" color="text.secondary">{u.email}</Typography>
@@ -664,7 +686,7 @@ function UsersTab({ companies, refreshKey }) {
                                             )}
                                         </TableCell>
                                         <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{lastActive(u.lastActiveAt)}</TableCell>
-                                        <TableCell>
+                                        <TableCell {...stopRowClick}>
                                             <Select
                                                 size="small"
                                                 value={u.role}
@@ -674,7 +696,7 @@ function UsersTab({ companies, refreshKey }) {
                                                 {ALL_ROLES.map(r => <MenuItem key={r} value={r}>{ROLE_LABEL[r]}</MenuItem>)}
                                             </Select>
                                         </TableCell>
-                                        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                                        <TableCell align="right" sx={{ whiteSpace: 'nowrap' }} {...stopRowClick}>
                                             <Tooltip title="Reset password">
                                                 <IconButton onClick={() => setPendingReset(u)} aria-label={`Reset password for ${u.name}`}>
                                                     <LockResetIcon />
@@ -708,6 +730,7 @@ function UsersTab({ companies, refreshKey }) {
                 </>
             )}
 
+            <CompanyUsersDialog companyId={openCompanyId} onClose={() => setOpenCompanyId(null)} />
             <ConfirmDialog
                 open={Boolean(pendingReset)}
                 title="Reset password?"
@@ -757,6 +780,50 @@ function UsersTab({ companies, refreshKey }) {
 }
 
 // ─── Audit log ───────────────────────────────────────────────────────────────
+function AuditDetailsDialog({ log, onClose }) {
+    const info = log && (AUDIT_ACTION_INFO[log.action] || { label: log.action, color: 'default' });
+    const rows = log ? [
+        ['When', formatDateTime(log.createdAt)],
+        ['Actor', log.actor ? `${log.actor.name || ''} ${log.actor.email ? `<${log.actor.email}>` : ''} (${log.actor.role})`.trim() : '—'],
+        ['Company', log.companyId?.name || '—'],
+        ['Target', log.target ? `${log.target.label || log.target.id} (${log.target.type})` : '—'],
+        ['IP address', log.ip || '—'],
+    ] : [];
+    const hasMetadata = log?.metadata && Object.keys(log.metadata).length > 0;
+
+    return (
+        <Dialog open={Boolean(log)} onClose={onClose} maxWidth="sm" fullWidth>
+            <DialogTitle fontWeight={700}>Audit event</DialogTitle>
+            <DialogContent dividers>
+                {log && (
+                    <>
+                        <Chip label={info.label} color={info.color} size="small" variant="outlined" sx={{ mb: 1 }} />
+                        <Typography variant="body2" sx={{ mb: 2 }}>{describeAudit(log)}</Typography>
+                        <Table size="small">
+                            <TableBody>
+                                {rows.map(([label, value]) => (
+                                    <TableRow key={label}>
+                                        <TableCell sx={{ color: 'text.secondary', whiteSpace: 'nowrap', width: '1%' }}>{label}</TableCell>
+                                        <TableCell sx={{ wordBreak: 'break-word' }}>{value}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                        {hasMetadata && (
+                            <Box component="pre" sx={{ mt: 2, p: 1.5, bgcolor: 'action.hover', borderRadius: 1, fontSize: '0.75rem', overflowX: 'auto' }}>
+                                {JSON.stringify(log.metadata, null, 2)}
+                            </Box>
+                        )}
+                    </>
+                )}
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose}>Close</Button>
+            </DialogActions>
+        </Dialog>
+    );
+}
+
 function AuditTab({ companies, refreshKey }) {
     const notify = useNotify();
     const [search, setSearch] = useState('');
@@ -766,6 +833,7 @@ function AuditTab({ companies, refreshKey }) {
     const [page, setPage] = useState(0);
     const [rowsPerPage, setRowsPerPage] = useState(20);
     const [result, setResult] = useState(null);
+    const [openLog, setOpenLog] = useState(null);
     const latestRequest = useRef(0);
 
     useEffect(() => {
@@ -847,7 +915,7 @@ function AuditTab({ companies, refreshKey }) {
                                 {result.logs.map(log => {
                                     const info = AUDIT_ACTION_INFO[log.action] || { label: log.action, color: 'default' };
                                     return (
-                                        <TableRow key={log._id} hover>
+                                        <TableRow key={log._id} {...clickableRowProps(() => setOpenLog(log), `View ${info.label} event details`)}>
                                             <TableCell sx={{ whiteSpace: 'nowrap', verticalAlign: 'top' }}>
                                                 <Typography variant="body2">{formatDateTime(log.createdAt)}</Typography>
                                             </TableCell>
@@ -888,6 +956,7 @@ function AuditTab({ companies, refreshKey }) {
                     />
                 </>
             )}
+            <AuditDetailsDialog log={openLog} onClose={() => setOpenLog(null)} />
         </Paper>
     );
 }
@@ -899,7 +968,11 @@ function AuditTab({ companies, refreshKey }) {
  */
 export default function SuperAdminDashboard() {
     const notify = useNotify();
-    const [tab, setTab] = useState(0);
+    const navigate = useNavigate();
+    const { tab: tabParam = TABS.OVERVIEW } = useParams();
+    // Unknown slugs (stale links) fall back to the overview.
+    const tab = Object.values(TABS).includes(tabParam) ? tabParam : TABS.OVERVIEW;
+    const goToTab = useCallback((slug) => navigate(superadminTabRoute(slug)), [navigate]);
     const [stats, setStats] = useState(null);
     const [companies, setCompanies] = useState(null);
     // Bumped by pull-to-refresh and by actions, so tabs/cards that load their own data reload.
@@ -988,17 +1061,8 @@ export default function SuperAdminDashboard() {
                 </Box>
             </Box>
 
-            <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ borderBottom: 1, borderColor: 'divider' }} variant="scrollable">
-                <Tab label="Overview" id="simple-tab-0" aria-controls="simple-tabpanel-0" />
-                <Tab label={`Companies (${companies.length})`} id="simple-tab-1" aria-controls="simple-tabpanel-1" />
-                <Tab label="Users" id="simple-tab-2" aria-controls="simple-tabpanel-2" />
-                <Tab label="Audit Log" id="simple-tab-3" aria-controls="simple-tabpanel-3" />
-            </Tabs>
-
-            {/* Inline panels rather than components/TabPanel: its fixed p:3
-                padding boxes these full-width cards in on phones. */}
-            <Box role="tabpanel" id={`simple-tabpanel-${tab}`} aria-labelledby={`simple-tab-${tab}`} sx={{ pt: 3 }}>
-                {tab === TABS.OVERVIEW && <OverviewTab stats={stats} companies={companies} refreshKey={refreshKey} onNavigate={setTab} />}
+            <Box sx={{ pt: 1 }}>
+                {tab === TABS.OVERVIEW && <OverviewTab stats={stats} companies={companies} refreshKey={refreshKey} onNavigate={goToTab} />}
                 {tab === TABS.COMPANIES && <CompaniesTab companies={companies} onToggleActive={handleToggleActive} />}
                 {tab === TABS.USERS && <UsersTab companies={companies} refreshKey={refreshKey} />}
                 {tab === TABS.AUDIT && <AuditTab companies={companies} refreshKey={refreshKey} />}

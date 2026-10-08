@@ -14,6 +14,7 @@ function renderAt(path, user) {
             <Routes>
                 <Route path="/login" element={<div>login page</div>} />
                 <Route path="/superadmin" element={<ProtectedRoute><div>platform page</div></ProtectedRoute>} />
+                <Route path="/superadmin/:tab" element={<ProtectedRoute><div>platform section</div></ProtectedRoute>} />
                 <Route path="/account" element={<ProtectedRoute><div>account page</div></ProtectedRoute>} />
                 <Route path="/dashboard" element={<ProtectedRoute><div>dashboard page</div></ProtectedRoute>} />
             </Routes>
@@ -35,6 +36,11 @@ describe('ProtectedRoute', () => {
     it('keeps a superadmin off tenant pages', () => {
         renderAt('/dashboard', { role: 'superadmin' });
         expect(screen.getByText('platform page')).toBeInTheDocument();
+    });
+
+    it('lets a superadmin reach the platform sections', () => {
+        renderAt('/superadmin/users', { role: 'superadmin' });
+        expect(screen.getByText('platform section')).toBeInTheDocument();
     });
 
     it('lets a superadmin reach their account page', () => {

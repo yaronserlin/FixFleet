@@ -9,6 +9,7 @@
 // accepted as a prop (harmless if unused).
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import FaultModal from './FaultModal';
 import { useAuth } from '../../../contexts/AuthContext';
 
@@ -35,7 +36,7 @@ function setup(overrides = {}, role = 'mechanic') {
         onReopenFault: jest.fn(),
         ...overrides,
     };
-    render(<FaultModal {...props} />);
+    render(<MemoryRouter><FaultModal {...props} /></MemoryRouter>);
     return props;
 }
 
@@ -48,6 +49,14 @@ describe('FaultModal', () => {
             <FaultModal open handleClose={jest.fn()} fault={null} />
         );
         expect(container).toBeEmptyDOMElement();
+    });
+
+    it('links the equipment name to its page and closes on click', () => {
+        const props = setup({ fault: { ...baseFault, tool: { _id: 't1', name: 'Forklift' } } });
+        const link = screen.getByRole('link', { name: 'Forklift' });
+        expect(link).toHaveAttribute('href', '/equipment/t1');
+        fireEvent.click(link);
+        expect(props.handleClose).toHaveBeenCalled();
     });
 
     it('renders core fault details', () => {

@@ -29,7 +29,8 @@ const ProtectedRoute = ({ children }) => {
         return <Navigate to={ROUTES.FORCE_PASSWORD_CHANGE} replace />;
     }
 
-    if (user.role === ROLES.SUPERADMIN && !SUPERADMIN_PATHS.includes(pathname)) {
+    // Prefix match so the platform sections (/superadmin/users, ...) are allowed.
+    if (user.role === ROLES.SUPERADMIN && !SUPERADMIN_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
         return <Navigate to={ROUTES.SUPERADMIN} replace />;
     }
 

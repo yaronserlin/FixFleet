@@ -259,7 +259,7 @@ function AppLayout() {
                     }
                 />
                 <Route
-                    path={ROUTES.SUPERADMIN}
+                    path={`${ROUTES.SUPERADMIN}/:tab?`}
                     element={
                         <ProtectedRoute>
                             <RequireAdmin role={ROLES.SUPERADMIN}>
