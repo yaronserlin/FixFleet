@@ -4,7 +4,7 @@ import { ROUTES } from '../constants/routes';
 
 // Pages a logged-out visitor may stay on: a failed session refresh (e.g. the
 // app's on-load /auth/me check) must not bounce them to the login page.
-const PUBLIC_PATHS = [ROUTES.LOGIN, ROUTES.RESET_PASSWORD, ROUTES.TERMS, ROUTES.PRIVACY, ROUTES.LEGAL];
+const PUBLIC_PATHS = [ROUTES.HOME, ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.RESET_PASSWORD, ROUTES.TERMS, ROUTES.PRIVACY, ROUTES.LEGAL, ROUTES.ACCESSIBILITY, ROUTES.GUIDE];
 
 export const shouldRedirectToLogin = (pathname) => !PUBLIC_PATHS.includes(pathname);
 

@@ -50,6 +50,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        // The user guide is a standalone static page (public/user-guide),
+        // not an SPA route; don't let the SPA fallback swallow it.
+        navigateFallbackDenylist: [/^\/user-guide/],
         // Web push needs `push`/`notificationclick` handlers inside the
         // service worker, but generateSW builds that file for us. Importing
         // our handlers into it keeps Workbox's precaching as-is instead of

@@ -9,6 +9,8 @@ import { ROLES } from './roles';
 export const ROUTES = Object.freeze({
     HOME: '/',
     LOGIN: '/login',
+    SIGNUP: '/signup',
+    GUIDE: '/guide',
     LOGOUT: '/logout',
     TERMS: '/terms',
     PRIVACY: '/privacy',

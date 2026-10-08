@@ -19,11 +19,13 @@ import { PageSkeleton } from './components/Skeletons/Skeletons';
 import LoadingComponent from './components/LoadingComponent/LoadingComponent';
 import LegalFooter from './components/Legal/LegalFooter';
 import AccessibilityMenu from './components/AccessibilityMenu/AccessibilityMenu';
-import { ROUTES, homeRouteFor } from './constants/routes';
+import { ROUTES } from './constants/routes';
 import { ROLES } from './constants/roles';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ToolPage = lazy(() => import('./pages/ToolPage'));
+const HomePage = lazy(() => import('./pages/HomePage'));
+const GuidePage = lazy(() => import('./pages/GuidePage'));
 const Login = lazy(() => import('./pages/Login'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Logout = lazy(() => import('./pages/Logout'));
@@ -54,6 +56,7 @@ const preloadRouteChunks = () => {
     import('./pages/OperatorReportsPage');
     import('./pages/EquipmentBooksPage');
     import('./pages/NotificationsPage');
+    import('./pages/GuidePage');
 };
 
 // Top-level route fallback: a thin progress bar for immediate feedback,
@@ -69,7 +72,10 @@ function RouteFallback() {
 }
 
 // Pages that use a full-screen layout (no Navbar)
-const HIDE_NAVBAR_PATHS = [ROUTES.LOGIN, ROUTES.FORCE_PASSWORD_CHANGE, ROUTES.RESET_PASSWORD];
+const HIDE_NAVBAR_PATHS = [ROUTES.HOME, ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.FORCE_PASSWORD_CHANGE, ROUTES.RESET_PASSWORD];
+// Public pages that bring their own header when nobody is signed in, and sit
+// inside the normal app layout when someone is.
+const PUBLIC_CHROME_PATHS = [ROUTES.GUIDE];
 
 function RequirePasswordChange({ children }) {
     const { user, loading } = useAuth();
@@ -97,7 +103,8 @@ function AppLayout() {
     // for them via usePageRefresh(), and this one gesture/indicator (below)
     // drives whichever page is on screen. See contexts/PageRefreshContext.
     const refreshPage = usePageRefreshTrigger();
-    const hideNavbar = HIDE_NAVBAR_PATHS.some(p => location.pathname === p);
+    const hideNavbar = HIDE_NAVBAR_PATHS.includes(location.pathname)
+        || (!user && PUBLIC_CHROME_PATHS.includes(location.pathname));
 
     // Fault-creation dialog state is lifted up here (rather than living only
     // inside Dashboard) so the phone bottom nav's center FAB can open fault
@@ -144,11 +151,13 @@ function AppLayout() {
     const routedContent = (
         <Suspense fallback={<RouteFallback />}>
             <Routes>
-                {/* Default redirect */}
-                <Route path={ROUTES.HOME} element={<Navigate to={homeRouteFor(user)} replace />} />
+                {/* Public landing page; signed-in users are redirected to their home */}
+                <Route path={ROUTES.HOME} element={<HomePage />} />
 
                 {/* Public routes */}
                 <Route path={ROUTES.LOGIN} element={<Login />} />
+                <Route path={ROUTES.SIGNUP} element={<Login />} />
+                <Route path={ROUTES.GUIDE} element={<GuidePage />} />
                 <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
                 <Route path={ROUTES.TERMS} element={<LegalPage />} />
                 <Route path={ROUTES.PRIVACY} element={<LegalPage />} />

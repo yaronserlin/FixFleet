@@ -13,6 +13,7 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
+import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 import { useNavigate } from 'react-router-dom';
 import { getMediaUrl } from '../../utils/mediaUtils';
 import { formatUserName, getUserInitials } from '../../utils/formatUtils';
@@ -148,6 +149,13 @@ export default function UserMenu({ user }) {
                         <Typography variant="body2" fontWeight={500}>My Activity</Typography>
                     </MenuItem>
                 )}
+
+                <MenuItem onClick={() => goTo(ROUTES.GUIDE)}>
+                    <ListItemIcon>
+                        <AutoStoriesOutlinedIcon fontSize="small" />
+                    </ListItemIcon>
+                    <Typography variant="body2" fontWeight={500}>User Guide</Typography>
+                </MenuItem>
 
                 <Divider sx={{ my: 0.5 }} />
 

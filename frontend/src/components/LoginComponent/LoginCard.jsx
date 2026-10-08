@@ -1,5 +1,6 @@
 // src/components/LoginComponent/LoginCard.jsx
 import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -7,11 +8,21 @@ import Divider from '@mui/material/Divider';
 import LoginForm from './LoginForm';
 import SignupForm from './SignupForm';
 import ForgotPasswordForm from './ForgotPasswordForm';
+import { ROUTES } from '../../constants/routes';
 
 export default function LoginCard() {
-    const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'forgot'
-    const isLogin = mode === 'login';
-    const isForgot = mode === 'forgot';
+    // Sign-up has its own route (/signup); "forgot password" is a step within /login.
+    const { pathname } = useLocation();
+    const navigate = useNavigate();
+    const [forgot, setForgot] = useState(false);
+    const isSignup = pathname === ROUTES.SIGNUP;
+    const isForgot = !isSignup && forgot;
+    const isLogin = !isSignup && !forgot;
+
+    const handleToggle = () => {
+        if (isForgot) setForgot(false);
+        else navigate(isLogin ? ROUTES.SIGNUP : ROUTES.LOGIN);
+    };
 
     return (
         <Box>
@@ -40,7 +51,7 @@ export default function LoginCard() {
             {isForgot
                 ? <ForgotPasswordForm />
                 : isLogin
-                ? <LoginForm onForgotPassword={() => setMode('forgot')} />
+                ? <LoginForm onForgotPassword={() => setForgot(true)} />
                 : <SignupForm />}
 
             {/* Toggle */}
@@ -52,7 +63,7 @@ export default function LoginCard() {
                 <Button
                     size="small"
                     variant="text"
-                    onClick={() => setMode(isLogin ? 'signup' : 'login')}
+                    onClick={handleToggle}
                     sx={{
                         fontWeight: 700,
                         fontSize: '0.875rem',

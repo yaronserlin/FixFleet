@@ -17,6 +17,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import HistoryIcon from '@mui/icons-material/History';
 import LogoutIcon from '@mui/icons-material/Logout';
+import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { getMediaUrl } from '../../utils/mediaUtils';
@@ -264,6 +265,10 @@ export default function BottomNav({ display, user, pages, menuPages = [], onOpen
                             <ListItemText primary="My Activity" />
                         </ListItemButton>
                     )}
+                    <ListItemButton onClick={() => goTo(ROUTES.GUIDE)} sx={{ minHeight: 48 }}>
+                        <ListItemIcon><AutoStoriesOutlinedIcon fontSize="small" /></ListItemIcon>
+                        <ListItemText primary="User Guide" />
+                    </ListItemButton>
                     <Divider sx={{ my: 0.5 }} />
 
                     <ListItemButton

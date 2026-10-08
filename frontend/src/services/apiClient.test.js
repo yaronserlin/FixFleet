@@ -44,6 +44,10 @@ describe('apiClient', () => {
         expect(shouldRedirectToLogin('/login')).toBe(false);
         expect(shouldRedirectToLogin('/reset-password')).toBe(false);
         expect(shouldRedirectToLogin('/terms')).toBe(false);
+        expect(shouldRedirectToLogin('/')).toBe(false);
+        expect(shouldRedirectToLogin('/accessibility')).toBe(false);
+        expect(shouldRedirectToLogin('/signup')).toBe(false);
+        expect(shouldRedirectToLogin('/guide')).toBe(false);
     });
 
     describe('401 interceptor behavior', () => {
