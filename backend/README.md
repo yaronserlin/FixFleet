@@ -30,7 +30,7 @@ One-off: `node scripts/migrateUploadsToGridFS.js` moves legacy `uploads/` disk f
 
 ## Environment
 
-Required: `MONGO_URI` and `JWT_SECRET`. `FRONTEND_URL` is also required in production. Push notifications (`VAPID_*`) and password-reset email (`EMAILJS_*`) are optional; the app runs without them. The full reference is in [docs/ENV.md](../docs/ENV.md).
+Required: `MONGO_URI` and `JWT_SECRET`. `FRONTEND_URL` is also required in production. Push notifications (`VAPID_*`) and email (`EMAILJS_*`) are optional in development, where emails are logged instead. In production, without `EMAILJS_*` no password-reset or signup-verification email is sent, so new company signups cannot sign in. The full reference is in [docs/ENV.md](../docs/ENV.md).
 
 ## Architecture
 

@@ -159,7 +159,7 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
       <p class="lede">Report breakdowns, run preventive maintenance, and keep your equipment records in one place. This guide covers every step, from your first sign-in to closing out a service.</p>
     </div>
     <div class="cover-meta">
-      <span class="chip">Version 1.0.6</span>
+      <span class="chip">Version 1.0.7</span>
       <span class="chip">Updated 8 Oct 2026</span>
       <span class="chip"><i style="background:#60A5FA"></i>Admins</span>
       <span class="chip"><i style="background:#FCD34D"></i>Mechanics</span>
@@ -196,6 +196,20 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
       <p class="eyebrow">Access</p>
       <h2 class="sec">Getting started</h2>
       <p>FixFleet runs in your web browser on a computer, tablet or phone. You don't need to install anything. Your company's admin gives you the web address and your sign-in details.</p>
+
+      <h3 id="home"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></span>Open FixFleet</h3>
+      <p>The web address opens the FixFleet home page. If you're already signed in, FixFleet skips it and opens your own home page instead.</p>
+      <ol class="steps">
+        <li><b class="ui">Sign up</b> creates an account for a new company (see <b class="ui">Create a company account</b> below).</li>
+        <li><b class="ui">Sign in</b> opens the sign-in screen.</li>
+        <li><b class="ui">User guide</b> opens this guide. You can read it without signing in.</li>
+        <li><b class="ui">Create company account</b> does the same as <b class="ui">Sign up</b>.</li>
+        <li><b class="ui">Read the user guide</b> also opens this guide. Further down the page, the feature and role cards jump straight to the matching section.</li>
+      </ol>
+      <figure class="shot">
+        <img width="1600" height="881" src="images/home-page.webp" alt="FixFleet home page with Sign up, Sign in and User guide in the top bar, and Create company account and Read the user guide buttons, marked 1 to 5" loading="lazy">
+        <figcaption><b>Step 1–5</b> The FixFleet home page. The moon icon switches between light and dark mode.</figcaption>
+      </figure>
 
       <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg></span>Sign in</h3>
       <ol class="steps">
@@ -661,11 +675,13 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
       <ol class="steps">
         <li><b class="ui">Account Settings</b>: your profile, photo, password, display and notifications.</li>
         <li><b class="ui">My Activity</b>: your own recent activity in FixFleet.</li>
+        <li><b class="ui">User Guide</b>: opens this guide inside FixFleet.</li>
         <li><b class="ui">Log out</b>: always do this on shared computers.</li>
       </ol>
+      <p>On a phone, tap your initials in the bottom bar to find the same items.</p>
       <figure class="shot">
-        <img width="1600" height="1075" src="images/account-menu.webp" alt="Account menu showing name, role badge, Account Settings, My Activity and Log out marked 1 to 3" loading="lazy">
-        <figcaption><b>Step 1–3</b> The account menu.</figcaption>
+        <img width="1600" height="940" src="images/account-menu.webp" alt="Account menu showing name, role badge, Account Settings, My Activity, User Guide and Log out marked 1 to 4" loading="lazy">
+        <figcaption><b>Step 1–4</b> The account menu.</figcaption>
       </figure>
       <p>On <b class="ui">Account Settings</b>:</p>
       <ol class="steps">
@@ -724,8 +740,18 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
       <details><summary>Sign-in stopped working after several wrong passwords.</summary>
         <div><p>After too many sign-in, sign-up or resend attempts from one network, FixFleet shows <b class="ui">Too many attempts from this IP, please try again after 15 minutes</b>. Wait 15 minutes before trying again. If you've forgotten your password, use <b class="ui">Forgot password?</b> once the wait is over.</p></div></details>
 
+      <details id="guide-help"><summary>Where can I find this guide again?</summary>
+        <div><p>Open <b class="ui">User Guide</b> from your account menu, or the <b class="ui">User guide</b> link at the top of the home page. Use <b class="ui">Contents</b> (1) to jump to a section. On a phone, the contents appear as a row of buttons you can swipe.</p>
+        <figure class="shot">
+          <img width="1600" height="881" src="images/guide-page.webp" alt="The user guide inside FixFleet with the Contents list marked 1 and the Getting started section heading marked 2" loading="lazy">
+          <figcaption><b>Step 1–2</b> The guide in FixFleet: Contents (1) and the section you're reading (2).</figcaption>
+        </figure></div></details>
+
+      <details><summary>Resend email says “Too many reset requests for this email”.</summary>
+        <div><p>FixFleet allows three emails per address every 15 minutes, counting verification resends and password-reset requests together. Wait 15 minutes, then try once more and use the newest email.</p></div></details>
+
       <details><summary>Can I use FixFleet in dark mode?</summary>
-        <div><p>Yes. Go to <b class="ui">Account Settings → Appearance &amp; Notifications</b> and use the light/dark switch. The setting applies only to the device you're using.</p></div></details>
+        <div><p>Yes. Go to <b class="ui">Account Settings → Appearance &amp; Notifications</b> and use the light/dark switch. When you're signed out, use the moon or sun icon at the top of the home page. The setting applies only to the device you're using.</p></div></details>
 
       <div class="note info" style="margin-top:20px"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Still stuck?</div>
         Contact your company's FixFleet admin. They can reset your access, change your role, or correct a record.</div>
@@ -736,7 +762,19 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
     <section id="updates">
       <p class="eyebrow">Changelog</p>
       <h2 class="sec">Recent updates</h2>
-      <h3>8 October 2026</h3>
+      <h3>8 October 2026 (version 1.0.7)</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Change</th><th>Where</th></tr></thead>
+          <tbody>
+            <tr><td><b>New:</b> the FixFleet home page, with sign-up, sign-in and links into this guide.</td><td><a href="#home">Open FixFleet</a></td></tr>
+            <tr><td><b>New:</b> this guide is now inside FixFleet. Open it from <b class="ui">User Guide</b> in the account menu.</td><td><a href="#account">Your account</a>, <a href="#guide-help">FAQ</a></td></tr>
+            <tr><td><b>New:</b> FAQ answer for the “Too many reset requests” message on <b class="ui">Resend email</b>.</td><td><a href="#help">Troubleshooting</a></td></tr>
+            <tr><td><b>New screenshots:</b> <code>home-page</code>, <code>guide-page</code>. <b>Replaced:</b> <code>account-menu</code> (now shows <b class="ui">User Guide</b>).</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>8 October 2026 (version 1.0.6)</h3>
       <div class="tbl">
         <table>
           <thead><tr><th>Change</th><th>Where</th></tr></thead>
@@ -751,7 +789,7 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
         </table>
       </div>
 
-      <footer class="end">FixFleet User Guide · written for version 1.0.6 · updated 8 October 2026 · Screenshots show the FixFleet demo farm.</footer>
+      <footer class="end">FixFleet User Guide · written for version 1.0.7 · updated 8 October 2026 · Screenshots show the FixFleet demo farm.</footer>
     </section>
   </main>
 </div>

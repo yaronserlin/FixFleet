@@ -63,7 +63,6 @@ This runbook covers operational procedures, deployment workflows, health monitor
 ```json
 {
   "status": "healthy",
-  "version": "<backend package.json version>",
   "timestamp": "2026-09-14T12:00:00.000Z",
   "database": "connected"
 }
@@ -73,7 +72,6 @@ This runbook covers operational procedures, deployment workflows, health monitor
 ```json
 {
   "status": "degraded",
-  "version": "<backend package.json version>",
   "timestamp": "2026-09-14T12:00:00.000Z",
   "database": "disconnected"
 }
@@ -120,6 +118,11 @@ This runbook covers operational procedures, deployment workflows, health monitor
 - **Cause**: Express rate limiter exceeded 20 requests within 15 minutes per IP.
 - **Fix**: Wait for window to reset (15 minutes). If occurring in production for multiple distinct users sharing a corporate network or reverse proxy, verify `app.set('trust proxy', 1)` is correctly configured.
 
+### 4a. New Company Admin Cannot Sign In (`Please verify your email before signing in`)
+- **Symptom**: After signing up, login returns `403` with `code: EMAIL_NOT_VERIFIED`, and no verification email arrives.
+- **Cause**: Self-service signups must follow the emailed link (`/verify-email?token=…`, valid 24 hours) before the first sign-in. In production, emails are only sent when all four `EMAILJS_*` variables are set; otherwise the server logs `Failed to send verification email` and nothing is sent.
+- **Fix**: Configure `EMAILJS_*` (see `docs/ENV.md`) and check that the first `FRONTEND_URL` entry is the public app URL, since links are built from it. The user can then click **Resend email** on the sign-in error or after signup (`POST /api/auth/resend-verification`, 3 per 15 minutes per email, shared with forgot-password).
+
 ### 5. Authentication Cookie Missing in Production
 - **Symptom**: User logs in successfully but subsequent API requests fail with `401 Unauthorized`.
 - **Cause**: In production (`NODE_ENV=production`), auth cookies require `secure: true` (HTTPS) and appropriate `sameSite` policy.
@@ -150,9 +153,10 @@ This runbook covers operational procedures, deployment workflows, health monitor
 ## 4. Rollback Procedures
 
 ### Backend Rollback
-1. Identify the previous stable Git commit SHA or release tag:
+1. Identify the previous stable Git commit SHA or release tag (CI tags every green `main` commit `v<VERSION>`):
    ```bash
    git log -n 5 --oneline
+   git tag --sort=-creatordate | head -5
    ```
 2. Trigger rollback in cloud deployment platform (e.g. Render "Rollback to commit", AWS ECS task revision rollback).
 3. If database schema migrations were applied, review if any backward-incompatible field changes occurred and run rollback scripts if available.

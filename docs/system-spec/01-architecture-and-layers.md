@@ -38,7 +38,7 @@ flowchart LR
     SPA -- "refresh cookie (path /api/auth)" --> MW
     MW --> R --> C --> S --> M --> DB
     MW --> U --> DB
-    S -- "password reset email" --> MAIL
+    S -- "password reset and email verification" --> MAIL
     S -- "web-push (VAPID)" --> PUSH --> SW
     SW -- "postMessage PUSH_NOTIFICATION_RECEIVED" --> SPA
 ```
@@ -51,14 +51,14 @@ flowchart LR
 |---|---|---|
 | Bootstrap | `main.jsx`, `index.html`, `index.css`, `theme/` | Mount, SW registration/update polling, MUI theme (light/dark), global CSS and accessibility classes. |
 | Routing & guards | `routes.jsx`, `constants/routes.js`, `components/ProtectedRoute`, `components/RequireAdmin`, inline `RequireStaff`, `RequirePasswordChange` | Lazy route table, role-aware redirects, layout selection. |
-| Layout shell | `components/Navbar/*`, `components/Legal/LegalFooter`, `components/AccessibilityMenu`, `components/PullToRefresh` | Responsive navigation (sidebar ≥ 1200 px, rail 600–1200 px, bottom bar < 600 px), footer, a11y tools, pull-to-refresh. |
-| Pages | `pages/*` (17 screens + 2 aliases) | Screen composition, local UI state, data loading via services/contexts. |
-| Feature components | `components/Fault/*`, `components/Tool/*`, `components/User/*`, `components/Notifications/*`, `components/LoginComponent/*` | Domain widgets, dialogs and forms. |
-| Generic components | `ConfirmDialog`, `DialogComponent`, `ErrorComponent`, `LoadingComponent`, `Skeletons`, `Form/*`, `ImageViewer`, `PdfViewer`, `Logo` | Reusable building blocks. |
+| Layout shell | `components/Navbar/*`, `components/PublicHeader/*`, `components/Legal/LegalFooter`, `components/AccessibilityMenu`, `components/PullToRefresh` | Responsive navigation (sidebar ≥ 1200 px, rail 600–1200 px, bottom bar < 600 px), the signed-out header of the public pages, footer, a11y tools, pull-to-refresh. |
+| Pages | `pages/*` (20 screens + 2 aliases + the shared `ErrorPage` layout) | Screen composition, local UI state, data loading via services/contexts. |
+| Feature components | `components/Fault/*`, `components/Tool/*`, `components/User/*`, `components/Notifications/*`, `components/LoginComponent/*`, `components/Auth/*` | Domain widgets, dialogs and forms. |
+| Generic components | `ConfirmDialog`, `DialogComponent`, `ErrorComponent`, `Skeletons`, `Form/*`, `ImageViewer`, `PdfViewer`, `Logo` | Reusable building blocks. |
 | State management | `contexts/*` | Auth/session, equipment and fault caches, toasts, notification feed, page-refresh registry, theme. |
 | Data access (client) | `services/*` | One module per API area over a shared axios `apiClient` with token handling and silent refresh. |
 | Utilities & hooks | `utils/*`, `hooks/*` | Sorting, retry/backoff, formatting, validation, media URL resolution, forms, push subscription, authenticated blob loading, gestures. |
-| Static content | `content/legalDocuments.js` | Terms, Privacy, Accessibility statements (EN + HE). |
+| Static content | `content/legalDocuments.js`, `public/user-guide/index.html` (+ images), `public/home/*.webp` | Terms, Privacy, Accessibility statements (EN + HE); the illustrated user guide, fetched at runtime by `GuidePage` (`utils/guideContent.js`); landing-page screenshots. |
 | Service worker | `public/push-sw.js` (+ Workbox) | Precaching, push display, app badge, click-through. |
 
 ### 1.3.2 API / Controller layer (`backend/app.js`, `routes/`, `middleware/`, `controllers/`)
@@ -82,7 +82,7 @@ Controllers are thin: they read `req.user.companyId` / `req.user.userId`, call o
 
 | Service | Domain | Core rules |
 |---|---|---|
-| `authService` | Identity & sessions | Company signup, login, JWT issue, refresh-token rotation with reuse detection, profile, avatar, password change/reset, self-deletion. |
+| `authService` | Identity & sessions | Company signup with email verification, login, JWT issue, refresh-token rotation with reuse detection, profile, avatar, password change/reset, self-deletion. |
 | `userService` | Tenant user admin | Create (operator + forced change), role change, delete (with sessions, push subscriptions and avatar); self-protection; last-admin invariant. |
 | `equipmentService` | Fleet, manuals, maintenance programs | Field whitelist, cascade delete (manual files, fault photos, faults, maintenance, related notifications), PDF manuals, schedule creation/completion, checklist, progress notes. |
 | `faultService` | Fault lifecycle | Tenant-checked creation with photos, close/reopen/update/delete (delete also removes the fault's notifications), engine-hours sync. |
@@ -103,9 +103,9 @@ Services use Mongoose models directly (no repository abstraction). `sanitizeFilt
 | MongoDB | `config/db.js` | Required | Logged via `logger`; process exits on connection failure; `/health` returns 503 when disconnected. |
 | GridFS | `utils/mediaStorage.js` | Required for uploads | Storage errors propagate as 500 (a rejected MIME type is a 400); deletes are best-effort. |
 | Web Push (VAPID) | `services/pushService.js` | Optional | Disabled without keys; delivery errors logged, dead endpoints pruned; never fails the triggering action. |
-| EmailJS | `utils/mailer.js` | Optional in dev, needed for reset emails in production | Dev: logged to console. Production: throws, caught and logged; HTTP response unchanged. |
+| EmailJS | `utils/mailer.js` | Optional in dev; needed in production for reset emails and for signup verification (without it a new company admin can never sign in) | Dev: logged to console. Production: throws, caught and logged; HTTP response unchanged. |
 | Google Fonts | `frontend/index.html` | Optional | Falls back to the system font stack. |
-| GitHub Actions | `.github/workflows/ci.yml` | CI | Frontend lint → test → build; backend syntax check → test; on `main`, a version job bumps `/VERSION`, commits and tags. A red job does not affect the running app. |
+| GitHub Actions | `.github/workflows/ci.yml` | CI | Frontend lint → test → build; backend syntax check → test; on `main`, after both pass, a version job tags `v<VERSION>` (skipped if the tag exists). The patch bump itself is made by `.githooks/pre-commit`. A red job does not affect the running app. |
 
 ## 1.4 Authorization Model (RBAC)
 
@@ -135,6 +135,7 @@ Services use Mongoose models directly (no repository abstraction). `sanitizeFilt
 
 ### 1.5.1 Authentication & session management
 
+- **Signup verification:** a self-service signup creates the admin with `emailVerified: false` and issues **no session**; the first session is created by `POST /auth/verify-email` with the single-use 24 h token from the emailed link. `login` refuses unverified users with `403 EMAIL_NOT_VERIFIED`. Admin-created, seeded and superadmin users default to verified.
 - **Access token:** HS256 JWT `{ userId, role, companyId }`, 60 min, sent **only** as `Authorization: Bearer`. Stored client-side in `localStorage['token']` and the axios default header.
 - **Refresh token:** HS256 JWT `{ userId, familyId, jti }`, 7 days, HTTP-only cookie scoped to `/api/auth`; persisted only as a SHA-256 hash (`RefreshToken`). Rotated on each use; reuse of a revoked token revokes the whole family (`TOKEN_REUSE_DETECTED`) unless it was rotated ≤ 30 s ago (multi-tab race).
 - **Revocation triggers:** logout (that token), password change/reset (all of the user's), superadmin password reset (all of the user's), company deactivation (all of the company's), reuse detection (the family). Deleting a user (self, admin or superadmin) deletes all of that user's refresh tokens and push subscriptions.
@@ -158,7 +159,7 @@ Services use Mongoose models directly (no repository abstraction). `sanitizeFilt
 
 ### 1.5.4 Error handling
 
-Services and the upload MIME filter throw `httpError(status, message, { code })`; controllers forward with `next(err)`; `errorHandler` maps known error types (JSON syntax, Mongoose validation/cast, multer, CORS) and service errors, logs 4xx as `warn` and others as `error`, and hides 5xx messages in production. Side effects that must not fail the request (notifications, push, audit writes, reset emails, GridFS cleanup) are caught and logged. Frontend: `ErrorBoundary` at the root, `ErrorComponent` with retry per page, toasts via `useNotify`, and `retry()` with exponential backoff (500 ms, ×5, 3 retries, never on 401/403/404).
+Services and the upload MIME filter throw `httpError(status, message, { code })`; controllers forward with `next(err)`; `errorHandler` maps known error types (JSON syntax, Mongoose validation/cast, multer, CORS) and service errors, logs 4xx as `warn` and others as `error`, and hides 5xx messages in production. Side effects that must not fail the request (notifications, push, audit writes, reset emails, GridFS cleanup) are caught and logged. Frontend: `ErrorBoundary` at the root (`main.jsx`) and around the routes keyed by pathname (`routes.jsx`), both rendering `ErrorPage`; a 503-style `ErrorPage` replaces the whole app when the on-load `GET /auth/me` fails with a network error or 5xx (`AuthContext.serverDown`); `ErrorComponent` with retry per page; `apiClient.normalizeApiError` turns network/5xx/429 failures into one toast through the `api:error` event; toasts via `useNotify`; and `retry()` with exponential backoff (500 ms, ×5, 3 retries, never on 401/403/404).
 
 ### 1.5.5 Logging & audit
 
@@ -175,7 +176,7 @@ Multer memory storage → GridFS `uploads` bucket; references `/uploads/<id>`; M
 
 ### 1.5.8 Offline / PWA
 
-Workbox precaches the build assets (`autoUpdate`, update checks hourly and on foreground). There is **no offline data caching or request queueing**; API calls require connectivity. iOS Web Push requires the app installed to the home screen (`apple-mobile-web-app-capable`).
+Workbox precaches the build assets (`autoUpdate`, update checks hourly and on foreground); `navigateFallbackDenylist: [/^\/user-guide/]` stops the SPA fallback from swallowing the static guide file. There is **no offline data caching or request queueing**; API calls require connectivity. iOS Web Push requires the app installed to the home screen (`apple-mobile-web-app-capable`).
 
 ### 1.5.9 Accessibility & internationalization
 
@@ -185,9 +186,12 @@ ESLint `jsx-a11y`; skeletons announce loading via `role="status"`; accessible cl
 
 | Path | Page component | Guard chain | Who reaches it |
 |---|---|---|---|
-| `/` | redirect | — | → `/superadmin` (superadmin) or `/dashboard` |
+| `/` | `HomePage` | public (no navbar) | signed-out visitors; signed-in users are redirected to `/superadmin` or `/dashboard` |
 | `/login` | `Login` | public | anyone (signed-in users are redirected) |
+| `/signup` | `Login` (sign-up form) | public | anyone (signed-in users are redirected) |
+| `/guide` | `GuidePage` | public | anyone; signed out: own `PublicHeader`, no navbar; signed in: inside the app layout |
 | `/reset-password` | `ResetPasswordPage` | public | anyone |
+| `/verify-email` | `VerifyEmailPage` | public (no navbar) | anyone with an emailed verification link |
 | `/terms`, `/privacy`, `/legal`, `/accessibility` | `LegalPage` | public | anyone |
 | `/force-password-change` | `ForcePasswordChangePage` | `RequirePasswordChange` | users with `mustChangePassword` |
 | `/dashboard` | `Dashboard` | `ProtectedRoute` | tenant users (role-specific view) |
@@ -207,7 +211,7 @@ ESLint `jsx-a11y`; skeletons announce loading via `role="status"`; accessible cl
 | `/books` | redirect → `/manuals` | — | legacy alias |
 | `*` | `NotFound` | — | anyone |
 
-**Navigation per role** (`components/Navbar/index.jsx`): superadmin → Overview, Companies, Users, Audit Log · operator → Dashboard, My Reports, Manuals · mechanic → Dashboard, Equipment, Manuals · admin → Dashboard, Equipment, Manuals, Admin (moved into the account sheet on phones). Phones also get a centre FAB that opens the global "report fault" dialog.
+**Navigation per role** (`components/Navbar/index.jsx`): superadmin → Overview, Companies, Users, Audit Log · operator → Dashboard, My Reports, Manuals · mechanic → Dashboard, Equipment, Manuals · admin → Dashboard, Equipment, Manuals, Admin (moved into the account sheet on phones). Phones also get a centre FAB that opens the global "report fault" dialog. Every signed-in user (superadmin included; `/guide` is not behind `ProtectedRoute`) also gets **User Guide** (`/guide`) in the avatar menu (`UserMenu`) and the phone account sheet (`BottomNav`). While `serverDown` is true, no navigation is rendered.
 
 ## 1.7 Naming Legacy: "Tool" vs "Equipment"
 

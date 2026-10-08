@@ -111,10 +111,13 @@ Root of the tenant boundary. Created only by `authService.register` (self-servic
 | `termsVersion` | String | — | `null` | Version accepted at signup (`CURRENT_TERMS_VERSION = '1.3'` in `constants/auth.js`; `__tests__/termsVersion.test.js` fails if it drifts from the terms/privacy versions in `legalDocuments.js`). Not set by the forced-change flow. |
 | `passwordResetTokenHash` | String | indexed, `select: false` | `null` | SHA-256 of the pending forgot-password token. |
 | `passwordResetExpires` | Date | `select: false` | `null` | Token expiry (now + 30 min). |
-| `lastActiveAt` | Date | — | `null` | Stamped on every login / register / refresh (`generateTokens`). Drives superadmin activity metrics. |
+| `emailVerified` | Boolean | — | `true` | `false` only for a self-service signup until its emailed link is used (`authService.verifyEmail`); `login` refuses with 403 `EMAIL_NOT_VERIFIED` while false. The `true` default leaves existing, admin-created, seeded and superadmin users unaffected. |
+| `emailVerifyTokenHash` | String | indexed, `select: false` | `null` | SHA-256 of the pending email-verification token; replaced on every resend, cleared when consumed. |
+| `emailVerifyExpires` | Date | `select: false` | `null` | Verification-token expiry (now + 24 h, `EMAIL_VERIFY_TOKEN_TTL_MS`). |
+| `lastActiveAt` | Date | — | `null` | Stamped on every login / email verification / refresh (`generateTokens`). Drives superadmin activity metrics. |
 | `createdAt` / `updatedAt` | Date | timestamps | auto | — |
 
-**Indexes:** `_id`; `email` (unique); `companyId`; `passwordResetTokenHash`.
+**Indexes:** `_id`; `email` (unique); `companyId`; `passwordResetTokenHash`; `emailVerifyTokenHash`.
 **Hooks:** `pre('save')` re-applies `formatUserName`. **Statics:** `User.formatUserName` exported for reuse.
 **Business invariants (service-enforced, `userService.js`):** a company must always keep ≥ 1 admin (cannot demote or delete the last admin); an admin cannot change their own role or delete themselves via the admin API; new admin-created users are always `operator` with `mustChangePassword: true`; superadmins are created only by the CLI script `scripts/createSuperAdmin.js`.
 

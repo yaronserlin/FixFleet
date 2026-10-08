@@ -3,8 +3,8 @@
   "subtitle": "System Specification",
   "logo": "frontend/public/favicon.svg",
   "chips": [
-    { "label": "v1.0.9", "title": "Documented version" },
-    { "label": "commit 56eb10f + working tree", "title": "Baseline commit" }
+    { "label": "v1.0.7", "title": "Documented version" },
+    { "label": "commit f503a4a", "title": "Baseline commit" }
   ],
   "fontStylesheet": "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
   "themeStorageKey": "maintenance_app_theme",

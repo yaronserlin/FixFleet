@@ -22,7 +22,7 @@ The backend must be running on port 5001. In dev, Vite proxies `/api` and `/uplo
 | `npm run preview` | `vite preview` | Serve the built `dist/` locally |
 | `npm run lint` | `eslint .` | ESLint 9 flat config (`eslint.config.js`), including `jsx-a11y` and React hooks rules |
 | `npm test` | `jest` | Jest + React Testing Library in jsdom |
-| `npm run prepare` | `git config core.hooksPath .githooks \|\| true` | Runs on `npm install`; enables the spec-viewer pre-commit hook |
+| `npm run prepare` | `git config core.hooksPath .githooks \|\| true` | Runs on `npm install`; enables the pre-commit hook (version bump on `main` + spec-viewer rebuild) |
 <!-- AUTO-GENERATED:SCRIPTS_END -->
 
 ## Environment

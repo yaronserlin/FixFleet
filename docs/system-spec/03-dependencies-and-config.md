@@ -9,12 +9,13 @@
 | `package.json` (root) | `FixFleet` | — | — | Repository tooling only: `docs:build` / `docs:watch` scripts for the spec viewer. No dependencies, no workspaces; each app is installed separately. |
 | `package-lock.json` (root) | — | lockfile v3 | — | Empty (no root dependencies). |
 | `docs/system-spec/_build/package.json` | `spec-viewer-build` | — | ESM | Spec viewer builder; one dev dependency, `marked` 14.1.4. Installed with `npm install --prefix docs/system-spec/_build`. |
-| `backend/package.json` | `backend` | 1.0.9 | CommonJS | Express API. Also declares a non-standard `"defaultLanguage": "en"` key. |
+| `backend/package.json` | `backend` | — (none) | CommonJS | Express API. Also declares a non-standard `"defaultLanguage": "en"` key. |
 | `backend/package-lock.json` | — | lockfile v3 | — | Pins the backend tree. |
-| `frontend/package.json` | `frontend` | 1.0.9 | ESM (`"type": "module"`) | React SPA / PWA. |
+| `frontend/package.json` | `frontend` | — (none) | ESM (`"type": "module"`) | React SPA / PWA. |
 | `frontend/package-lock.json` | — | lockfile v3 | — | Pins the frontend tree. |
+| `VERSION` (root) | — | 1.0.7 | plain text | The single app version (`MAJOR.MINOR.PATCH`). |
 
-The app version lives in the root `VERSION` file (the package.json files carry none); the frontend reads it at build time (`vite.config.js` → `APP_VERSION`), and CI bumps it on `main` (see §3.6).
+The app version lives in the root `VERSION` file (the package.json files carry none); the frontend reads it at build time (`vite.config.js` → `APP_VERSION`); `.githooks/pre-commit` bumps the patch in every commit on `main`, and CI tags `v<version>` (see §3.6).
 
 ### 3.1.1 npm scripts
 
@@ -31,7 +32,7 @@ The app version lives in the root `VERSION` file (the package.json files carry n
 | frontend | `test` | `jest` | jsdom component/unit tests. |
 | frontend | `lint` | `eslint .` | Flat-config lint. |
 | frontend | `preview` | `vite preview` | Serve the built bundle (port 4173 — allowed by backend dev CORS). |
-| frontend | `prepare` | `git config core.hooksPath .githooks \|\| true` | Installs the repo's git hooks on `npm install`. |
+| frontend | `prepare` | `git config core.hooksPath .githooks \|\| true` | Installs the repo's git hooks (version bump + spec viewer rebuild) on `npm install`. |
 | root | `docs:build` | `node docs/system-spec/_build/build.mjs` | Regenerates `docs/system-spec/index.html`. |
 | root | `docs:watch` | `node docs/system-spec/_build/build.mjs --watch` | Rebuilds the viewer on every save of a spec file. |
 
@@ -104,12 +105,12 @@ Resolved versions come from `backend/package-lock.json`.
 | `MONGO_URI` | **Yes** | — | `config/db.js`, scripts | MongoDB connection string. Connection failure → `process.exit(1)`. |
 | `JWT_SECRET` | **Yes** | — | `authService`, `authMiddleware` | HS256 secret for access tokens (and base of the refresh fallback). |
 | `JWT_REFRESH_SECRET` | No | `${JWT_SECRET}_refresh` | `authService.getRefreshSecret` | Separate secret for refresh tokens. Not listed in `.env.example`. |
-| `FRONTEND_URL` | Prod: **Yes** | `http://localhost:5173` | `app.js` (CORS + CSP `frame-ancestors`), `authService.requestPasswordReset` | Comma-separated allowed origins (trailing slashes stripped). The **first** entry is the base of password-reset links. |
+| `FRONTEND_URL` | Prod: **Yes** | `http://localhost:5173` | `app.js` (CORS + CSP `frame-ancestors`), `authService.appBaseUrl` (used by `requestPasswordReset` and `sendVerificationEmail`) | Comma-separated allowed origins (trailing slashes stripped). The **first** entry is the base of password-reset and email-verification links. |
 | `COOKIE_DOMAIN` | No | host-only cookie | `authController.getCookieOptions` | Shared cookie domain (e.g. `.example.com`) for app/API on sibling subdomains; in production it also switches `sameSite` to `none`. |
 | `VAPID_PUBLIC_KEY` | No | push disabled | `pushService` | Web Push public key (also served to clients). |
 | `VAPID_PRIVATE_KEY` | No | push disabled | `pushService` | Web Push private key. Malformed keys → push disabled with an error log (no crash). |
 | `VAPID_SUBJECT` | No | `mailto:admin@example.com` | `pushService` | Contact URI required by the VAPID spec. |
-| `EMAILJS_SERVICE_ID` | No* | — | `utils/mailer.js` | EmailJS service. *All four EmailJS keys must be set, otherwise dev logs the email and production throws (logged; the reset endpoint still returns 200). |
+| `EMAILJS_SERVICE_ID` | No* | — | `utils/mailer.js` | EmailJS service. *All four EmailJS keys must be set, otherwise dev logs the email and production throws (logged; the reset, register and resend endpoints still succeed). In production without them, no self-service signup can be verified, so no new company admin can sign in. |
 | `EMAILJS_TEMPLATE_ID` | No* | — | `utils/mailer.js` | Template receiving `email`, `to_email`, `subject`, `message`, `link`. |
 | `EMAILJS_PUBLIC_KEY` | No* | — | `utils/mailer.js` | Sent as `user_id`. |
 | `EMAILJS_PRIVATE_KEY` | No* | — | `utils/mailer.js` | Sent as `accessToken`. |
@@ -122,6 +123,7 @@ Resolved versions come from `backend/package-lock.json`.
 
 | Key | Default | Consumed in | Responsibility |
 |---|---|---|---|
+| `VITE_APP_VERSION` | `'dev'` | `constants/appVersion.js` | Not set in `.env`: `vite.config.js` defines it from `/VERSION` at build time. |
 | `VITE_API_URL` | `/api` | `services/apiClient.js` (baseURL and refresh URL), `utils/mediaUtils.js#getMediaUrl`, `hooks/useAuthenticatedBlobUrl.js#isTrustedOrigin` | API base. Relative (`/api`) for same-origin/proxy deployments; absolute (`https://api.example.com/api`) for split hosting — media URLs are then rewritten to the API origin. |
 
 In Jest, `import.meta` is rewritten to `{ env: process.env }` by an inline Babel plugin in `frontend/babel.config.cjs`.
@@ -140,7 +142,7 @@ In Jest, `import.meta` is rewritten to `{ env: process.env }` by an inline Babel
 | `backend/constants/scheduleStatus.js` | Statuses and `DUE_SOON_THRESHOLD_HOURS 20`. |
 | `backend/constants/roles.js`, `faultStatus.js`, `audit.js` | Enumerations shared by schemas and services (`AUDIT_RETENTION_DAYS 365`). |
 | `backend/jest.config.js` | `testEnvironment: node`, `testMatch: **/__tests__/**/*.test.js`, `testTimeout: 30000`. |
-| `frontend/vite.config.js` | React plugin; PWA manifest (name/short_name `FixFleet`, theme `#1976d2`, background `#ffffff`, `display: standalone`, icons 192/512 any + maskable + SVG); Workbox `importScripts: ['push-sw.js']`; dev server `host: true`, port 5173, proxy `/api` and `/uploads` → `http://localhost:5001`; Rollup `manualChunks` `vendor` (react, react-dom, react-router-dom) and `mui` (@mui/material, @mui/icons-material). |
+| `frontend/vite.config.js` | Reads `../VERSION` and defines `import.meta.env.VITE_APP_VERSION`; React plugin; PWA manifest (name/short_name `FixFleet`, theme `#1976d2`, background `#ffffff`, `display: standalone`, icons 192/512 any + maskable + SVG); Workbox `importScripts: ['push-sw.js']` and `navigateFallbackDenylist: [/^\/user-guide/]` (the static guide is not an SPA route); dev server `host: true`, port 5173, proxy `/api` and `/uploads` → `http://localhost:5001`; Rollup `manualChunks` `vendor` (react, react-dom, react-router-dom) and `mui` (@mui/material, @mui/icons-material). |
 | `frontend/eslint.config.js` | Flat config: recommended JS, react-hooks, react-refresh (vite), jsx-a11y; `no-unused-vars` ignoring `^[A-Z_]`; contexts exempt from `only-export-components`; jest globals for tests. Ignores `dist`, `node_modules`, `coverage`. |
 | `frontend/babel.config.cjs` | Jest-only Babel: preset-env (current Node), preset-react (automatic), `import.meta` → `{ env: process.env }`. |
 | `frontend/jest.config.js` | jsdom environment, `babel-jest` for `.js/.jsx`, `setupFilesAfterEnv: jest.setup.js`. |
@@ -157,8 +159,8 @@ In Jest, `import.meta` is rewritten to `{ env: process.env }` by an inline Babel
 
 | Item | Behaviour |
 |---|---|
-| `.githooks/pre-commit` | On every branch: when spec Markdown or the viewer's template/config/builder is staged, rebuilds `docs/system-spec/index.html` and stages it (skipped with a warning if the builder's `node_modules` is missing). Skip with `--no-verify`. Enabled by the frontend `prepare` script. |
-| `.github/workflows/ci.yml` | Workflow name "CI". On push to any branch: **frontend** (`npm ci` → `npm run lint` → `npm test` → `npm run build`) and **backend** (cache `backend/.mongo-binaries` keyed on `backend/package-lock.json` → `npm ci` → `npm run build` (syntax check) → `npm test`). On `main` only, after both pass, **version** bumps the patch in `/VERSION`, commits `chore: release v<x> [skip ci]`, tags `v<x>` and pushes (serialized by a `version-bump` concurrency group). No backend lint (no ESLint config). |
+| `.githooks/pre-commit` | (1) On `main`, when something is staged and `VERSION` is **not** staged, bumps the patch in `/VERSION` (`awk`) and stages it, so the bump ships in the same commit; staging `VERSION` yourself keeps a manual minor/major bump. (2) On every branch: when spec Markdown or the viewer's template/config/builder is staged, rebuilds `docs/system-spec/index.html` and stages it (skipped with a warning if the builder's `node_modules` is missing). Skip with `--no-verify`. Enabled by the frontend `prepare` script. |
+| `.github/workflows/ci.yml` | Workflow name "CI". On push to any branch: **frontend** (`npm ci` → `npm run lint` → `npm test` → `npm run build`) and **backend** (cache `backend/.mongo-binaries` keyed on `backend/package-lock.json` → `npm ci` → `npm run build` (syntax check) → `npm test`). On `main` only, after both pass, **version** (`contents: write`) tags the pushed commit `v<VERSION>` and pushes the tag, or skips if that tag already exists on `origin`. It does not commit. No backend lint (no ESLint config). |
 | App version display | `frontend/vite.config.js` reads `/VERSION` into `import.meta.env.VITE_APP_VERSION`; `frontend/src/constants/appVersion.js` exposes it (`'dev'` if unset) → shown in `LegalFooter`. |
 | Service-worker updates | `main.jsx` registers the SW (`autoUpdate`) and calls `registration.update()` hourly and on every return to foreground. |
 
@@ -170,7 +172,8 @@ In Jest, `import.meta` is rewritten to `{ env: process.env }` by an inline Babel
 |---|---|
 | `frontend/public/` | `favicon.svg/.ico/-16x16/-32x32.png`, `apple-touch-icon.png`, `logo.svg`, `pwa-192x192.png`, `pwa-512x512.png`, `pwa-maskable-192x192.png`, `pwa-maskable-512x512.png`, `push-sw.js` (service-worker push handlers). |
 | `media/` | `demo.png`, `equipment.png` — README screenshots. |
-| `docs/user-guide/` | `index.html` (illustrated end-user guide) + 29 `.webp` screenshots + `fixfleet-mark.svg`. |
+| `frontend/public/user-guide/` | `index.html` (illustrated end-user guide; served as a static file and rendered in-app by `GuidePage` at `/guide`) + `images/` with 32 `.webp` screenshots and `fixfleet-mark.svg`. Moved here from `docs/user-guide/`. |
+| `frontend/public/home/` | `dashboard-light.webp`, `dashboard-dark.webp` — landing-page hero screenshots. |
 | `docs/API.md`, `ENV.md`, `RUNBOOK.md`, `CONTRIBUTING.md` | Hand-written operational docs (pre-existing). |
 | `.claude/plans/multi-tenant-migration.md` | Historical design document (2026-09-14) for the multi-tenant migration. |
 | `.agents/` | Local AI-agent tooling (agents, rules, skills, workflows) — git-ignored. |

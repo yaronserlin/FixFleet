@@ -74,7 +74,7 @@ npm run seed
 | `npm run preview` | `vite preview` | Locally preview the generated production build |
 | `npm run lint` | `eslint .` | Run ESLint static analysis across frontend source files |
 | `npm test` | `jest` | Run frontend component and unit test suite with jsdom environment |
-| `npm run prepare` | `git config core.hooksPath .githooks \|\| true` | Runs automatically on `npm install`; points git at the repo's `.githooks/` (enables the spec-viewer pre-commit hook) |
+| `npm run prepare` | `git config core.hooksPath .githooks \|\| true` | Runs automatically on `npm install`; points git at the repo's `.githooks/` (enables the version-bump and spec-viewer pre-commit hook) |
 <!-- AUTO-GENERATED:SCRIPTS_END -->
 
 ---
@@ -125,7 +125,7 @@ When creating new frontend tests:
   ```
 
 ### Pre-commit Hook (Versioning)
-`npm install` in `frontend/` sets `core.hooksPath` to `.githooks/`; `.githooks/pre-commit` rebuilds the spec viewer when spec Markdown is staged. The app version lives in the root `VERSION` file: CI (`.github/workflows/ci.yml`) builds and tests every push, and on `main` bumps the patch, commits it and tags `v<version>`. For a minor/major release, edit `VERSION` yourself in your commit (e.g. `1.0.11` → `1.1.0`); CI bumps from there.
+`npm install` in `frontend/` sets `core.hooksPath` to `.githooks/`. The app version lives in the root `VERSION` file. On `main`, `.githooks/pre-commit` bumps its patch inside every commit, so the version change ships in the same commit; on every branch it also rebuilds the spec viewer when spec Markdown is staged. For a minor/major release, edit and stage `VERSION` yourself (e.g. `1.0.11` → `1.1.0`): the hook keeps a staged `VERSION` as is. CI (`.github/workflows/ci.yml`) builds and tests every push and, on `main` once both jobs pass, tags the commit `v<version>` (skipped if the tag exists). Skip the hook with `git commit --no-verify`.
 
 ---
 

@@ -15,7 +15,7 @@
 | ID params | `validateObjectId(...)` → `400 { message: "Invalid <param> format" }` before any DB access. |
 | Pagination | List endpoints for equipment, faults and maintenance return a **plain array** when neither `page` nor `limit` is supplied, otherwise `{ <items>, page, limit, total, pages }`. `limit` clamped to 1–100 (default 20). Notifications and superadmin lists are always paginated. |
 | Error body | `{ message: string, code?: string }`. 4xx messages are always returned; 5xx message is `"Server error"` in production. |
-| Rate limits | Global 500 req / 15 min / IP. `/auth/register|login|refresh|forgot-password|reset-password`: +20 / 15 min / IP. `/auth/forgot-password`: +3 / 15 min **per email**. All skipped when `NODE_ENV=test`. Auth `429` body: `{ message: "Too many attempts from this IP, please try again after 15 minutes" }`. |
+| Rate limits | Global 500 req / 15 min / IP. `/auth/register|login|refresh|forgot-password|reset-password|verify-email|resend-verification`: +20 / 15 min / IP. `/auth/forgot-password` and `/auth/resend-verification`: +3 / 15 min **per email**, one shared counter (same `passwordResetLimiter` instance). All skipped when `NODE_ENV=test`. Auth `429` body: `{ message: "Too many attempts from this IP, please try again after 15 minutes" }`. |
 
 ### 5.1.1 Global error mapping (`middleware/errorMiddleware.js`)
 
@@ -46,7 +46,7 @@ Role guards: `ensureAdmin` → `403 "Forbidden: Admins only"`; `ensureMechanicOr
 
 ### 5.1.3 Shared response shapes
 
-**`UserProfile`** (register / login — `shapeUserProfile`):
+**`UserProfile`** (register / login / verify-email — `shapeUserProfile`):
 ```json
 { "id": "665f…", "_id": "665f…", "name": "Megan Carter", "email": "admin@example.com", "role": "admin",
   "avatar": null, "mustChangePassword": false, "termsAccepted": true,
@@ -75,8 +75,10 @@ Legend — **Auth:** `—` public · `JWT` any authenticated tenant user · `M/A
 
 | Method | Path | Auth / Limits | Request body | Success response | Errors |
 |---|---|---|---|---|---|
-| POST | `/register` | — · authLimiter | `{ companyName (≥2), name (≥2), email, password (≥8), agreeToTerms: true \| termsAccepted: true }` | `201 { message, accessToken, token, user: UserProfile }` + `Set-Cookie: refreshToken` | 400 field validation / `User with this email already exists` / terms not agreed |
-| POST | `/login` | — · authLimiter | `{ email, password }` | `200 { accessToken, token, user: UserProfile }` + cookie | 400 `Valid email and password are required` / `Invalid credentials`; 403 `Company account is inactive` |
+| POST | `/register` | — · authLimiter | `{ companyName (≥2), name (≥2), email, password (≥8), agreeToTerms: true \| termsAccepted: true }` | `201 { message: "Account created. Check your email to verify your address.", email, user: UserProfile }` — **no tokens, no cookie**; the admin starts with `emailVerified: false` and a verification email is sent | 400 field validation / `User with this email already exists` / terms not agreed |
+| POST | `/verify-email` | — · authLimiter | `{ token }` (raw token from the emailed link) | `200 { accessToken, token, user: UserProfile }` + `Set-Cookie: refreshToken` — signs the user in | 400 `Verification link is invalid or has expired` (missing, unknown, expired or already used token) |
+| POST | `/resend-verification` | — · authLimiter · per-email limiter | `{ email }` | `200 { message: "If that account still needs verifying, a new link has been sent." }` (same for unknown and already-verified emails) | 400 `A valid email address is required`; 429 `Too many reset requests for this email…` (shared counter with `/forgot-password`) |
+| POST | `/login` | — · authLimiter | `{ email, password }` | `200 { accessToken, token, user: UserProfile }` + cookie | 400 `Valid email and password are required` / `Invalid credentials`; 403 `Please verify your email before signing in` with `code: EMAIL_NOT_VERIFIED` (checked after the password); 403 `Company account is inactive` |
 | POST | `/refresh` | — · authLimiter | cookie `refreshToken` (or body `{ refreshToken }`) | `200 { accessToken, token }` + rotated cookie | 401 missing / invalid / not recognized / user deleted; 403 company inactive; 403 `code: TOKEN_REUSE_DETECTED` (+ cookies cleared) |
 | POST | `/forgot-password` | — · authLimiter · per-email limiter | `{ email }` | `200 { message: "If an account exists for that email, a reset link has been sent." }` (always) | 400 invalid email |
 | POST | `/reset-password` | — · authLimiter | `{ token, newPassword (≥8) }` | `200 { message: "Password has been reset. You can now sign in." }` | 400 `Reset link is invalid or has expired` / short password |
@@ -371,13 +373,15 @@ Notation: **UI → Context/Service (frontend) → Route → Middleware → Contr
 
 ```
 
+> **Outdated diagram:** the diagram above predates email verification. Register no longer issues tokens or a cookie and no longer navigates to the dashboard: it returns `201 { message, email, user }` and sends a verification email. The session is created by `POST /auth/verify-email` instead. See [§5.3.13](#5313-email-verification-after-signup).
+
 ### 5.3.2 Login, silent refresh and reuse detection
 
 1. `LoginForm.jsx` → `AuthContext.login(email, password)` → `POST /api/auth/login`.
-2. `authService.login`: `users.findOne({ email }).select('+password').populate(companyId)` → `bcrypt.compare` → company-active check → `generateTokens` (stamps `lastActiveAt`, inserts `RefreshToken`).
+2. `authService.login`: `users.findOne({ email }).select('+password').populate(companyId)` → `bcrypt.compare` → `emailVerified` check (403 `EMAIL_NOT_VERIFIED`; `LoginForm` then shows a **Resend email** button) → company-active check → `generateTokens` (stamps `lastActiveAt`, inserts `RefreshToken`).
 3. Controller: audits `auth.superadmin_login` (superadmin) or, on a 4xx with an email, `auth.login_failed`; sets the `refreshToken` cookie (`httpOnly`, `secure` in production, `sameSite: none` only in production with `COOKIE_DOMAIN`, else `lax`; path `/api/auth`; 7 days).
 4. Frontend stores the access token in `localStorage['token']` and as the axios default header; navigates to `/force-password-change` if `mustChangePassword`, else `homeRouteFor(user)` (`/superadmin` or `/dashboard`).
-5. Any later `401` (not from login/register/refresh): the `apiClient` interceptor queues concurrent failures, calls `POST /auth/refresh` once with raw axios (`withCredentials`), stores the new token, replays queued requests. On refresh failure: clears the token and hard-redirects to `/login` unless on a public path.
+5. Any later `401` (not from login/register/refresh): the `apiClient` interceptor queues concurrent failures, calls `POST /auth/refresh` once with raw axios (`withCredentials`), stores the new token, replays queued requests. On refresh failure: clears the token and hard-redirects to `/login` unless on a public path (`PUBLIC_PATHS`: `/`, `/login`, `/signup`, `/reset-password`, `/verify-email`, `/terms`, `/privacy`, `/legal`, `/accessibility`, `/guide`). Every rejected request then goes through `normalizeApiError`: the server's message becomes `error.message`; a network failure, 5xx or 429 gets a friendly message and is broadcast as the `api:error` window event, which `NotificationContext` shows as one error toast. Aborted requests (`ERR_CANCELED`) pass through untouched.
 6. `rotateRefreshToken`: verify JWT → find by SHA-256 hash → if revoked and **not** (`wasRotated` and ≤ 30 s ago) → revoke the entire `familyId` → `403 TOKEN_REUSE_DETECTED` (controller clears cookies). Otherwise mark the current token `isRevoked + wasRotated` and issue a new pair in the same family.
 
 ### 5.3.3 First-login forced password change
@@ -460,14 +464,23 @@ Platform variant: `SuperAdminDashboard.jsx` passes `companies` + `onSend = super
 
 `AccountPage.jsx` delete dialog → type `delete <name>` + current password → `userService.deleteAccount` → `DELETE /api/auth/me` → verify → delete user, refresh tokens, push subscriptions, avatar → audit `account.self_deleted` → clear cookies → frontend `logout()` → `/login`. The last-admin protection does **not** apply to self-deletion.
 
+### 5.3.13 Email verification after signup
+
+1. `SignupForm.jsx` → `AuthContext.signup` → `POST /api/auth/register`. `authService.register` inserts the company and the admin user with `emailVerified: false`, then `sendVerificationEmail`: stores `sha256(random 32 bytes)` in `emailVerifyTokenHash` with a 24 h `emailVerifyExpires`, and fire-and-forget `mailer.sendMail` ("Confirm your FixFleet email") with the link `<first FRONTEND_URL>/verify-email?token=<raw>`. A mail failure is logged, never returned.
+2. Controller audits `company.registered` and returns `201 { message, email, user }`. `AuthContext.signup` returns `{ email }` without storing a token or navigating; `SignupForm` swaps itself for a "Check your inbox at …" alert with a `ResendVerificationButton`.
+3. The user opens the link → `/verify-email` (`VerifyEmailPage.jsx`, public, no navbar) reads `?token` and calls `AuthContext.verifyEmail(token)` once (a `useRef` guard stops React StrictMode's double effect from spending the single-use token twice).
+4. `POST /api/auth/verify-email` → `authService.verifyEmail`: atomic `findOneAndUpdate({ emailVerifyTokenHash: sha256(token), emailVerifyExpires: trusted({ $gt: now }) }, { emailVerified: true, emailVerifyTokenHash: null, emailVerifyExpires: null })` → `generateTokens` (stamps `lastActiveAt`, inserts `RefreshToken`) → controller sets the refresh cookie → `200 { accessToken, token, user }`.
+5. `AuthContext.completeSession` (shared with `login`) stores the token, sets the user and navigates to `/force-password-change` or `homeRouteFor(user)`. On failure the page shows "This verification link is invalid or has expired. Sign in to get a new one." with a **Sign in** button.
+6. **Resend:** `ResendVerificationButton` (in the signup success alert and in the `LoginForm` error alert after `EMAIL_NOT_VERIFIED`) → `userService.resendVerification(email)` → `POST /api/auth/resend-verification` → `authService.resendVerification`: unknown or already-verified email → silent no-op; otherwise `sendVerificationEmail` replaces the pending token. The response is identical in every case. Button states: `Resend email` → `Sending…` → `Email sent` (disabled) or `Failed, retry`.
+
 ---
 
 ## 5.4 Frontend → Backend Endpoint Usage Matrix
 
 | Frontend caller (`frontend/src/services/…`) | Endpoint | Used by (components/pages) |
 |---|---|---|
-| `apiClient` (direct) | `GET /auth/me`, `POST /auth/login`, `/auth/register`, `/auth/logout`, `/auth/me/avatar`, `/auth/refresh` | `AuthContext.jsx`, interceptor |
-| `userService.getProfile / updateProfile / deleteAccount / changePassword / forgotPassword / resetPassword / uploadAvatar` | `/auth/me` (GET/PUT/DELETE), `/auth/me/change-password`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/me/avatar` | `AccountPage`, `ForcePasswordChangePage`, `ForcePasswordChangeDialog`, `ForgotPasswordForm`, `ResetPasswordPage` |
+| `apiClient` (direct) | `GET /auth/me`, `POST /auth/login`, `/auth/register`, `/auth/verify-email`, `/auth/logout`, `/auth/me/avatar`, `/auth/refresh` | `AuthContext.jsx`, interceptor |
+| `userService.getProfile / updateProfile / deleteAccount / changePassword / forgotPassword / resetPassword / resendVerification / uploadAvatar` | `/auth/me` (GET/PUT/DELETE), `/auth/me/change-password`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/resend-verification`, `/auth/me/avatar` | `AccountPage`, `ForcePasswordChangePage`, `ForcePasswordChangeDialog`, `ForgotPasswordForm`, `ResetPasswordPage`, `ResendVerificationButton` |
 | `equipmentService.*` | `/equipment/**` | `EquipmentContext`, `Dashboard`, `EquipmentPage`, `EquipmentBooksPage`, `EquipmentSchedulePage`, `EquipmentBooksTab`, `EquipmentMaintenanceTab` |
 | `faultsService.*` | `/faults/**` | `FaultContext`, `Dashboard`, `EquipmentsPage`, `OperatorReportsPage`, `ProfilePage` |
 | `maintenanceService.getMaintenance / deleteMaintenance` | `GET /maintenance?toolId`, `DELETE /maintenance/:id` | `EquipmentMaintenanceTab` |

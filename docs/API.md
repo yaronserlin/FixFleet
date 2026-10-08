@@ -36,17 +36,19 @@ This document provides the complete API specification for the FixFleet backend s
 
 | Method | Path | Auth Required | Minimum Role | Description |
 |--------|------|---------------|--------------|-------------|
-| `POST` | `/api/auth/register` | No | None | Register new user account (Rate limited: 20 req/15min) |
-| `POST` | `/api/auth/login` | No | None | Authenticate user credentials and set auth cookie (Rate limited) |
+| `POST` | `/api/auth/register` | No | None | Create a company and its admin account (`{ companyName, name, email, password, agreeToTerms }`). Returns `201 { message, email, user }` with **no session**: the admin starts unverified and is emailed a verification link valid for 24 hours (Rate limited: 20 req/15min) |
+| `POST` | `/api/auth/verify-email` | No | None | Complete signup with the token from the emailed link (`{ token }`); single-use. Marks the email verified and signs the user in: `200 { accessToken, token, user }` + `refreshToken` cookie. `400` if the link is invalid, expired or already used (Rate limited) |
+| `POST` | `/api/auth/resend-verification` | No | None | Re-send the verification email (`{ email }`); always 200 with the same message, so it can't reveal which emails have accounts. Shares the 3 req/15min per-email limit with `forgot-password` (Rate limited per IP, plus per email) |
+| `POST` | `/api/auth/login` | No | None | Authenticate user credentials and set the refresh cookie (Rate limited). `403` with `code: EMAIL_NOT_VERIFIED` until a self-service signup has verified its email |
 | `POST` | `/api/auth/refresh` | No | None | Rotate access/refresh tokens from the `refreshToken` cookie (Rate limited); revokes the session family on reuse-attack detection |
 | `POST` | `/api/auth/forgot-password` | No | None | Email a password reset link (`{ email }`); always 200 with a generic message so it can't reveal which emails have accounts (Rate limited per IP, plus 3 req/15min per email) |
 | `POST` | `/api/auth/reset-password` | No | None | Set a new password with a reset token (`{ token, newPassword }`); the token is single-use and expires after 30 minutes; revokes all sessions (Rate limited) |
 | `POST` | `/api/auth/logout` | No | None | Clear authentication cookie |
 | `GET` | `/api/auth/me` | Yes | Any | Retrieve current authenticated user profile |
-| `PUT` | `/api/auth/me` | Yes | Any | Update current user profile (name, phone, language, etc.) |
+| `PUT` | `/api/auth/me` | Yes | Any | Update current user profile (`{ name, email, currentPassword }`; `currentPassword` required only when the email changes) |
 | `DELETE` | `/api/auth/me` | Yes | Any | Delete own account (`{ confirmation: "delete <name>", currentPassword }`; confirmation is case-insensitive, password must match); removes sessions, push subscriptions, and avatar, then clears auth cookies |
 | `POST` | `/api/auth/me/avatar` | Yes | Any | Upload profile picture avatar (`multipart/form-data`, file key: `avatar`) |
-| `POST` | `/api/auth/me/change-password` | Yes | Any | Change account password (requires `oldPassword` and `newPassword`) |
+| `POST` | `/api/auth/me/change-password` | Yes | Any | Change account password (`{ currentPassword, newPassword }`; `currentPassword` is not required during a forced first-login change, which instead requires `agreeToTerms` if terms were not yet accepted); revokes all sessions |
 
 ---
 
