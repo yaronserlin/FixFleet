@@ -27,7 +27,18 @@ const logger = require('../utils/logger');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-async function deleteAccount(userId, confirmation) {
+/**
+ * Permanently deletes the user's own account. Requires both the typed
+ * "delete <name>" confirmation and the current password, so a hijacked or
+ * unattended session alone can't destroy the account.
+ *
+ * @param {string} userId - The authenticated user.
+ * @param {{ confirmation?: string, currentPassword?: string }} body - Raw request body.
+ * @throws {Error & { status: number }} 404 if the user is gone; 400 on a bad confirmation or password.
+ * @returns {Promise<void>}
+ */
+async function deleteAccount(userId, body) {
+    const { confirmation, currentPassword } = body || {};
     const user = await User.findById(userId);
     if (!user) {
         throw httpError(404, 'User not found');
@@ -36,6 +47,12 @@ async function deleteAccount(userId, confirmation) {
     const expectedConfirmation = `delete ${user.name}`;
     if (typeof confirmation !== 'string' || confirmation.trim().toLowerCase() !== expectedConfirmation.toLowerCase()) {
         throw httpError(400, `Type "delete ${user.name}" to confirm account deletion`);
+    }
+    if (!currentPassword || typeof currentPassword !== 'string') {
+        throw httpError(400, 'Current password is required to delete your account');
+    }
+    if (!(await bcrypt.compare(currentPassword, user.password))) {
+        throw httpError(400, 'Current password is incorrect');
     }
 
     await Promise.all([

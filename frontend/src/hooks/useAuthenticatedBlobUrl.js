@@ -2,6 +2,20 @@
 import { useEffect, useState } from 'react';
 import apiClient from '../services/apiClient';
 
+// True only for this app's or the API's own origin -- the only places the
+// Bearer token may go.
+function isTrustedOrigin(url) {
+    const { origin } = window.location;
+    const apiUrl = import.meta.env.VITE_API_URL || '';
+    const trusted = [origin];
+    if (/^https?:\/\//.test(apiUrl)) trusted.push(new URL(apiUrl).origin);
+    try {
+        return trusted.includes(new URL(url, origin).origin);
+    } catch {
+        return false;
+    }
+}
+
 /**
  * Fetches a protected media URL (e.g. `/uploads/:filename`, which requires a
  * valid auth token) as a blob and exposes it as a local object URL.
@@ -19,6 +33,10 @@ import apiClient from '../services/apiClient';
  * `baseURL` is overridden to `''` per-request since media routes are
  * mounted outside the `/api` prefix `apiClient` otherwise defaults to.
  *
+ * `apiClient` attaches the Bearer token to every request, so only URLs on
+ * this app's or the API's own origin are fetched; anything else (e.g. an
+ * external URL stored in an old fault) errors instead of leaking the token.
+ *
  * @param {string} url - A fully-resolved media URL (see `getMediaUrl`), or falsy to skip fetching.
  * @returns {{ blobUrl: string|null, loading: boolean, error: Error|null }}
  */
@@ -28,6 +46,11 @@ export function useAuthenticatedBlobUrl(url) {
     useEffect(() => {
         if (!url) {
             setState({ blobUrl: null, loading: false, error: null });
+            return undefined;
+        }
+
+        if (!isTrustedOrigin(url)) {
+            setState({ blobUrl: null, loading: false, error: new Error('Refusing to fetch media from an untrusted origin') });
             return undefined;
         }
 

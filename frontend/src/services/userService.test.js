@@ -12,13 +12,13 @@ import apiClient from './apiClient';
 import userService from './userService';
 
 describe('userService', () => {
-    it('deleteAccount sends the exact confirmation to the self-delete endpoint', async () => {
+    it('deleteAccount sends the confirmation and current password to the self-delete endpoint', async () => {
         apiClient.delete.mockResolvedValueOnce({ data: { message: 'Account deleted successfully' } });
 
-        await userService.deleteAccount('delete Jane Doe');
+        await userService.deleteAccount('delete Jane Doe', 'secret123');
 
         expect(apiClient.delete).toHaveBeenCalledWith('/auth/me', {
-            data: { confirmation: 'delete Jane Doe' },
+            data: { confirmation: 'delete Jane Doe', currentPassword: 'secret123' },
         });
     });
     afterEach(() => {

@@ -49,14 +49,9 @@ export default function OperatorReportsPage() {
         if (!user || user.mustChangePassword) return;
         try {
             if (showSkeleton) setLoading(true);
-            const data = await faultService.getAll();
-            const uid = user?.id || user?._id;
-            // Filter to current user's reported faults if user is operator
-            const myFaults = (data || []).filter(f => {
-                const opId = f.operator?._id || f.operator;
-                return user?.role === ROLES.OPERATOR ? opId === uid : true;
-            });
-            setFaults(myFaults);
+            // Operators see only their own reports; staff see the whole company.
+            const data = await faultService.getAll(user?.role === ROLES.OPERATOR ? { mine: 1 } : undefined);
+            setFaults(data || []);
         } catch (err) {
             console.error('Failed to load reports:', err);
             notify.error('Failed to load reports');

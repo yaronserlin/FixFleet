@@ -18,7 +18,7 @@ const userService = {
      */
     updateProfile: (data) => apiClient.put('/auth/me', data),
 
-    deleteAccount: (confirmation) => apiClient.delete('/auth/me', { data: { confirmation } }),
+    deleteAccount: (confirmation, currentPassword) => apiClient.delete('/auth/me', { data: { confirmation, currentPassword } }),
 
     /**
      * Change the current user's password

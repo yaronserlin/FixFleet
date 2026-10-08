@@ -41,6 +41,11 @@ This runbook covers operational procedures, deployment workflows, health monitor
    - Deploy contents of `frontend/dist/` to static hosting.
 4. **Configure SPA Rewrite**:
    - Ensure all non-asset routes rewrite to `/index.html` (e.g. `/* -> /index.html 200` in Netlify/Render/Vercel configuration).
+5. **Configure Security Headers** (clickjacking protection):
+   - The backend's helmet headers only cover `/api` and `/uploads`; the static host serves `index.html` itself, so it must send its own. Add for path `/*`:
+     - `X-Frame-Options: DENY`
+     - `Content-Security-Policy: frame-ancestors 'none'`
+   - **Render**: Dashboard -> Static Site -> Headers. Verify with `curl -sI https://<your-site>/ | grep -i -E "x-frame|content-security"`.
 
 ---
 

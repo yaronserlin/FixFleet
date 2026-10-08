@@ -44,7 +44,7 @@ This document provides the complete API specification for the FixFleet backend s
 | `POST` | `/api/auth/logout` | No | None | Clear authentication cookie |
 | `GET` | `/api/auth/me` | Yes | Any | Retrieve current authenticated user profile |
 | `PUT` | `/api/auth/me` | Yes | Any | Update current user profile (name, phone, language, etc.) |
-| `DELETE` | `/api/auth/me` | Yes | Any | Delete own account (`{ confirmation: "delete <name>" }`, case-insensitive); removes sessions, push subscriptions, and avatar, then clears auth cookies |
+| `DELETE` | `/api/auth/me` | Yes | Any | Delete own account (`{ confirmation: "delete <name>", currentPassword }`; confirmation is case-insensitive, password must match); removes sessions, push subscriptions, and avatar, then clears auth cookies |
 | `POST` | `/api/auth/me/avatar` | Yes | Any | Upload profile picture avatar (`multipart/form-data`, file key: `avatar`) |
 | `POST` | `/api/auth/me/change-password` | Yes | Any | Change account password (requires `oldPassword` and `newPassword`) |
 
@@ -78,9 +78,9 @@ This document provides the complete API specification for the FixFleet backend s
 
 | Method | Path | Auth Required | Minimum Role | Description |
 |--------|------|---------------|--------------|-------------|
-| `GET` | `/api/faults` | Yes | Any | List company faults (supports query filters for equipment, status, priority) |
+| `GET` | `/api/faults` | Yes | Any | List company faults (query: `status`, `page`/`limit`; `mine=1` returns only faults the caller reported) |
 | `GET` | `/api/faults/:id` | Yes | Any | Get fault report details |
-| `POST` | `/api/faults` | Yes | Any | Report a new fault (supports up to 5 photos via `multipart/form-data`, key: `photos`) |
+| `POST` | `/api/faults` | Yes | Any | Report a new fault (supports up to 5 photos via `multipart/form-data`, key: `photos`; photo URL strings in the body are ignored) |
 | `PUT` | `/api/faults/:id` | Yes | Mechanic | Update fault details |
 | `PATCH` | `/api/faults/:id/close` | Yes | Mechanic | Mark fault as resolved and closed |
 | `PATCH` | `/api/faults/:id/reopen` | Yes | Mechanic | Reopen previously closed fault (`PUT` also accepted) |

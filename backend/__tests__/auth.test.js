@@ -260,6 +260,28 @@ describe('Auth Controller', () => {
         });
     });
 
+    describe('DELETE /api/auth/me', () => {
+        it('requires the current password in addition to the typed confirmation', async () => {
+            const { token, userId } = await registerCompanyAdmin(server);
+            const confirmation = 'delete Admin User';
+
+            const missing = await request(server).delete('/api/auth/me')
+                .set('Authorization', `Bearer ${token}`).send({ confirmation });
+            expect(missing.status).toBe(400);
+
+            const wrong = await request(server).delete('/api/auth/me')
+                .set('Authorization', `Bearer ${token}`).send({ confirmation, currentPassword: 'wrongpass1' });
+            expect(wrong.status).toBe(400);
+            expect(wrong.body.message).toMatch(/incorrect/i);
+            expect(await User.exists({ _id: userId })).toBeTruthy();
+
+            const ok = await request(server).delete('/api/auth/me')
+                .set('Authorization', `Bearer ${token}`).send({ confirmation, currentPassword: 'password123' });
+            expect(ok.status).toBe(200);
+            expect(await User.exists({ _id: userId })).toBeNull();
+        });
+    });
+
     describe('POST /api/auth/me/avatar', () => {
         it('rejects a request with no file attached', async () => {
             const { token } = await registerCompanyAdmin(server);

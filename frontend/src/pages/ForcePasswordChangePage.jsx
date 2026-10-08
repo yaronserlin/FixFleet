@@ -24,7 +24,7 @@ import { ROUTES } from '../constants/routes';
 import PasswordField from '../components/Form/PasswordField';
 
 export default function ForcePasswordChangePage() {
-    const { user, setUser, logout, loginPassword, clearLoginPassword } = useAuth();
+    const { user, setUser, logout } = useAuth();
     const navigate = useNavigate();
 
     const [newPassword, setNewPassword] = useState('');
@@ -55,11 +55,9 @@ export default function ForcePasswordChangePage() {
         setLoading(true);
         try {
             await userService.changePassword({
-                currentPassword: loginPassword || undefined,
                 newPassword,
                 agreeToTerms: true,
             });
-            clearLoginPassword?.();
             setUser(prev => ({
                 ...prev,
                 mustChangePassword: false,

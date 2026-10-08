@@ -16,7 +16,6 @@ jest.mock('../src/services/apiClient');
 describe('ForcePasswordChangePage', () => {
     const mockSetUser = jest.fn();
     const mockLogout = jest.fn();
-    const mockClearLoginPassword = jest.fn();
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -24,8 +23,6 @@ describe('ForcePasswordChangePage', () => {
             user: { name: 'John Doe', mustChangePassword: true },
             setUser: mockSetUser,
             logout: mockLogout,
-            loginPassword: 'initialPassword123',
-            clearLoginPassword: mockClearLoginPassword,
         });
     });
 
@@ -57,7 +54,7 @@ describe('ForcePasswordChangePage', () => {
         expect(apiClient.post).not.toHaveBeenCalled();
     });
 
-    test('submits successfully with kept password from login and agreed terms', async () => {
+    test('submits the new password without the login password once terms are agreed', async () => {
         apiClient.post.mockResolvedValueOnce({ data: { message: 'Success' } });
 
         render(<ForcePasswordChangePage />);
@@ -77,11 +74,9 @@ describe('ForcePasswordChangePage', () => {
 
         await waitFor(() => {
             expect(apiClient.post).toHaveBeenCalledWith('/auth/me/change-password', {
-                currentPassword: 'initialPassword123',
                 newPassword: 'brandNewPassword123',
                 agreeToTerms: true,
             });
-            expect(mockClearLoginPassword).toHaveBeenCalled();
             expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
         });
     });

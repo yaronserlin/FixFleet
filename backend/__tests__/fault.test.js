@@ -71,7 +71,7 @@ describe('Fault Controller', () => {
             expect(res.body.message).toMatch(/does not exist in your organization/i);
         });
 
-        it('creates a fault with photo uploads and comma-separated body photos', async () => {
+        it('creates a fault with photo uploads and ignores photo URLs in the body', async () => {
             const { token } = await registerCompanyAdmin(server);
             const tool = await createTool(token);
             const res = await request(server)
@@ -87,7 +87,9 @@ describe('Fault Controller', () => {
                     contentType: 'image/jpeg',
                 });
             expect(res.status).toBe(201);
-            expect(res.body.photos.length).toBe(3);
+            // Body URLs would later be fetched with the viewer's token, so only uploads count.
+            expect(res.body.photos).toHaveLength(1);
+            expect(res.body.photos[0]).toMatch(/^\/uploads\//);
             // Engine hours reported on a fault are recorded but only applied to the
             // equipment's currentEngineHours when the fault is resolved (see closeFault /
             // syncEquipmentEngineHours) -- creating a fault never raises it immediately.
@@ -131,6 +133,24 @@ describe('Fault Controller', () => {
                 .set('Authorization', `Bearer ${token}`);
             expect(pagedRes.body.faults).toHaveLength(1);
             expect(pagedRes.body.total).toBe(2);
+        });
+
+        it('returns only the caller\'s own faults with ?mine=1', async () => {
+            const { token: adminToken } = await registerCompanyAdmin(server);
+            const tool = await createTool(adminToken);
+            const { token: operatorToken, userId: operatorId } = await createOperator(adminToken);
+            await request(server).post('/api/faults').set('Authorization', `Bearer ${adminToken}`)
+                .send({ description: 'Admin fault', tool: tool._id });
+            await request(server).post('/api/faults').set('Authorization', `Bearer ${operatorToken}`)
+                .send({ description: 'Operator fault', tool: tool._id });
+
+            const allRes = await request(server).get('/api/faults').set('Authorization', `Bearer ${operatorToken}`);
+            expect(allRes.body).toHaveLength(2);
+
+            const mineRes = await request(server).get('/api/faults?mine=1').set('Authorization', `Bearer ${operatorToken}`);
+            expect(mineRes.status).toBe(200);
+            expect(mineRes.body).toHaveLength(1);
+            expect(mineRes.body[0].operator._id).toBe(operatorId);
         });
     });
 

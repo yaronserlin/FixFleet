@@ -12,7 +12,7 @@ const logger = require('../utils/logger');
  */
 exports.getAllFaults = async (req, res, next) => {
     try {
-        const result = await faultService.getAllFaults(req.user.companyId, req.query);
+        const result = await faultService.getAllFaults(req.user.companyId, req.query, req.user.userId);
         res.json(result);
     } catch (err) {
         next(err);

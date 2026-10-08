@@ -20,7 +20,7 @@ import LegalModal from '../Legal/LegalModal';
 import PasswordField from '../Form/PasswordField';
 
 export default function ForcePasswordChangeDialog() {
-    const { user, setUser, logout, loginPassword, clearLoginPassword } = useAuth();
+    const { user, setUser, logout } = useAuth();
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -54,11 +54,9 @@ export default function ForcePasswordChangeDialog() {
         setLoading(true);
         try {
             await userService.changePassword({
-                currentPassword: loginPassword || undefined,
                 newPassword,
                 agreeToTerms: true,
             });
-            clearLoginPassword?.();
             setUser(prev => ({
                 ...prev,
                 mustChangePassword: false,

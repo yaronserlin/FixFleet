@@ -52,11 +52,7 @@ export default function ProfilePage() {
             return;
         }
         try {
-            const all = await faultService.getAll();
-            const mine = all.filter(f => {
-                const op = f.operator && (f.operator._id || f.operator);
-                return op === effectiveUserId;
-            });
+            const mine = await faultService.getAll({ mine: 1 });
             const sorted = mine.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             setFaults(sorted);
             setError(null);

@@ -2,8 +2,9 @@
 import apiClient from './apiClient';
 
 const faultService = {
-    getAll: () =>
-        apiClient.get('/faults')
+    // `params.mine` asks the server for only the caller's own faults.
+    getAll: (params) =>
+        apiClient.get('/faults', { params })
             .then(res => (Array.isArray(res.data) ? res.data : (res.data.faults || []))),
 
     getById: (id) =>

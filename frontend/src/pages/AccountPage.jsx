@@ -73,6 +73,7 @@ export default function AccountPage() {
     const [emailPassword, setEmailPassword] = useState('');
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState('');
+    const [deletePassword, setDeletePassword] = useState('');
     const [deleteError, setDeleteError] = useState(null);
     const [deletingAccount, setDeletingAccount] = useState(false);
 
@@ -203,13 +204,15 @@ export default function AccountPage() {
     const expectedDeleteConfirmation = `delete ${formatUserName(user.name)}`;
     const isDeleteConfirmationValid = deleteConfirmation.trim().toLowerCase() === expectedDeleteConfirmation.toLowerCase();
 
+    const canDeleteAccount = isDeleteConfirmationValid && Boolean(deletePassword);
+
     const handleDeleteAccount = async () => {
-        if (!isDeleteConfirmationValid) return;
+        if (!canDeleteAccount) return;
 
         setDeletingAccount(true);
         setDeleteError(null);
         try {
-            await userService.deleteAccount(deleteConfirmation);
+            await userService.deleteAccount(deleteConfirmation, deletePassword);
             await logout();
         } catch (err) {
             setDeleteError(err.response?.data?.message || 'Account deletion failed');
@@ -491,13 +494,13 @@ export default function AccountPage() {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     Permanently delete your account, sessions, push subscriptions, and profile photo. This action cannot be undone.
                 </Typography>
-                {deleteError && <Alert severity="error" sx={{ mb: 2 }}>{deleteError}</Alert>}
                 <Button
                     variant="outlined"
                     color="error"
                     startIcon={<DeleteForeverIcon />}
                     onClick={() => {
                         setDeleteConfirmation('');
+                        setDeletePassword('');
                         setDeleteError(null);
                         setDeleteDialogOpen(true);
                     }}
@@ -530,6 +533,17 @@ export default function AccountPage() {
                         error={Boolean(deleteConfirmation) && !isDeleteConfirmationValid}
                         helperText={deleteConfirmation && !isDeleteConfirmationValid ? `Type ${expectedDeleteConfirmation}` : ' '}
                     />
+                    <PasswordField
+                        fullWidth
+                        label="Current Password"
+                        name="deletePassword"
+                        value={deletePassword}
+                        onChange={(e) => setDeletePassword(e.target.value)}
+                        disabled={deletingAccount}
+                        autoComplete="current-password"
+                        required
+                    />
+                    {deleteError && <Alert severity="error" sx={{ mt: 2 }}>{deleteError}</Alert>}
                 </DialogContent>
                 <Divider />
                 <DialogActions sx={{ px: 3, py: 2 }}>
@@ -538,7 +552,7 @@ export default function AccountPage() {
                         color="error"
                         variant="contained"
                         onClick={handleDeleteAccount}
-                        disabled={deletingAccount || !isDeleteConfirmationValid}
+                        disabled={deletingAccount || !canDeleteAccount}
                         startIcon={<DeleteForeverIcon />}
                     >
                         {deletingAccount ? 'Deleting…' : 'Delete permanently'}

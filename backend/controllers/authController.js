@@ -218,9 +218,16 @@ exports.updateProfile = async (req, res, next) => {
     }
 };
 
+/**
+ * DELETE /api/auth/me - Deletes the authenticated user's own account.
+ * @param {import('express').Request} req - Express request; uses `req.user` and `req.body` (`confirmation`, `currentPassword`).
+ * @param {import('express').Response} res - Express response.
+ * @param {import('express').NextFunction} next - Express next function.
+ * @returns {Promise<void>}
+ */
 exports.deleteAccount = async (req, res, next) => {
     try {
-        await authService.deleteAccount(req.user.userId, req.body?.confirmation);
+        await authService.deleteAccount(req.user.userId, req.body);
         await recordAudit(req, {
             action: AUDIT_ACTIONS.ACCOUNT_SELF_DELETED,
             companyId: req.user.companyId,

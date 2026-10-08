@@ -18,7 +18,6 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [userId, setUserId] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [loginPassword, setLoginPassword] = useState('');
     const navigate = useNavigate();
 
     // On mount, check if authenticated session exists via httpOnly cookie or stored token
@@ -38,7 +37,6 @@ export const AuthProvider = ({ children }) => {
                     apiClient.setToken(null);
                     setUser(null);
                     setUserId(null);
-                    setLoginPassword('');
                 }
             })
             .finally(() => {
@@ -61,9 +59,6 @@ export const AuthProvider = ({ children }) => {
                 ? emailOrCredentials.password
                 : maybePassword;
 
-            // Preserve the entered password for seamless first-time forced password change
-            setLoginPassword(password || '');
-
             const { data } = await apiClient.post('/auth/login', { email, password });
             const token = data.accessToken || data.token;
             if (token) {
@@ -79,7 +74,6 @@ export const AuthProvider = ({ children }) => {
             }
             return formattedUser;
         } catch (error) {
-            setLoginPassword('');
             if (error.response && error.response.data) {
                 throw new Error(error.response.data.message || 'Login failed, please check your credentials');
             } else {
@@ -135,7 +129,6 @@ export const AuthProvider = ({ children }) => {
             apiClient.setToken(null);
             setUser(null);
             setUserId(null);
-            setLoginPassword('');
             navigate(ROUTES.LOGIN);
         }
     }, [navigate]);
@@ -159,10 +152,6 @@ export const AuthProvider = ({ children }) => {
         });
     }, []);
 
-    const clearLoginPassword = useCallback(() => {
-        setLoginPassword('');
-    }, []);
-
     // Memoize the provider value so consumers only re-render when something
     // they actually depend on changes, not on every AuthProvider render.
     const value = useMemo(() => ({
@@ -174,9 +163,7 @@ export const AuthProvider = ({ children }) => {
         signup,
         logout,
         updateAvatar,
-        loginPassword,
-        clearLoginPassword,
-    }), [user, userId, loading, loginPassword, handleSetUser, login, signup, logout, updateAvatar, clearLoginPassword]);
+    }), [user, userId, loading, handleSetUser, login, signup, logout, updateAvatar]);
 
     return (
         <AuthContext.Provider value={value}>

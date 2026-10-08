@@ -57,7 +57,6 @@ function ActionHarness({ action }) {
             <span data-testid="error">{error}</span>
             <span data-testid="ran">{String(ran)}</span>
             <span data-testid="user">{ctx.user ? ctx.user.name : 'none'}</span>
-            <span data-testid="loginPassword">{ctx.loginPassword}</span>
         </div>
     );
 }
@@ -154,7 +153,6 @@ describe('AuthContext', () => {
             await waitFor(() => expect(apiClient.get).toHaveBeenCalled());
             fireEvent.click(screen.getByText('run'));
             await waitFor(() => expect(screen.getByTestId('error').textContent).toBe('Bad credentials'));
-            expect(screen.getByTestId('loginPassword').textContent).toBe('');
         });
 
         it('falls back to a generic error message when the server sends none', async () => {
@@ -256,7 +254,7 @@ describe('AuthContext', () => {
         });
     });
 
-    describe('setUser / clearLoginPassword', () => {
+    describe('setUser', () => {
         it('setUser sanitizes (formats the name of) whatever is passed in', async () => {
             apiClient.get.mockRejectedValueOnce(new Error('no session'));
             renderWithProvider(
@@ -279,23 +277,6 @@ describe('AuthContext', () => {
             await waitFor(() => expect(screen.getByTestId('user').textContent).toBe('Jane'));
             fireEvent.click(screen.getByText('run'));
             await waitFor(() => expect(screen.getByTestId('ran').textContent).toBe('true'));
-        });
-
-        it('clearLoginPassword empties the stored login password', async () => {
-            apiClient.get.mockRejectedValueOnce(new Error('no session'));
-            apiClient.post.mockResolvedValueOnce({ data: { user: { id: '1', name: 'jane' } } });
-            renderWithProvider(
-                <AuthProvider>
-                    <ActionHarness action={async (ctx) => {
-                        await ctx.login('a@b.com', 'secret');
-                        ctx.clearLoginPassword();
-                    }}
-                    />
-                </AuthProvider>
-            );
-            await waitFor(() => expect(apiClient.get).toHaveBeenCalled());
-            fireEvent.click(screen.getByText('run'));
-            await waitFor(() => expect(screen.getByTestId('loginPassword').textContent).toBe(''));
         });
     });
 

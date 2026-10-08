@@ -17,15 +17,19 @@ const FAULT_POPULATE_FIELDS = [
  * Lists faults for a company, optionally filtered by status and paginated.
  *
  * @param {string} companyId - Tenant scope; only faults for this company are returned.
- * @param {{ page?: string|number, limit?: string|number, status?: string }} [query] - Raw query params.
+ * @param {{ page?: string|number, limit?: string|number, status?: string, mine?: string }} [query] - Raw query params; `mine` limits results to faults reported by `userId`.
+ * @param {string} [userId] - The requesting user, used by `mine`.
  * @returns {Promise<Array<Object>|{ faults: Array<Object>, page: number, limit: number, total: number, pages: number }>}
  *   A plain array when no pagination params are given, otherwise a paginated envelope.
  */
-async function getAllFaults(companyId, query = {}) {
-    const { page, limit, status } = query;
+async function getAllFaults(companyId, query = {}, userId) {
+    const { page, limit, status, mine } = query;
     const filter = { companyId };
     if (status) {
         filter.status = status;
+    }
+    if (mine) {
+        filter.operator = userId;
     }
 
     if (page || limit) {
@@ -83,7 +87,10 @@ async function getFaultById(companyId, faultId) {
  *
  * @param {string} companyId - Tenant scope for the new fault and for the referenced tool lookup.
  * @param {string} userId - The reporting user (stored as `operator`).
- * @param {{ tool?: string, description?: string, code?: string, photos?: string|string[], engineHours?: string|number }} body - Raw request body.
+ * @param {{ tool?: string, description?: string, code?: string, engineHours?: string|number }} body - Raw request body.
+ *   Photos come only from `files`: URL strings in the body are ignored, since a
+ *   stored URL is later fetched with the viewer's token (and an `/uploads/<id>`
+ *   reference grants access to that file via the media route in app.js).
  * @param {Array<{ buffer: Buffer, mimetype: string, originalname: string }>} [files] - Uploaded photo files (from multer memory storage), if any.
  * @throws {Error & { status: number }} 400 if description/tool are missing or the tool doesn't belong to this company.
  * @returns {Promise<Object>} The created, populated fault.
@@ -93,7 +100,7 @@ async function createFault(companyId, userId, body, files = []) {
         throw httpError(400, 'No data provided');
     }
 
-    const { tool: toolId, description, code, photos: bodyPhotos, engineHours } = body;
+    const { tool: toolId, description, code, engineHours } = body;
 
     if (!description || typeof description !== 'string' || description.trim().length === 0) {
         throw httpError(400, 'Description is required');
@@ -121,18 +128,6 @@ async function createFault(companyId, userId, body, files = []) {
         }))
         : [];
 
-    // Parse any photo URLs sent in the body
-    let additionalPhotos = [];
-    if (bodyPhotos) {
-        if (Array.isArray(bodyPhotos)) {
-            additionalPhotos = bodyPhotos.filter(p => typeof p === 'string' && p.trim().length > 0);
-        } else if (typeof bodyPhotos === 'string') {
-            additionalPhotos = bodyPhotos.split(',').map(s => s.trim()).filter(Boolean);
-        }
-    }
-
-    const allPhotos = [...uploadedPhotos, ...additionalPhotos];
-
     const parsedHours = engineHours !== undefined && engineHours !== '' ? parseFloat(engineHours) : undefined;
     const validHours = parsedHours !== undefined && !isNaN(parsedHours) && parsedHours >= 0 ? parsedHours : undefined;
 
@@ -143,7 +138,7 @@ async function createFault(companyId, userId, body, files = []) {
         description: description.trim(),
         code: code && typeof code === 'string' ? code.trim() : undefined,
         engineHours: validHours,
-        photos: allPhotos,
+        photos: uploadedPhotos,
         status: FAULT_STATUS.OPEN,
     });
 
