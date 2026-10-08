@@ -15,6 +15,7 @@ const {
     BCRYPT_SALT_ROUNDS,
     REFRESH_REUSE_GRACE_MS,
     PASSWORD_RESET_TOKEN_TTL_MS,
+    EMAIL_VERIFY_TOKEN_TTL_MS,
     CURRENT_TERMS_VERSION,
 } = require('../constants/auth');
 const { httpError } = require('../utils/httpError');
@@ -160,11 +161,43 @@ function shapeUserProfile(user) {
 }
 
 /**
- * Registers a new company and its first (admin) user.
+ * First `FRONTEND_URL` entry, used as the base of emailed links -- never the
+ * request's Host header, which an attacker could spoof to steal the token.
+ * @returns {string}
+ */
+const appBaseUrl = () => (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0].trim();
+
+/**
+ * Issues a fresh email-verification token for an unverified user (replacing
+ * any pending one) and emails the link. The send is fire-and-forget: a mail
+ * failure is logged, never surfaced, and the user can ask for a resend.
+ * @param {Object} user - A User document.
+ * @returns {Promise<void>}
+ */
+async function sendVerificationEmail(user) {
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    await User.updateOne({ _id: user._id }, {
+        emailVerifyTokenHash: hashToken(rawToken),
+        emailVerifyExpires: new Date(Date.now() + EMAIL_VERIFY_TOKEN_TTL_MS),
+    });
+
+    const link = `${appBaseUrl()}/verify-email?token=${rawToken}`;
+    mailer.sendMail({
+        to: user.email,
+        subject: 'Confirm your FixFleet email',
+        text: `Hi ${user.name},\n\nConfirm your email address to activate your account (link valid for 24 hours):\n${link}\n\nIf you didn't sign up, you can ignore this email.`,
+        params: { link },
+    }).catch((err) => logger.error('Failed to send verification email', { error: err.message }));
+}
+
+/**
+ * Registers a new company and its first (admin) user. The user starts
+ * unverified and gets a verification email; no session is issued until the
+ * link is used (see {@link verifyEmail}).
  *
  * @param {{ companyName?: string, name?: string, email?: string, password?: string, agreeToTerms?: boolean, termsAccepted?: boolean }} body - Raw request body.
  * @throws {Error & { status: number }} 400 for any invalid/missing field or a duplicate email.
- * @returns {Promise<{ user: Object, tokens: { accessToken: string, token: string, refreshToken: string } }>}
+ * @returns {Promise<{ user: Object }>}
  */
 async function register(body) {
     if (!body || typeof body !== 'object') {
@@ -223,14 +256,12 @@ async function register(body) {
             termsAccepted: true,
             termsAcceptedAt: new Date(),
             termsVersion: CURRENT_TERMS_VERSION,
+            emailVerified: false,
         });
 
-        const tokens = await generateTokens(user, company._id);
+        await sendVerificationEmail(user);
 
-        return {
-            user: shapeUserProfile({ ...user.toObject(), companyId: company }),
-            tokens,
-        };
+        return { user: shapeUserProfile({ ...user.toObject(), companyId: company }) };
     } catch (userErr) {
         // Clean up the company if user creation fails, so we don't leave an orphaned company
         await Company.findByIdAndDelete(company._id);
@@ -264,6 +295,10 @@ async function login(body) {
         throw httpError(400, 'Invalid credentials');
     }
 
+    if (!user.emailVerified) {
+        throw httpError(403, 'Please verify your email before signing in', { code: 'EMAIL_NOT_VERIFIED' });
+    }
+
     if (user.role !== ROLES.SUPERADMIN && (!user.companyId || !user.companyId.isActive)) {
         throw httpError(403, 'Company account is inactive');
     }
@@ -271,6 +306,53 @@ async function login(body) {
     const tokens = await generateTokens(user, user.companyId ? user.companyId._id : null);
 
     return { user: shapeUserProfile(user), tokens };
+}
+
+/**
+ * Completes signup: marks the user whose unexpired verification token
+ * matches as verified, consumes the token (single use), and signs them in.
+ *
+ * @param {{ token?: string }} body - Raw request body.
+ * @throws {Error & { status: number }} 400 for an invalid/expired/used token.
+ * @returns {Promise<{ user: Object, tokens: { accessToken: string, token: string, refreshToken: string } }>}
+ */
+async function verifyEmail(body) {
+    const { token } = body || {};
+    if (!token || typeof token !== 'string') {
+        throw httpError(400, 'Verification link is invalid or has expired');
+    }
+
+    // Atomic consume, as in resetPassword; mongoose.trusted() for the server-built $gt.
+    const user = await User.findOneAndUpdate(
+        { emailVerifyTokenHash: hashToken(token), emailVerifyExpires: mongoose.trusted({ $gt: new Date() }) },
+        { $set: { emailVerified: true, emailVerifyTokenHash: null, emailVerifyExpires: null } },
+        { new: true }
+    ).populate('companyId');
+    if (!user) {
+        throw httpError(400, 'Verification link is invalid or has expired');
+    }
+
+    const tokens = await generateTokens(user, user.companyId ? user.companyId._id : null);
+    return { user: shapeUserProfile(user), tokens };
+}
+
+/**
+ * Re-sends the verification email to an unverified user. Silent for unknown
+ * or already-verified emails, so it can't be used to probe for accounts.
+ *
+ * @param {{ email?: string }} body - Raw request body.
+ * @throws {Error & { status: number }} 400 for a missing/invalid email.
+ * @returns {Promise<void>}
+ */
+async function resendVerification(body) {
+    const { email } = body || {};
+    if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+        throw httpError(400, 'A valid email address is required');
+    }
+
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    if (!user || user.emailVerified) return;
+    await sendVerificationEmail(user);
 }
 
 /**
@@ -598,8 +680,7 @@ async function requestPasswordReset(body) {
     user.passwordResetExpires = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS);
     await user.save();
 
-    const appBase = (process.env.FRONTEND_URL || 'http://localhost:5173').split(',')[0].trim();
-    const link = `${appBase}/reset-password?token=${rawToken}`;
+    const link = `${appBaseUrl()}/reset-password?token=${rawToken}`;
     mailer.sendMail({
         to: user.email,
         subject: 'Reset your FixFleet password',
@@ -650,6 +731,8 @@ async function resetPassword(body) {
 
 module.exports = {
     register,
+    verifyEmail,
+    resendVerification,
     requestPasswordReset,
     resetPassword,
     login,

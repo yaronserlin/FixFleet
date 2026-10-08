@@ -43,6 +43,13 @@ const userService = {
     resetPassword: (token, newPassword) => apiClient.post('/auth/reset-password', { token, newPassword }),
 
     /**
+     * Re-send the signup verification email
+     * @param {string} email
+     * @returns {Promise} Axios response
+     */
+    resendVerification: (email) => apiClient.post('/auth/resend-verification', { email }),
+
+    /**
      * Upload an avatar image for the current user
      * @param {File} file
      * @returns {Promise} Axios response with updated user data

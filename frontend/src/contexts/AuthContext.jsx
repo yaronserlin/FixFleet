@@ -18,6 +18,9 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [userId, setUserId] = useState(null);
     const [loading, setLoading] = useState(true);
+    // True when the on-load session check couldn't reach a healthy API
+    // (network failure or 5xx); the app shows a "can't reach server" page.
+    const [serverDown, setServerDown] = useState(false);
     const navigate = useNavigate();
 
     // On mount, check if authenticated session exists via httpOnly cookie or stored token
@@ -32,8 +35,12 @@ export const AuthProvider = ({ children }) => {
                 }
             })
 
-            .catch(() => {
-                if (isMounted) {
+            .catch((err) => {
+                if (!isMounted) return;
+                if (!err.response || err.response.status >= 500) {
+                    // Keep the stored token: the session may be fine, the server isn't.
+                    setServerDown(true);
+                } else {
                     apiClient.setToken(null);
                     setUser(null);
                     setUserId(null);
@@ -48,6 +55,23 @@ export const AuthProvider = ({ children }) => {
         };
     }, []);
 
+    // Stores the session from an auth response and routes the user home.
+    const completeSession = useCallback((data) => {
+        const token = data.accessToken || data.token;
+        if (token) {
+            apiClient.setToken(token);
+        }
+        const formattedUser = sanitizeUser(data.user);
+        setUser(formattedUser);
+        setUserId(formattedUser?.id || formattedUser?._id);
+        if (formattedUser?.mustChangePassword) {
+            navigate(ROUTES.FORCE_PASSWORD_CHANGE, { replace: true });
+        } else {
+            navigate(homeRouteFor(formattedUser));
+        }
+        return formattedUser;
+    }, [navigate]);
+
     // Login function (supports both login(email, password) and login({ email, password }))
     const login = useCallback(async (emailOrCredentials, maybePassword) => {
         setLoading(true);
@@ -60,29 +84,27 @@ export const AuthProvider = ({ children }) => {
                 : maybePassword;
 
             const { data } = await apiClient.post('/auth/login', { email, password });
-            const token = data.accessToken || data.token;
-            if (token) {
-                apiClient.setToken(token);
-            }
-            const formattedUser = sanitizeUser(data.user);
-            setUser(formattedUser);
-            setUserId(formattedUser?.id || formattedUser?._id);
-            if (formattedUser?.mustChangePassword) {
-                navigate(ROUTES.FORCE_PASSWORD_CHANGE, { replace: true });
-            } else {
-                navigate(homeRouteFor(formattedUser));
-            }
-            return formattedUser;
+            return completeSession(data);
         } catch (error) {
             if (error.response && error.response.data) {
-                throw new Error(error.response.data.message || 'Login failed, please check your credentials');
+                // Keep the server's machine-readable code (e.g. EMAIL_NOT_VERIFIED) for the form.
+                throw Object.assign(
+                    new Error(error.response.data.message || 'Login failed, please check your credentials'),
+                    { code: error.response.data.code },
+                );
             } else {
                 throw new Error('Login failed, please try again later');
             }
         } finally {
             setLoading(false);
         }
-    }, [navigate]);
+    }, [completeSession]);
+
+    // Completes signup from the emailed link: the server signs the user in.
+    const verifyEmail = useCallback(async (token) => {
+        const { data } = await apiClient.post('/auth/verify-email', { token });
+        return completeSession(data);
+    }, [completeSession]);
 
     // Company self-service signup function
     const signup = useCallback(async ({ companyName, name, email, password, agreeToTerms }) => {
@@ -95,19 +117,8 @@ export const AuthProvider = ({ children }) => {
                 password,
                 agreeToTerms: Boolean(agreeToTerms),
             });
-            const token = data.accessToken || data.token;
-            if (token) {
-                apiClient.setToken(token);
-            }
-            const formattedUser = sanitizeUser(data.user);
-            setUser(formattedUser);
-            setUserId(formattedUser?.id || formattedUser?._id);
-            if (formattedUser?.mustChangePassword) {
-                navigate(ROUTES.FORCE_PASSWORD_CHANGE, { replace: true });
-            } else {
-                navigate(homeRouteFor(formattedUser));
-            }
-            return formattedUser;
+            // No session yet: the user must follow the emailed verification link.
+            return { email: data.email };
         } catch (error) {
             if (error.response && error.response.data) {
                 throw new Error(error.response.data.message || 'Signup failed, please try again');
@@ -117,7 +128,7 @@ export const AuthProvider = ({ children }) => {
         } finally {
             setLoading(false);
         }
-    }, [navigate]);
+    }, []);
 
     // Logout function
     const logout = useCallback(async () => {
@@ -159,11 +170,13 @@ export const AuthProvider = ({ children }) => {
         setUser: handleSetUser,
         userId,
         loading,
+        serverDown,
         login,
         signup,
+        verifyEmail,
         logout,
         updateAvatar,
-    }), [user, userId, loading, handleSetUser, login, signup, logout, updateAvatar]);
+    }), [user, userId, loading, serverDown, handleSetUser, login, signup, verifyEmail, logout, updateAvatar]);
 
     return (
         <AuthContext.Provider value={value}>

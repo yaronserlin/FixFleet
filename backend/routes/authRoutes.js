@@ -14,6 +14,8 @@ const {
     changePassword,
     forgotPassword,
     resetPassword,
+    verifyEmail,
+    resendVerification,
 } = require('../controllers/authController');
 const { verifyToken } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
@@ -43,6 +45,8 @@ router.post('/login', authLimiter, login);
 router.post('/refresh', authLimiter, refreshToken);
 router.post('/forgot-password', authLimiter, passwordResetLimiter, forgotPassword);
 router.post('/reset-password', authLimiter, resetPassword);
+router.post('/verify-email', authLimiter, verifyEmail);
+router.post('/resend-verification', authLimiter, passwordResetLimiter, resendVerification);
 router.post('/logout', logout);
 
 // Protected routes

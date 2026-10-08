@@ -55,8 +55,23 @@ function uniqueEmail(prefix = 'user') {
     return `${prefix}${Date.now()}${counter}@example.com`;
 }
 
-// Registers a brand new company + admin user via the public API and returns
-// the token/cookie/ids needed to act as that admin in further requests.
+// Signup issues no session until the emailed link is used, and only the
+// token's hash is stored -- so plant a known token on the user and complete
+// verification through the real endpoint. Returns the verify-email response.
+async function verifyRegisteredEmail(app, email) {
+    const crypto = require('crypto');
+    const User = require('../../models/User');
+    const rawToken = crypto.randomBytes(16).toString('hex');
+    await User.updateOne({ email }, {
+        emailVerifyTokenHash: crypto.createHash('sha256').update(rawToken).digest('hex'),
+        emailVerifyExpires: new Date(Date.now() + 60 * 1000),
+    });
+    return request(app).post('/api/auth/verify-email').send({ token: rawToken });
+}
+
+// Registers a brand new company + admin user via the public API, verifies
+// the email, and returns the token/cookie/ids needed to act as that admin in
+// further requests (`res` is the verify-email response that signed them in).
 async function registerCompanyAdmin(app, overrides = {}) {
     counter += 1;
     const payload = {
@@ -66,7 +81,10 @@ async function registerCompanyAdmin(app, overrides = {}) {
         password: overrides.password || 'password123',
         agreeToTerms: overrides.agreeToTerms !== undefined ? overrides.agreeToTerms : true,
     };
-    const res = await request(app).post('/api/auth/register').send(payload);
+    const registerRes = await request(app).post('/api/auth/register').send(payload);
+    const res = registerRes.status === 201
+        ? await verifyRegisteredEmail(app, payload.email.trim().toLowerCase())
+        : registerRes;
     return {
         res,
         token: res.body.token,
@@ -120,6 +138,7 @@ module.exports = {
     closeTestDB,
     uniqueEmail,
     registerCompanyAdmin,
+    verifyRegisteredEmail,
     createCompanyAndUser,
     extractRefreshToken,
 };

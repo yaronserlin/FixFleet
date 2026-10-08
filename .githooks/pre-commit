@@ -1,7 +1,6 @@
 #!/bin/sh
-# 1. Rebuilds docs/system-spec/index.html when spec Markdown is staged (every branch).
-# 2. Bumps the shared frontend/backend patch version inside the commit being made (main only).
-#    A manual minor/major bump (staged frontend version differs from HEAD) is kept and copied to the backend.
+# Rebuilds docs/system-spec/index.html when spec Markdown is staged.
+# (The app version lives in /VERSION and is bumped by CI on main.)
 # Skip with: git commit --no-verify
 set -e
 
@@ -25,22 +24,3 @@ if git diff --cached --name-only | grep -qE "^${SPEC_DIR}/(.*\.md|_build/(templa
   fi
 fi
 # ── end update-functional-doc ──────────────────────────────────────────────────
-
-[ "$(git branch --show-current)" = main ] || exit 0
-
-version_of() { node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version"; }
-
-STAGED=$(git show :frontend/package.json | version_of)
-COMMITTED=$(git show HEAD:frontend/package.json 2>/dev/null | version_of 2>/dev/null || echo none)
-
-if [ "$STAGED" = "$COMMITTED" ]; then
-  VERSION=$(cd frontend && npm version patch --no-git-tag-version)
-  VERSION=${VERSION#v}
-else
-  VERSION=$STAGED
-  (cd frontend && npm version "$VERSION" --no-git-tag-version --allow-same-version >/dev/null)
-fi
-
-(cd backend && npm version "$VERSION" --no-git-tag-version --allow-same-version >/dev/null)
-git add frontend/package.json frontend/package-lock.json backend/package.json backend/package-lock.json
-echo "pre-commit: version $VERSION"

@@ -1,7 +1,6 @@
 {
   "name": "backend",
   "private": true,
-  "version": "1.0.11",
   "defaultLanguage": "en",
   "scripts": {
     "build": "node --check app.js",

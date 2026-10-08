@@ -12,6 +12,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import useForm from '../../hooks/useForm';
 import { validateEmail, isRequired } from '../../utils/validate';
 import PasswordField from '../Form/PasswordField';
+import ResendVerificationButton from '../Auth/ResendVerificationButton';
 
 function validate(vals) {
     const errs = {};
@@ -25,16 +26,19 @@ function validate(vals) {
 export default function LoginForm({ onForgotPassword }) {
     const { login, loading } = useAuth();
     const [serverError, setServerError] = useState('');
+    const [unverifiedEmail, setUnverifiedEmail] = useState('');
 
     const { values, errors, isSubmitting, handleChange, handleSubmit, resetForm } = useForm({
         initialValues: { email: '', password: '' },
         validate,
         onSubmit: async (vals) => {
             setServerError('');
+            setUnverifiedEmail('');
             try {
                 await login(vals.email, vals.password);
                 resetForm();
             } catch (err) {
+                if (err.code === 'EMAIL_NOT_VERIFIED') setUnverifiedEmail(vals.email);
                 setServerError(err.message || 'Invalid email or password. Please try again.');
             }
         },
@@ -57,7 +61,8 @@ export default function LoginForm({ onForgotPassword }) {
             {serverError && (
                 <Alert
                     severity="error"
-                    onClose={() => setServerError('')}
+                    onClose={unverifiedEmail ? undefined : () => setServerError('')}
+                    action={unverifiedEmail ? <ResendVerificationButton email={unverifiedEmail} /> : undefined}
                     sx={{ borderRadius: 2 }}
                 >
                     {serverError}

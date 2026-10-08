@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import LoadingComponent from '../components/LoadingComponent/LoadingComponent';
+import { PageSkeleton } from '../components/Skeletons/Skeletons';
 import { ROUTES } from '../constants/routes';
 
 export default function Logout() {
@@ -15,5 +15,5 @@ export default function Logout() {
         navigate(ROUTES.LOGIN, { replace: true });
     }, [logout, navigate]);
 
-    return <LoadingComponent />;
+    return <PageSkeleton label="Signing out" />;
 }

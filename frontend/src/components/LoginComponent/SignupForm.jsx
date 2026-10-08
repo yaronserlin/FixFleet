@@ -21,6 +21,7 @@ import useForm from '../../hooks/useForm';
 import { validateName, validateEmail, validatePassword } from '../../utils/validate';
 import LegalModal from '../Legal/LegalModal';
 import PasswordField from '../Form/PasswordField';
+import ResendVerificationButton from '../Auth/ResendVerificationButton';
 
 function validateSignup(vals) {
     const errs = {};
@@ -44,6 +45,7 @@ export default function SignupForm() {
     const [serverError, setServerError] = useState('');
     const [legalModalOpen, setLegalModalOpen] = useState(false);
     const [legalDefaultTab, setLegalDefaultTab] = useState('terms');
+    const [sentTo, setSentTo] = useState('');
 
     const { values, errors, isSubmitting, handleChange, handleSubmit, resetForm } = useForm({
         initialValues: { companyName: '', name: '', email: '', password: '', agreeToTerms: false },
@@ -51,8 +53,9 @@ export default function SignupForm() {
         onSubmit: async (vals) => {
             setServerError('');
             try {
-                await signup(vals);
+                const { email } = await signup(vals);
                 resetForm();
+                setSentTo(email);
             } catch (err) {
                 setServerError(err.message || 'Sign up failed. Please try again.');
             }
@@ -65,6 +68,18 @@ export default function SignupForm() {
     };
 
     const busy = isSubmitting || loading;
+
+    if (sentTo) {
+        return (
+            <Alert
+                severity="success"
+                sx={{ borderRadius: 2 }}
+                action={<ResendVerificationButton email={sentTo} />}
+            >
+                Check your inbox at <strong>{sentTo}</strong> and follow the link to activate your account.
+            </Alert>
+        );
+    }
 
     return (
         <Box

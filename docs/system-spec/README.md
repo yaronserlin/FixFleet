@@ -108,7 +108,7 @@ MaintenanceSystemApp/
 ├── docs/                        API.md, ENV.md, RUNBOOK.md, CONTRIBUTING.md, user-guide/, system-spec/ (this)
 ├── media/                       README screenshots
 ├── .github/workflows/           CI: frontend lint/test/build, backend syntax check/test
-├── .githooks/pre-commit         spec viewer rebuild + shared version bump on main
+├── .githooks/pre-commit         spec viewer rebuild
 └── .claude/plans/               historical multi-tenant migration plan
 ```
 
@@ -148,6 +148,6 @@ Factual findings from reading the code. They do not change the specification abo
 | 2 | Performance | Fault and equipment lists are unpaginated by default, and the dashboard, the equipment page and `FaultContext` each fetch the full company fault list, refreshed every 30 s while visible. Cost grows linearly with fault history. (`GET /api/equipment` no longer populates faults.) | `backend/services/faultService.js:59`; `frontend/src/pages/Dashboard.jsx:195`; `frontend/src/pages/EquipmentsPage.jsx:54`; `frontend/src/contexts/FaultContext.jsx:23`; `frontend/src/contexts/PageRefreshContext.jsx:40` |
 | 3 | Docs drift | The English Terms of Service (v1.3) still list "spare part inventory management" as a core feature; the parts domain was removed. The `syncEquipmentEngineHours` JSDoc says closed faults contribute `closingEngineHours` *and* `engineHours`; the query selects only `closingEngineHours`. | `frontend/src/content/legalDocuments.js:21`; `backend/utils/equipmentEngineHours.js:8`, `:38` |
 | 4 | Unused code | `controllers/toolController.js` is no longer imported anywhere: its only consumer was `adminRoutes.js`, whose equipment/tool aliases were removed. `models/Tool.js` still cites it as part of the alias chain. Frontend methods with no caller: `faultsService.getById` and `equipmentService.addChecklistItem` / `deleteChecklistItem`, so `GET /api/faults/:id` and the checklist add/delete endpoints have no UI consumer. | `backend/controllers/toolController.js:1`; `backend/models/Tool.js:5`; `frontend/src/services/faultsService.js:10`; `frontend/src/services/equipmentService.js:114`, `:130` |
-| 5 | CI / hygiene | The backend has no linter: no ESLint config and no `lint` script, so CI checks backend syntax and tests only. | `backend/package.json:6`; `.github/workflows/increment-build-version.yml` |
+| 5 | CI / hygiene | The backend has no linter: no ESLint config and no `lint` script, so CI checks backend syntax and tests only. | `backend/package.json`; `.github/workflows/ci.yml` |
 
 **Browsable version:** open `docs/system-spec/index.html` in a browser. It is generated from these Markdown files by `docs/system-spec/_build/build.mjs` and kept in sync automatically: the pre-commit hook rebuilds and stages it whenever a spec file, the template or the viewer config is committed, and `npm run docs:watch` (repo root) rebuilds it on every save while you edit. One-time setup: `npm install --prefix docs/system-spec/_build`.

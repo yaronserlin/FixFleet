@@ -1,3 +1,2 @@
-import packageJson from '../../package.json';
-
-export const APP_VERSION = packageJson.version;
+// Injected from /VERSION by vite.config.js.
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION || 'dev';

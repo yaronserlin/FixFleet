@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { connectTestDB, closeTestDB, registerCompanyAdmin, uniqueEmail, extractRefreshToken } = require('./helpers/setup');
+const { connectTestDB, closeTestDB, registerCompanyAdmin, verifyRegisteredEmail, uniqueEmail, extractRefreshToken } = require('./helpers/setup');
 const RefreshToken = require('../models/RefreshToken');
 const crypto = require('crypto');
 const User = require('../models/User');
@@ -114,6 +114,56 @@ describe('Auth Controller', () => {
             expect(res.status).toBe(201);
             expect(res.body.user.role).toBe('admin');
             expect(res.body.user.termsAccepted).toBe(true);
+        });
+    });
+
+    describe('Email verification', () => {
+        const signup = (email) => request(server).post('/api/auth/register').send({
+            companyName: 'Verify Co',
+            name: 'Verify Admin',
+            email,
+            password: 'password123',
+            agreeToTerms: true,
+        });
+
+        it('issues no session on register and refuses login until verified', async () => {
+            const email = uniqueEmail();
+            const res = await signup(email);
+            expect(res.status).toBe(201);
+            expect(res.body.token).toBeUndefined();
+            expect(extractRefreshToken(res.headers['set-cookie'])).toBeUndefined();
+
+            const login = await request(server).post('/api/auth/login').send({ email, password: 'password123' });
+            expect(login.status).toBe(403);
+            expect(login.body.code).toBe('EMAIL_NOT_VERIFIED');
+        });
+
+        it('signs the user in on verify, and the link works only once', async () => {
+            const email = uniqueEmail();
+            await signup(email);
+            const verified = await verifyRegisteredEmail(server, email);
+            expect(verified.status).toBe(200);
+            expect(verified.body.token).toBeDefined();
+            expect(verified.body.user.email).toBe(email);
+
+            const login = await request(server).post('/api/auth/login').send({ email, password: 'password123' });
+            expect(login.status).toBe(200);
+        });
+
+        it('rejects an unknown or reused token', async () => {
+            const res = await request(server).post('/api/auth/verify-email').send({ token: 'nope' });
+            expect(res.status).toBe(400);
+            expect(res.body.message).toMatch(/invalid or has expired/i);
+        });
+
+        it('answers resend the same way for unknown and pending emails', async () => {
+            const email = uniqueEmail();
+            await signup(email);
+            const pending = await request(server).post('/api/auth/resend-verification').send({ email });
+            const unknown = await request(server).post('/api/auth/resend-verification').send({ email: uniqueEmail() });
+            expect(pending.status).toBe(200);
+            expect(unknown.status).toBe(200);
+            expect(unknown.body.message).toBe(pending.body.message);
         });
     });
 
@@ -446,7 +496,7 @@ describe('Auth Controller', () => {
     describe('Transport security regressions', () => {
         it('never returns the refresh token in register/login response bodies (HTTP-only cookie only)', async () => {
             const { res, email, password } = await registerCompanyAdmin(server);
-            expect(res.status).toBe(201);
+            expect(res.status).toBe(200); // the verify-email response that signs the user in
             expect(res.body.refreshToken).toBeUndefined();
             expect(extractRefreshToken(res.headers['set-cookie'])).toBeDefined();
 

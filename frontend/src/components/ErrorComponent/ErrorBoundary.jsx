@@ -1,41 +1,37 @@
 import React from 'react';
-import { Box, Button, Container, Typography, Paper } from '@mui/material';
+import ErrorPage from '../../pages/ErrorPage';
 
+/**
+ * Catches render crashes and shows the crash page. routes.jsx mounts one
+ * inside the app layout keyed by pathname (nav stays, navigating away
+ * recovers); main.jsx keeps one at the root as the last resort.
+ */
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
+  static getDerivedStateFromError() {
+    return { hasError: true };
   }
 
   componentDidCatch(error, errorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
   }
 
-  handleReset = () => {
-    this.setState({ hasError: false, error: null });
-    window.location.href = '/';
-  };
-
   render() {
     if (this.state.hasError) {
       return (
-        <Container maxWidth="sm" sx={{ mt: 8 }}>
-          <Paper elevation={3} sx={{ p: 4, textAlign: 'center' }}>
-            <Typography variant="h5" color="error" gutterBottom>
-              Something went wrong
-            </Typography>
-            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              An unexpected error occurred while rendering the page.
-            </Typography>
-            <Button variant="contained" color="primary" onClick={this.handleReset}>
-              Return to Home
-            </Button>
-          </Paper>
-        </Container>
+        <ErrorPage
+          code="Oops"
+          title="Something went wrong"
+          message="An unexpected error occurred while showing this page. Try again, or head back home."
+          actions={[
+            { label: 'Try again', onClick: () => window.location.reload() },
+            { label: 'Go home', href: '/' },
+          ]}
+        />
       );
     }
 

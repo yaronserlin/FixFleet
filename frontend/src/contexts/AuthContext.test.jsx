@@ -22,11 +22,12 @@ jest.mock('react-router-dom', () => ({
 }));
 
 function Consumer() {
-    const { user, loading } = useAuth();
+    const { user, loading, serverDown } = useAuth();
     return (
         <div>
             <span data-testid="user">{user ? user.name : 'none'}</span>
             <span data-testid="loading">{String(loading)}</span>
+            <span data-testid="serverDown">{String(serverDown)}</span>
         </div>
     );
 }
@@ -81,12 +82,21 @@ describe('AuthContext', () => {
         });
 
         it('clears auth state when there is no valid session', async () => {
-            apiClient.get.mockRejectedValueOnce(new Error('unauthenticated'));
+            apiClient.get.mockRejectedValueOnce({ response: { status: 401 } });
             renderWithProvider(<AuthProvider><Consumer /></AuthProvider>);
 
             await waitFor(() => expect(screen.getByTestId('loading').textContent).toBe('false'));
             expect(apiClient.setToken).toHaveBeenCalledWith(null);
             expect(screen.getByTestId('user').textContent).toBe('none');
+            expect(screen.getByTestId('serverDown').textContent).toBe('false');
+        });
+
+        it('flags the server as down (keeping the token) when /auth/me is unreachable', async () => {
+            apiClient.get.mockRejectedValueOnce(new Error('Network Error'));
+            renderWithProvider(<AuthProvider><Consumer /></AuthProvider>);
+
+            await waitFor(() => expect(screen.getByTestId('serverDown').textContent).toBe('true'));
+            expect(apiClient.setToken).not.toHaveBeenCalledWith(null);
         });
     });
 
@@ -173,10 +183,8 @@ describe('AuthContext', () => {
             apiClient.get.mockRejectedValueOnce(new Error('no session'));
         });
 
-        it('registers the company, sets the user, and navigates to the dashboard', async () => {
-            apiClient.post.mockResolvedValueOnce({
-                data: { accessToken: 'tok', user: { id: '1', name: 'admin user', role: 'admin' } },
-            });
+        it('registers the company without signing in (email must be verified first)', async () => {
+            apiClient.post.mockResolvedValueOnce({ data: { email: 'a@acme.com' } });
             renderWithProvider(
                 <AuthProvider>
                     <ActionHarness
@@ -188,10 +196,28 @@ describe('AuthContext', () => {
             );
             await waitFor(() => expect(apiClient.get).toHaveBeenCalled());
             fireEvent.click(screen.getByText('run'));
-            await waitFor(() => expect(screen.getByTestId('user').textContent).toBe('Admin User'));
+            await waitFor(() => expect(screen.getByTestId('ran').textContent).toBe('true'));
             expect(apiClient.post).toHaveBeenCalledWith('/auth/register', {
                 companyName: 'Acme', name: 'Admin User', email: 'a@acme.com', password: 'secret123', agreeToTerms: true,
             });
+            expect(screen.getByTestId('user').textContent).toBe('none');
+            expect(apiClient.setToken).not.toHaveBeenCalledWith(expect.any(String));
+            expect(mockNavigate).not.toHaveBeenCalled();
+        });
+
+        it('verifyEmail signs the user in and navigates home', async () => {
+            apiClient.post.mockResolvedValueOnce({
+                data: { accessToken: 'tok', user: { id: '1', name: 'admin user', role: 'admin' } },
+            });
+            renderWithProvider(
+                <AuthProvider>
+                    <ActionHarness action={(ctx) => ctx.verifyEmail('abc')} />
+                </AuthProvider>
+            );
+            await waitFor(() => expect(apiClient.get).toHaveBeenCalled());
+            fireEvent.click(screen.getByText('run'));
+            await waitFor(() => expect(screen.getByTestId('user').textContent).toBe('Admin User'));
+            expect(apiClient.post).toHaveBeenCalledWith('/auth/verify-email', { token: 'abc' });
             expect(mockNavigate).toHaveBeenCalledWith(ROUTES.DASHBOARD);
         });
 

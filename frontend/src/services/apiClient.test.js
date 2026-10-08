@@ -125,4 +125,35 @@ describe('apiClient', () => {
             expect(error.config.headers['Authorization']).toBe('Bearer new-token-xyz');
         });
     });
+
+    describe('normalizeApiError', () => {
+        const { normalizeApiError, API_ERROR_EVENT } = require('./apiClient');
+        let heard;
+        const listener = (e) => heard.push(e.detail);
+        beforeEach(() => { heard = []; window.addEventListener(API_ERROR_EVENT, listener); });
+        afterEach(() => window.removeEventListener(API_ERROR_EVENT, listener));
+
+        it('broadcasts a friendly message when the server is unreachable', () => {
+            const err = normalizeApiError({ message: 'Network Error' });
+            expect(err.message).toMatch(/can't reach the server/i);
+            expect(heard).toEqual([err.message]);
+        });
+
+        it('broadcasts a generic message for 5xx', () => {
+            const err = normalizeApiError({ response: { status: 503, data: { message: 'stack trace' } } });
+            expect(err.message).toMatch(/server error/i);
+            expect(heard).toHaveLength(1);
+        });
+
+        it('uses the server message for 4xx without broadcasting', () => {
+            const err = normalizeApiError({ message: 'x', response: { status: 400, data: { message: 'Bad field' } } });
+            expect(err.message).toBe('Bad field');
+            expect(heard).toHaveLength(0);
+        });
+
+        it('ignores aborted requests', () => {
+            normalizeApiError({ code: 'ERR_CANCELED', message: 'canceled' });
+            expect(heard).toHaveLength(0);
+        });
+    });
 });

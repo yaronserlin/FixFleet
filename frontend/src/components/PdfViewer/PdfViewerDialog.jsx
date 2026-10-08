@@ -8,7 +8,7 @@ import {
     IconButton,
     Box,
     Typography,
-    CircularProgress,
+    Skeleton,
     Alert,
     useTheme,
     useMediaQuery,
@@ -119,9 +119,8 @@ export default function PdfViewerDialog({ open, onClose, title, fileUrl }) {
                 }}
             >
                 {loading && (
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexGrow: 1, gap: 1.5, flexDirection: 'column' }}>
-                        <CircularProgress size={32} />
-                        <Typography variant="body2" color="text.secondary">Loading document&hellip;</Typography>
+                    <Box role="status" aria-label="Loading document" sx={{ display: 'flex', flexGrow: 1, p: 2 }}>
+                        <Skeleton variant="rectangular" sx={{ flexGrow: 1, height: 'auto', borderRadius: 1 }} />
                     </Box>
                 )}
 

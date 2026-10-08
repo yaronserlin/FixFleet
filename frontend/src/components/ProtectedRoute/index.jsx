@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import LoadingComponent from '../LoadingComponent/LoadingComponent';
+import { PageSkeleton } from '../Skeletons/Skeletons';
 import { ROUTES } from '../../constants/routes';
 import { ROLES } from '../../constants/roles';
 
@@ -18,7 +18,7 @@ const ProtectedRoute = ({ children }) => {
     const { pathname } = useLocation();
 
     if (loading) {
-        return <LoadingComponent />;
+        return <PageSkeleton />;
     }
 
     if (!user) {

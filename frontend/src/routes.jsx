@@ -16,7 +16,8 @@ import { BOTTOM_NAV_HEIGHT } from './components/Navbar/navConstants';
 import CreateFaultDialog from './components/Fault/CreateFaultDialog/CreateFaultDialog';
 import PullToRefresh from './components/PullToRefresh/PullToRefresh';
 import { PageSkeleton } from './components/Skeletons/Skeletons';
-import LoadingComponent from './components/LoadingComponent/LoadingComponent';
+import ErrorBoundary from './components/ErrorComponent/ErrorBoundary';
+import ErrorPage from './pages/ErrorPage';
 import LegalFooter from './components/Legal/LegalFooter';
 import AccessibilityMenu from './components/AccessibilityMenu/AccessibilityMenu';
 import { ROUTES } from './constants/routes';
@@ -39,6 +40,7 @@ const OperatorReportsPage = lazy(() => import('./pages/OperatorReportsPage'));
 const EquipmentBooksPage = lazy(() => import('./pages/EquipmentBooksPage'));
 const ForcePasswordChangePage = lazy(() => import('./pages/ForcePasswordChangePage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const LegalPage = lazy(() => import('./pages/LegalPage'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage'));
 import ForcePasswordChangeDialog from './components/Auth/ForcePasswordChangeDialog';
@@ -72,14 +74,14 @@ function RouteFallback() {
 }
 
 // Pages that use a full-screen layout (no Navbar)
-const HIDE_NAVBAR_PATHS = [ROUTES.HOME, ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.FORCE_PASSWORD_CHANGE, ROUTES.RESET_PASSWORD];
+const HIDE_NAVBAR_PATHS = [ROUTES.HOME, ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.FORCE_PASSWORD_CHANGE, ROUTES.RESET_PASSWORD, ROUTES.VERIFY_EMAIL];
 // Public pages that bring their own header when nobody is signed in, and sit
 // inside the normal app layout when someone is.
 const PUBLIC_CHROME_PATHS = [ROUTES.GUIDE];
 
 function RequirePasswordChange({ children }) {
     const { user, loading } = useAuth();
-    if (loading) return <LoadingComponent />;
+    if (loading) return <PageSkeleton />;
     if (!user) return <Navigate to={ROUTES.LOGIN} replace />;
     if (!user.mustChangePassword) return <Navigate to={ROUTES.DASHBOARD} replace />;
     return children;
@@ -95,7 +97,7 @@ function RequireStaff({ children }) {
 
 function AppLayout() {
     const location = useLocation();
-    const { user } = useAuth();
+    const { user, serverDown } = useAuth();
     const notify = useNotify();
     const { fetchEquipment } = useTool();
     const { createFault, fetchFaults } = useFault();
@@ -103,7 +105,8 @@ function AppLayout() {
     // for them via usePageRefresh(), and this one gesture/indicator (below)
     // drives whichever page is on screen. See contexts/PageRefreshContext.
     const refreshPage = usePageRefreshTrigger();
-    const hideNavbar = HIDE_NAVBAR_PATHS.includes(location.pathname)
+    const hideNavbar = serverDown
+        || HIDE_NAVBAR_PATHS.includes(location.pathname)
         || (!user && PUBLIC_CHROME_PATHS.includes(location.pathname));
 
     // Fault-creation dialog state is lifted up here (rather than living only
@@ -148,165 +151,176 @@ function AppLayout() {
         }
     }, [user]);
 
-    const routedContent = (
-        <Suspense fallback={<RouteFallback />}>
-            <Routes>
-                {/* Public landing page; signed-in users are redirected to their home */}
-                <Route path={ROUTES.HOME} element={<HomePage />} />
+    // Keyed by path: a page crash keeps the nav, and navigating away recovers.
+    const routedContent = serverDown ? (
+        <ErrorPage
+            code="503"
+            title="Can't reach FixFleet"
+            message="The server isn't responding right now. Check your connection, or try again in a moment."
+            actions={[{ label: 'Try again', onClick: () => window.location.reload() }]}
+        />
+    ) : (
+        <ErrorBoundary key={location.pathname}>
+            <Suspense fallback={<RouteFallback />}>
+                <Routes>
+                    {/* Public landing page; signed-in users are redirected to their home */}
+                    <Route path={ROUTES.HOME} element={<HomePage />} />
 
-                {/* Public routes */}
-                <Route path={ROUTES.LOGIN} element={<Login />} />
-                <Route path={ROUTES.SIGNUP} element={<Login />} />
-                <Route path={ROUTES.GUIDE} element={<GuidePage />} />
-                <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
-                <Route path={ROUTES.TERMS} element={<LegalPage />} />
-                <Route path={ROUTES.PRIVACY} element={<LegalPage />} />
-                <Route path={ROUTES.LEGAL} element={<LegalPage />} />
-                <Route path={ROUTES.ACCESSIBILITY} element={<LegalPage />} />
-                <Route
-                    path={ROUTES.FORCE_PASSWORD_CHANGE}
-                    element={
-                        <RequirePasswordChange>
-                            <ForcePasswordChangePage />
-                        </RequirePasswordChange>
-                    }
-                />
+                    {/* Public routes */}
+                    <Route path={ROUTES.LOGIN} element={<Login />} />
+                    <Route path={ROUTES.SIGNUP} element={<Login />} />
+                    <Route path={ROUTES.GUIDE} element={<GuidePage />} />
+                    <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+                    <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
+                    <Route path={ROUTES.TERMS} element={<LegalPage />} />
+                    <Route path={ROUTES.PRIVACY} element={<LegalPage />} />
+                    <Route path={ROUTES.LEGAL} element={<LegalPage />} />
+                    <Route path={ROUTES.ACCESSIBILITY} element={<LegalPage />} />
+                    <Route
+                        path={ROUTES.FORCE_PASSWORD_CHANGE}
+                        element={
+                            <RequirePasswordChange>
+                                <ForcePasswordChangePage />
+                            </RequirePasswordChange>
+                        }
+                    />
 
-                {/* Protected routes */}
-                <Route
-                    path={ROUTES.DASHBOARD}
-                    element={
-                        <ProtectedRoute>
-                            <Dashboard />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path={ROUTES.EQUIPMENT}
-                    element={
-                        <ProtectedRoute>
-                            <RequireStaff>
-                                <ToolsPage />
-                            </RequireStaff>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/equipment/:id"
-                    element={
-                        <ProtectedRoute>
-                            <RequireStaff>
-                                <ToolPage />
-                            </RequireStaff>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/equipment/:id/schedules/:scheduleId"
-                    element={
-                        <ProtectedRoute>
-                            <RequireStaff>
-                                <EquipmentSchedulePage />
-                            </RequireStaff>
-                        </ProtectedRoute>
-                    }
-                />
-                {/* Backward-compatible aliases for /tools */}
-                <Route path={ROUTES.TOOLS} element={<Navigate to={ROUTES.EQUIPMENT} replace />} />
-                <Route
-                    path="/tools/:id"
-                    element={
-                        <ProtectedRoute>
-                            <RequireStaff>
-                                <ToolPage />
-                            </RequireStaff>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path="/tools/:id/schedules/:scheduleId"
-                    element={
-                        <ProtectedRoute>
-                            <RequireStaff>
-                                <EquipmentSchedulePage />
-                            </RequireStaff>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path={ROUTES.LOGOUT}
-                    element={
-                        <ProtectedRoute>
-                            <Logout />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path={ROUTES.PROFILE}
-                    element={
-                        <ProtectedRoute>
-                            <ProfilePage />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path={ROUTES.ACCOUNT}
-                    element={
-                        <ProtectedRoute>
-                            <AccountPage />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path={ROUTES.ADMIN}
-                    element={
-                        <ProtectedRoute>
-                            <RequireAdmin>
-                                <AdminDashboard />
-                            </RequireAdmin>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path={`${ROUTES.SUPERADMIN}/:tab?`}
-                    element={
-                        <ProtectedRoute>
-                            <RequireAdmin role={ROLES.SUPERADMIN}>
-                                <SuperAdminDashboard />
-                            </RequireAdmin>
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path={ROUTES.MY_REPORTS}
-                    element={
-                        <ProtectedRoute>
-                            <OperatorReportsPage />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path={ROUTES.NOTIFICATIONS}
-                    element={
-                        <ProtectedRoute>
-                            <NotificationsPage />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route
-                    path={ROUTES.MANUALS}
-                    element={
-                        <ProtectedRoute>
-                            <EquipmentBooksPage />
-                        </ProtectedRoute>
-                    }
-                />
-                <Route path={ROUTES.BOOKS} element={<Navigate to={ROUTES.MANUALS} replace />} />
+                    {/* Protected routes */}
+                    <Route
+                        path={ROUTES.DASHBOARD}
+                        element={
+                            <ProtectedRoute>
+                                <Dashboard />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.EQUIPMENT}
+                        element={
+                            <ProtectedRoute>
+                                <RequireStaff>
+                                    <ToolsPage />
+                                </RequireStaff>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/equipment/:id"
+                        element={
+                            <ProtectedRoute>
+                                <RequireStaff>
+                                    <ToolPage />
+                                </RequireStaff>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/equipment/:id/schedules/:scheduleId"
+                        element={
+                            <ProtectedRoute>
+                                <RequireStaff>
+                                    <EquipmentSchedulePage />
+                                </RequireStaff>
+                            </ProtectedRoute>
+                        }
+                    />
+                    {/* Backward-compatible aliases for /tools */}
+                    <Route path={ROUTES.TOOLS} element={<Navigate to={ROUTES.EQUIPMENT} replace />} />
+                    <Route
+                        path="/tools/:id"
+                        element={
+                            <ProtectedRoute>
+                                <RequireStaff>
+                                    <ToolPage />
+                                </RequireStaff>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/tools/:id/schedules/:scheduleId"
+                        element={
+                            <ProtectedRoute>
+                                <RequireStaff>
+                                    <EquipmentSchedulePage />
+                                </RequireStaff>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.LOGOUT}
+                        element={
+                            <ProtectedRoute>
+                                <Logout />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.PROFILE}
+                        element={
+                            <ProtectedRoute>
+                                <ProfilePage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.ACCOUNT}
+                        element={
+                            <ProtectedRoute>
+                                <AccountPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.ADMIN}
+                        element={
+                            <ProtectedRoute>
+                                <RequireAdmin>
+                                    <AdminDashboard />
+                                </RequireAdmin>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={`${ROUTES.SUPERADMIN}/:tab?`}
+                        element={
+                            <ProtectedRoute>
+                                <RequireAdmin role={ROLES.SUPERADMIN}>
+                                    <SuperAdminDashboard />
+                                </RequireAdmin>
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.MY_REPORTS}
+                        element={
+                            <ProtectedRoute>
+                                <OperatorReportsPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.NOTIFICATIONS}
+                        element={
+                            <ProtectedRoute>
+                                <NotificationsPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path={ROUTES.MANUALS}
+                        element={
+                            <ProtectedRoute>
+                                <EquipmentBooksPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route path={ROUTES.BOOKS} element={<Navigate to={ROUTES.MANUALS} replace />} />
 
-                {/* Fallback */}
-                <Route path="*" element={<NotFound />} />
-            </Routes>
-        </Suspense>
+                    {/* Fallback */}
+                    <Route path="*" element={<NotFound />} />
+                </Routes>
+            </Suspense>
+        </ErrorBoundary>
     );
 
     // Full-bleed layout for login / force-password-change: no sidebar, rail,

@@ -4,7 +4,7 @@ import { ROUTES } from '../constants/routes';
 
 // Pages a logged-out visitor may stay on: a failed session refresh (e.g. the
 // app's on-load /auth/me check) must not bounce them to the login page.
-const PUBLIC_PATHS = [ROUTES.HOME, ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.RESET_PASSWORD, ROUTES.TERMS, ROUTES.PRIVACY, ROUTES.LEGAL, ROUTES.ACCESSIBILITY, ROUTES.GUIDE];
+const PUBLIC_PATHS = [ROUTES.HOME, ROUTES.LOGIN, ROUTES.SIGNUP, ROUTES.RESET_PASSWORD, ROUTES.VERIFY_EMAIL, ROUTES.TERMS, ROUTES.PRIVACY, ROUTES.LEGAL, ROUTES.ACCESSIBILITY, ROUTES.GUIDE];
 
 export const shouldRedirectToLogin = (pathname) => !PUBLIC_PATHS.includes(pathname);
 
@@ -64,6 +64,30 @@ const processQueue = (error, token = null) => {
     });
     failedQueue = [];
 };
+
+export const API_ERROR_EVENT = 'api:error';
+
+/**
+ * Gives every failed request a user-facing `error.message` (the server's
+ * message, or a friendly one when there is none) and, for failures no page
+ * can fix -- server unreachable, 5xx, rate limited -- broadcasts it so
+ * NotificationContext shows one consistent toast.
+ */
+export function normalizeApiError(error) {
+    if (error.code === 'ERR_CANCELED') return error; // an aborted request isn't a failure
+    const status = error.response?.status;
+    const serverMessage = error.response?.data?.message;
+    let message = serverMessage;
+    if (!error.response) message = "Can't reach the server. Check your connection and try again.";
+    else if (status >= 500) message = 'Server error, please try again in a moment.';
+    else if (status === 429) message = serverMessage || 'Too many requests, please slow down.';
+    if (message) error.message = message;
+
+    if ((!error.response || status >= 500 || status === 429) && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(API_ERROR_EVENT, { detail: message }));
+    }
+    return error;
+}
 
 // Global 401 response interceptor with automatic silent refresh
 apiClient.interceptors.response.use(
@@ -131,7 +155,7 @@ apiClient.interceptors.response.use(
             }
         }
 
-        return Promise.reject(error);
+        return Promise.reject(normalizeApiError(error));
     }
 );
 

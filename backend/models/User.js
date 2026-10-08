@@ -44,6 +44,9 @@ const formatUserName = (name) => {
  * @property {Date|null} [termsAcceptedAt=null] - Timestamp of terms acceptance, or null if not yet accepted.
  * @property {string|null} [termsVersion=null] - Version of the Terms of Service the user accepted.
  * @property {string|null} [passwordResetTokenHash=null] - SHA-256 hash of the pending forgot-password token (services/authService.js `requestPasswordReset`), or null. Not selected by default.
+ * @property {boolean} [emailVerified=true] - False only for a self-service signup until its verification link is used (services/authService.js `verifyEmail`); login is refused while false. Defaults to true so existing, admin-created and superadmin users are unaffected.
+ * @property {string|null} [emailVerifyTokenHash=null] - SHA-256 hash of the pending email-verification token, or null. Not selected by default.
+ * @property {Date|null} [emailVerifyExpires=null] - Expiry of the pending email-verification token, or null. Not selected by default.
  * @property {Date|null} [lastActiveAt=null] - Last time this user signed in, registered, or refreshed a session (stamped in services/authService.js `generateTokens`). Drives the superadmin activity metrics.
  * @property {Date|null} [passwordResetExpires=null] - Expiry of the pending forgot-password token, or null. Not selected by default.
  * @property {Date} createdAt - Set automatically (`timestamps: true`).
@@ -67,6 +70,9 @@ const UserSchema = new mongoose.Schema({
     termsVersion: { type: String, default: null },
     passwordResetTokenHash: { type: String, default: null, index: true, select: false },
     passwordResetExpires: { type: Date, default: null, select: false },
+    emailVerified: { type: Boolean, default: true },
+    emailVerifyTokenHash: { type: String, default: null, index: true, select: false },
+    emailVerifyExpires: { type: Date, default: null, select: false },
     lastActiveAt: { type: Date, default: null },
 }, { timestamps: true });
 

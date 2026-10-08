@@ -8,6 +8,7 @@ process.env.JWT_SECRET = 'test_secret_key_minimum_32_characters_long';
 process.env.MONGOMS_DOWNLOAD_DIR = path.join(__dirname, '../.mongo-binaries');
 
 const app = require('../app');
+const { verifyRegisteredEmail } = require('./helpers/setup');
 let server;
 
 jest.setTimeout(90000);
@@ -74,10 +75,11 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
             expect(res.status).toBe(201);
             expect(res.body.user.role).toBe('admin'); // Role forced to admin for creator
             expect(res.body.user.company.name).toBe('Acme Corp');
-            expect(res.headers['set-cookie']).toBeDefined();
 
-            companyAToken = res.body.token;
-            companyACookie = res.headers['set-cookie'] && res.headers['set-cookie'][0];
+            const verified = await verifyRegisteredEmail(server, 'alice@acme.com');
+            expect(verified.headers['set-cookie']).toBeDefined();
+            companyAToken = verified.body.token;
+            companyACookie = verified.headers['set-cookie'] && verified.headers['set-cookie'][0];
             void companyACookie;
         });
 
@@ -95,8 +97,9 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
             expect(res.status).toBe(201);
             expect(res.body.user.company.name).toBe('Beta Industries');
 
-            companyBToken = res.body.token;
-            companyBCookie = res.headers['set-cookie'][0];
+            const verified = await verifyRegisteredEmail(server, 'bob@beta.com');
+            companyBToken = verified.body.token;
+            companyBCookie = verified.headers['set-cookie'][0];
         });
 
         it('enforces global email uniqueness across companies', async () => {

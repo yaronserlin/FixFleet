@@ -1,6 +1,6 @@
 // __tests__/SignupForm.test.jsx
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import SignupForm from '../src/components/LoginComponent/SignupForm';
 import { useAuth } from '../src/contexts/AuthContext';
 import useForm from '../src/hooks/useForm';
@@ -57,5 +57,17 @@ describe('SignupForm', () => {
         render(<SignupForm />);
         fireEvent.submit(screen.getByRole('button', { name: /Create Company Account/i }));
         expect(mockHandleSubmit).toHaveBeenCalled();
+    });
+
+    test('replaces the form with a check-your-inbox message after signup', async () => {
+        mockSignup.mockResolvedValueOnce({ email: 'admin@acme.com' });
+        render(<SignupForm />);
+        const { onSubmit } = useForm.mock.calls[0][0];
+
+        await act(() => onSubmit({ email: 'admin@acme.com' }));
+
+        expect(screen.getByText(/check your inbox/i)).toHaveTextContent('admin@acme.com');
+        expect(screen.getByRole('button', { name: /resend email/i })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /Create Company Account/i })).not.toBeInTheDocument();
     });
 });

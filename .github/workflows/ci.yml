@@ -1,0 +1,88 @@
+# Builds and tests every branch. On main, once both pass, bumps the patch in
+# /VERSION (the single app version), commits it and tags v<version>.
+# For a minor/major release, edit VERSION by hand (e.g. 1.0.11 -> 1.1.0) in
+# your commit; CI then bumps from there.
+name: CI
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Check out the pushed branch
+        uses: actions/checkout@v4
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Lint frontend
+        run: npm run lint
+
+      - name: Test frontend
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build
+
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Check out the pushed branch
+        uses: actions/checkout@v4
+
+      # mongodb-memory-server downloads a MongoDB binary on first use
+      # (into backend/.mongo-binaries, see __tests__/helpers/setup.js).
+      - name: Cache MongoDB test binary
+        uses: actions/cache@v4
+        with:
+          path: backend/.mongo-binaries
+          key: mongo-binaries-${{ runner.os }}-${{ hashFiles('backend/package-lock.json') }}
+
+      - name: Install backend dependencies
+        run: npm ci
+
+      - name: Check backend syntax
+        run: npm run build
+
+      - name: Test backend
+        run: npm test
+
+  version:
+    needs: [frontend, backend]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    # One bump at a time, so two quick pushes can't both claim the same version.
+    concurrency:
+      group: version-bump
+      cancel-in-progress: false
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      # Pushes made with GITHUB_TOKEN don't start new workflow runs, so this can't loop.
+      - name: Bump patch version, commit and tag
+        run: |
+          VERSION=$(awk -F. '{ printf "%d.%d.%d", $1, $2, $3 + 1 }' VERSION)
+          echo "$VERSION" > VERSION
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: release v$VERSION [skip ci]"
+          git tag "v$VERSION"
+          git push origin HEAD:main "v$VERSION"

@@ -18,6 +18,7 @@ export const ROUTES = Object.freeze({
     ACCESSIBILITY: '/accessibility',
     FORCE_PASSWORD_CHANGE: '/force-password-change',
     RESET_PASSWORD: '/reset-password',
+    VERIFY_EMAIL: '/verify-email',
     DASHBOARD: '/dashboard',
     EQUIPMENT: '/equipment',
     TOOLS: '/tools',

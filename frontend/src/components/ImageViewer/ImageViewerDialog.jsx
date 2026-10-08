@@ -9,7 +9,7 @@ import {
     IconButton,
     Box,
     Typography,
-    CircularProgress,
+    Skeleton,
     Alert,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
@@ -172,7 +172,14 @@ export default function ImageViewerDialog({
                 )}
 
                 {/* Main Image */}
-                {loading && <CircularProgress size={32} sx={{ color: '#fff' }} />}
+                {loading && (
+                    <Skeleton
+                        variant="rectangular"
+                        role="status"
+                        aria-label="Loading image"
+                        sx={{ width: 'min(80vw, 640px)', height: 'min(60vh, 480px)', borderRadius: 1, bgcolor: 'rgba(255,255,255,0.12)' }}
+                    />
+                )}
 
                 {!loading && error && (
                     <Alert severity="error" sx={{ maxWidth: 360, mx: 2 }}>

@@ -1,8 +1,9 @@
 // src/contexts/NotificationContext.jsx
-import React, { createContext, useContext, useState, useMemo } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import { BOTTOM_NAV_HEIGHT } from '../components/Navbar/navConstants';
+import { API_ERROR_EVENT } from '../services/apiClient';
 
 // Create notification context
 const NotificationContext = createContext();
@@ -23,6 +24,13 @@ export function NotificationProvider({ children }) {
         info: (msg) => { setMessageInfo({ message: msg, severity: 'info' }); setOpen(true); },
         warning: (msg) => { setMessageInfo({ message: msg, severity: 'warning' }); setOpen(true); },
     }), []);
+
+    // Network/5xx/429 failures from any request (see services/apiClient.js).
+    useEffect(() => {
+        const onApiError = (e) => notify.error(e.detail);
+        window.addEventListener(API_ERROR_EVENT, onApiError);
+        return () => window.removeEventListener(API_ERROR_EVENT, onApiError);
+    }, [notify]);
 
     return (
         <NotificationContext.Provider value={notify}>

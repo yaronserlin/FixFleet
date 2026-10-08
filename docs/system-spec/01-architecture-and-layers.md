@@ -105,7 +105,7 @@ Services use Mongoose models directly (no repository abstraction). `sanitizeFilt
 | Web Push (VAPID) | `services/pushService.js` | Optional | Disabled without keys; delivery errors logged, dead endpoints pruned; never fails the triggering action. |
 | EmailJS | `utils/mailer.js` | Optional in dev, needed for reset emails in production | Dev: logged to console. Production: throws, caught and logged; HTTP response unchanged. |
 | Google Fonts | `frontend/index.html` | Optional | Falls back to the system font stack. |
-| GitHub Actions | `.github/workflows/increment-build-version.yml` | CI | Two jobs: frontend lint → test → build; backend syntax check → test. A red job does not affect the running app. |
+| GitHub Actions | `.github/workflows/ci.yml` | CI | Frontend lint → test → build; backend syntax check → test; on `main`, a version job bumps `/VERSION`, commits and tags. A red job does not affect the running app. |
 
 ## 1.4 Authorization Model (RBAC)
 

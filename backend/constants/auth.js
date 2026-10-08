@@ -61,6 +61,12 @@ const REFRESH_REUSE_GRACE_MS = 30 * 1000;
  */
 const PASSWORD_RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
 
+/**
+ * Lifetime, in milliseconds, of a signup email-verification link (24 hours).
+ * @type {number}
+ */
+const EMAIL_VERIFY_TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+
 module.exports = {
     ACCESS_TOKEN_EXPIRY,
     REFRESH_TOKEN_EXPIRY,
@@ -69,4 +75,5 @@ module.exports = {
     CURRENT_TERMS_VERSION,
     REFRESH_REUSE_GRACE_MS,
     PASSWORD_RESET_TOKEN_TTL_MS,
+    EMAIL_VERIFY_TOKEN_TTL_MS,
 };

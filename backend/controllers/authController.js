@@ -80,23 +80,58 @@ const clearAuthCookies = (res) => {
  */
 exports.register = async (req, res, next) => {
     try {
-        const { user, tokens } = await authService.register(req.body);
+        const { user } = await authService.register(req.body);
         await recordAudit(req, {
             action: AUDIT_ACTIONS.COMPANY_REGISTERED,
             actor: user,
             companyId: user.company._id,
             target: companyTarget(user.company),
         });
-        setRefreshCookie(res, tokens.refreshToken);
 
-        // The refresh token is deliberately NOT returned in the body: it is
-        // an HTTP-only cookie so client JS never has a reason to store it.
+        // No session yet: the user signs in by following the emailed
+        // verification link (POST /api/auth/verify-email).
         res.status(201).json({
-            message: 'Company and admin account created successfully',
+            message: 'Account created. Check your email to verify your address.',
+            email: user.email,
+            user,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * POST /api/auth/verify-email - Consumes a signup verification token and signs the user in.
+ * @param {import('express').Request} req - Express request; uses `req.body.token`.
+ * @param {import('express').Response} res - Express response.
+ * @param {import('express').NextFunction} next - Express next function.
+ * @returns {Promise<void>}
+ */
+exports.verifyEmail = async (req, res, next) => {
+    try {
+        const { user, tokens } = await authService.verifyEmail(req.body);
+        setRefreshCookie(res, tokens.refreshToken);
+        res.json({
             accessToken: tokens.accessToken,
             token: tokens.token,
             user,
         });
+    } catch (err) {
+        next(err);
+    }
+};
+
+/**
+ * POST /api/auth/resend-verification - Re-sends the signup verification email.
+ * @param {import('express').Request} req - Express request; uses `req.body.email`.
+ * @param {import('express').Response} res - Express response.
+ * @param {import('express').NextFunction} next - Express next function.
+ * @returns {Promise<void>}
+ */
+exports.resendVerification = async (req, res, next) => {
+    try {
+        await authService.resendVerification(req.body);
+        res.json({ message: 'If that account still needs verifying, a new link has been sent.' });
     } catch (err) {
         next(err);
     }

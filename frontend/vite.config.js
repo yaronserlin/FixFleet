@@ -1,8 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
+import { readFileSync } from 'node:fs';
+
+// Single source of truth for the app version; bumped by CI on main.
+const APP_VERSION = readFileSync(new URL('../VERSION', import.meta.url), 'utf8').trim();
 
 export default defineConfig({
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(APP_VERSION),
+  },
   plugins: [
     react(),
     VitePWA({

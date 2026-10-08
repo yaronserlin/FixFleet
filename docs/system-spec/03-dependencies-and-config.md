@@ -14,7 +14,7 @@
 | `frontend/package.json` | `frontend` | 1.0.9 | ESM (`"type": "module"`) | React SPA / PWA. |
 | `frontend/package-lock.json` | — | lockfile v3 | — | Pins the frontend tree. |
 
-Frontend and backend versions are kept identical by `.githooks/pre-commit` (see §3.6).
+The app version lives in the root `VERSION` file (the package.json files carry none); the frontend reads it at build time (`vite.config.js` → `APP_VERSION`), and CI bumps it on `main` (see §3.6).
 
 ### 3.1.1 npm scripts
 
@@ -133,7 +133,7 @@ In Jest, `import.meta` is rewritten to `{ env: process.env }` by an inline Babel
 | File | Responsibility |
 |---|---|
 | `backend/config/db.js` | Enables `sanitizeFilter`; connects to `MONGO_URI`; logs success/failure through `utils/logger`; exits the process on failure. |
-| `backend/constants/auth.js` | `ACCESS_TOKEN_EXPIRY '60m'`, `REFRESH_TOKEN_EXPIRY '7d'`, `REFRESH_COOKIE_MAX_AGE 604 800 000`, `CURRENT_TERMS_VERSION '1.3'` (must equal the terms/privacy `version` in `frontend/src/content/legalDocuments.js`; enforced by `__tests__/termsVersion.test.js`), `BCRYPT_SALT_ROUNDS 10`, `REFRESH_REUSE_GRACE_MS 30 000`, `PASSWORD_RESET_TOKEN_TTL_MS 1 800 000`. |
+| `backend/constants/auth.js` | `ACCESS_TOKEN_EXPIRY '60m'`, `REFRESH_TOKEN_EXPIRY '7d'`, `REFRESH_COOKIE_MAX_AGE 604 800 000`, `CURRENT_TERMS_VERSION '1.3'` (must equal the terms/privacy `version` in `frontend/src/content/legalDocuments.js`; enforced by `__tests__/termsVersion.test.js`), `BCRYPT_SALT_ROUNDS 10`, `REFRESH_REUSE_GRACE_MS 30 000`, `PASSWORD_RESET_TOKEN_TTL_MS 1 800 000`, `EMAIL_VERIFY_TOKEN_TTL_MS 86 400 000`. |
 | `backend/constants/rateLimits.js` | `AUTH_RATE_LIMIT {15 min, 20}`, `GENERAL_RATE_LIMIT {15 min, 500}`, `PASSWORD_RESET_RATE_LIMIT {15 min, 3}`. |
 | `backend/constants/pagination.js` | `DEFAULT_PAGE 1`, `DEFAULT_LIMIT 20`, `MAX_LIMIT 100`. |
 | `backend/constants/notifications.js` | Types, `NOTIFICATION_PAGE_SIZE {DEFAULT 20, MAX 100}`, `ANNOUNCEMENT_LIMITS {TITLE_MAX 120, BODY_MAX 1000}`. |
@@ -157,9 +157,9 @@ In Jest, `import.meta` is rewritten to `{ env: process.env }` by an inline Babel
 
 | Item | Behaviour |
 |---|---|
-| `.githooks/pre-commit` | (1) On every branch: when spec Markdown or the viewer's template/config/builder is staged, rebuilds `docs/system-spec/index.html` and stages it (skipped with a warning if the builder's `node_modules` is missing). (2) On `main` only: if the staged `frontend/package.json` version equals `HEAD`'s, runs `npm version patch` in `frontend`; otherwise keeps the manual bump. Copies the version into `backend/package.json` and stages both manifests and lockfiles. Skip with `--no-verify`. Enabled by the frontend `prepare` script. |
-| `.github/workflows/increment-build-version.yml` | Workflow name "Build". On push to any branch, two jobs: **frontend** (`npm ci` → `npm run lint` → `npm test` → `npm run build`) and **backend** (cache `backend/.mongo-binaries` keyed on `backend/package-lock.json` → `npm ci` → `npm run build` (syntax check) → `npm test`). No backend lint (no ESLint config). |
-| App version display | `frontend/src/constants/appVersion.js` reads the `package.json` version → shown in `LegalFooter`. |
+| `.githooks/pre-commit` | On every branch: when spec Markdown or the viewer's template/config/builder is staged, rebuilds `docs/system-spec/index.html` and stages it (skipped with a warning if the builder's `node_modules` is missing). Skip with `--no-verify`. Enabled by the frontend `prepare` script. |
+| `.github/workflows/ci.yml` | Workflow name "CI". On push to any branch: **frontend** (`npm ci` → `npm run lint` → `npm test` → `npm run build`) and **backend** (cache `backend/.mongo-binaries` keyed on `backend/package-lock.json` → `npm ci` → `npm run build` (syntax check) → `npm test`). On `main` only, after both pass, **version** bumps the patch in `/VERSION`, commits `chore: release v<x> [skip ci]`, tags `v<x>` and pushes (serialized by a `version-bump` concurrency group). No backend lint (no ESLint config). |
+| App version display | `frontend/vite.config.js` reads `/VERSION` into `import.meta.env.VITE_APP_VERSION`; `frontend/src/constants/appVersion.js` exposes it (`'dev'` if unset) → shown in `LegalFooter`. |
 | Service-worker updates | `main.jsx` registers the SW (`autoUpdate`) and calls `registration.update()` hourly and on every return to foreground. |
 
 ---
