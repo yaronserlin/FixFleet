@@ -62,6 +62,7 @@ npm run seed
 | `npm start` | `node app.js` | Start backend server in production mode |
 | `npm run build` | `node --check app.js` | Perform syntax and validity check on backend entry point |
 | `npm run seed` | `node seeders/seeder.js` | Seed MongoDB database with initial sample users, equipment, parts, and schedules |
+| `npm run create-superadmin` | `node scripts/createSuperAdmin.js` | Create (or reset the password of) a platform superadmin: `npm run create-superadmin -- --email <email> [--name "<name>"]`. Uses `SUPERADMIN_PASSWORD` if set, otherwise generates and prints one once |
 | `npm test` | `jest --runInBand --detectOpenHandles --forceExit` | Execute backend test suite using in-memory MongoDB and Supertest |
 
 ### Frontend Scripts (`frontend/package.json`)

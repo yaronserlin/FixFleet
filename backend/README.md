@@ -22,6 +22,7 @@ Check it's up: `curl http://localhost:5001/health` should return `"status": "hea
 | `npm start` | `node app.js` | Start for production |
 | `npm run build` | `node --check app.js` | Syntax check of the entry point (there is no compile step) |
 | `npm run seed` | `node seeders/seeder.js` | Seed MongoDB with sample data |
+| `npm run create-superadmin` | `node scripts/createSuperAdmin.js` | Create or reset a platform superadmin (`-- --email <email> [--name "<name>"]`); the only way to make one |
 | `npm test` | `jest --runInBand --detectOpenHandles --forceExit` | Jest + Supertest against an in-memory MongoDB |
 <!-- AUTO-GENERATED:SCRIPTS_END -->
 

@@ -25,6 +25,7 @@ This document outlines all environment variables utilized across the FixFleet ba
 | `EMAILJS_PUBLIC_KEY` | No | EmailJS public key | unset | Account -> API keys |
 | `EMAILJS_PRIVATE_KEY` | No | EmailJS private key; required for server-side sends (also enable Account -> Security -> "Allow EmailJS API for non-browser applications") | unset | Account -> API keys; treat as a secret |
 | `TEST_LOGS` | No | When set (any value), re-enables log output while `NODE_ENV=test` (normally suppressed to keep test runs quiet) | unset | Set to any truthy value to see application logs during `npm test` |
+| `SUPERADMIN_PASSWORD` | No | Password used by `npm run create-superadmin`. If unset, the script generates one and prints it once. Read only by that script, never by the server | unset (generated) | At least 12 characters (the script refuses shorter) |
 
 ---
 
