@@ -1,7 +1,6 @@
-# Builds and tests every branch. On main, once both pass, bumps the patch in
-# /VERSION (the single app version), commits it and tags v<version>.
-# For a minor/major release, edit VERSION by hand (e.g. 1.0.11 -> 1.1.0) in
-# your commit; CI then bumps from there.
+# Builds and tests every branch. On main, once both pass, tags v<version> from
+# /VERSION (the single app version). The patch bump happens in the commit
+# itself (.githooks/pre-commit); for a minor/major release, edit VERSION by hand.
 name: CI
 
 on:
@@ -65,24 +64,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    # One bump at a time, so two quick pushes can't both claim the same version.
-    concurrency:
-      group: version-bump
-      cancel-in-progress: false
 
     steps:
-      - name: Check out main
+      - name: Check out the pushed commit
         uses: actions/checkout@v4
-        with:
-          ref: main
 
-      # Pushes made with GITHUB_TOKEN don't start new workflow runs, so this can't loop.
-      - name: Bump patch version, commit and tag
+      - name: Tag v<version>
         run: |
-          VERSION=$(awk -F. '{ printf "%d.%d.%d", $1, $2, $3 + 1 }' VERSION)
-          echo "$VERSION" > VERSION
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -am "chore: release v$VERSION [skip ci]"
-          git tag "v$VERSION"
-          git push origin HEAD:main "v$VERSION"
+          TAG="v$(tr -d '[:space:]' < VERSION)"
+          if git ls-remote --exit-code --tags origin "$TAG" > /dev/null; then
+            echo "$TAG already exists, skipping."
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi

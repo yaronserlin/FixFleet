@@ -1,10 +1,19 @@
 #!/bin/sh
 # Rebuilds docs/system-spec/index.html when spec Markdown is staged.
-# (The app version lives in /VERSION and is bumped by CI on main.)
+# Also bumps the patch in /VERSION on every commit to main, so the version
+# change ships in the same commit (CI then tags v<version>).
 # Skip with: git commit --no-verify
 set -e
 
 cd "$(git rev-parse --show-toplevel)"
+
+# ── version: bump patch on main, unless VERSION is already staged (manual
+# minor/major bump, e.g. 1.0.11 -> 1.1.0) ──────────────────────────────────────
+if [ "$(git symbolic-ref --short -q HEAD)" = "main" ] && ! git diff --cached --quiet && \
+   git diff --cached --quiet -- VERSION; then
+  awk -F. '{ printf "%d.%d.%d\n", $1, $2, $3 + 1 }' VERSION > VERSION.tmp && mv VERSION.tmp VERSION
+  git add VERSION
+fi
 
 # ── update-functional-doc: keep the spec viewer in sync ────────────────────────
 # Paste into the project's pre-commit hook (POSIX sh). Place it BEFORE any early
