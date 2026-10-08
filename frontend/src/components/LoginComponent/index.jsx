@@ -6,6 +6,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import LoginCard from './LoginCard';
 import Logo from '../Logo/Logo';
 import LegalFooter from '../Legal/LegalFooter';
+import { ROUTES } from '../../constants/routes';
 
 const FEATURES = [
     'Track equipment faults and repairs',
@@ -58,7 +59,7 @@ export default function LoginComponent() {
                         textColor="#FFFFFF"
                         subtitleColor="rgba(255,255,255,0.7)"
                         subtitle="Ops Manager"
-                        to={null}
+                        to={ROUTES.HOME}
                     />
                 </Box>
 

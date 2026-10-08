@@ -27,7 +27,7 @@ const contentSx = {
     '& code': { fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontSize: '0.86em', px: 0.5, borderRadius: 1, ...panel, bgcolor: 'background.subtle' },
     '& .legend': { display: 'flex', alignItems: 'center', gap: 1.25, fontSize: '0.875rem', p: 1.5, mb: 4, borderRadius: 2, ...panel },
     '& .legend i': { width: 22, height: 22, flex: 'none', borderRadius: '50%', bgcolor: MARK, color: '#fff', fontStyle: 'normal', fontWeight: 700, fontSize: 12, lineHeight: '22px', textAlign: 'center' },
-    '& section': { scrollMarginTop: 96 },
+    '& section, & h3[id]': { scrollMarginTop: 96 },
     '& section + section': { mt: 7, pt: 7, borderTop: 1, borderColor: 'divider' },
     '& .eyebrow': { m: 0, fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'primary.main' },
     '& h2.sec': { mt: 0.5, mb: 2, fontSize: { xs: '1.75rem', md: '2.125rem' }, fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.2 },

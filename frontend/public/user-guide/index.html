@@ -86,6 +86,7 @@ b.ui { font-weight: 650; color: var(--fg); }
 
 main { min-width: 0; max-width: 780px; }
 section { padding-top: 12px; scroll-margin-top: 16px; }
+h3[id] { scroll-margin-top: 16px; }
 section + section { margin-top: 44px; border-top: 1px solid var(--line); padding-top: 40px; }
 .eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--action); margin: 0 0 6px; }
 h2.sec { font-size: clamp(26px, 3.4vw, 32px); font-weight: 800; margin: 0 0 12px; }
@@ -159,6 +160,7 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
     </div>
     <div class="cover-meta">
       <span class="chip">Version 1.0.6</span>
+      <span class="chip">Updated 8 Oct 2026</span>
       <span class="chip"><i style="background:#60A5FA"></i>Admins</span>
       <span class="chip"><i style="background:#FCD34D"></i>Mechanics</span>
       <span class="chip"><i style="background:#86EFAC"></i>Operators</span>
@@ -182,6 +184,7 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
       <li><a href="#admin">Administration</a></li>
       <li><a href="#account">Your account</a></li>
       <li><a href="#help">Troubleshooting &amp; FAQ</a></li>
+      <li><a href="#updates">Recent updates</a></li>
     </ol>
   </nav>
 
@@ -206,6 +209,15 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
         <img width="1600" height="881" src="images/login-screen.webp" alt="FixFleet sign-in screen with the email field, password field, Sign in button, Forgot password link and Sign up link marked 1 to 5" loading="lazy">
         <figcaption><b>Step 1–5</b> The sign-in screen.</figcaption>
       </figure>
+      <p>If you created a company account but haven't confirmed your email yet, FixFleet won't sign you in. It shows <b class="ui">Please verify your email before signing in</b> instead.</p>
+      <ol class="steps">
+        <li>Read the message. Your account exists, but it isn't active yet.</li>
+        <li>Click <b class="ui">Resend email</b> to get a new verification link. The button changes to <b class="ui">Email sent</b>. Then follow the steps in <a href="#verify">Verify your email</a>.</li>
+      </ol>
+      <figure class="shot">
+        <img width="1600" height="881" src="images/login-email-not-verified.webp" alt="Sign-in screen showing the error Please verify your email before signing in, marked 1, and the Resend email button, marked 2" loading="lazy">
+        <figcaption><b>Step 1–2</b> Signing in before your email is confirmed.</figcaption>
+      </figure>
 
       <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01M9 12v.01M9 15v.01M9 18v.01"/></svg></span>Create a company account</h3>
       <p>Only the first person from each company does this. That person becomes the company's <b class="ui">Admin</b> and adds everyone else.</p>
@@ -221,6 +233,20 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
         <img width="1600" height="881" src="images/create-company-account.webp" alt="Create an account form with company name, admin name, email, password, terms checkbox and Create Company Account button marked 1 to 6" loading="lazy">
         <figcaption><b>Step 1–6</b> Registering a new company.</figcaption>
       </figure>
+
+      <h3 id="verify"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></span>Verify your email</h3>
+      <p>Before you can sign in, FixFleet checks that the email address is yours. As soon as you click <b class="ui">Create Company Account</b>, it sends you a verification email.</p>
+      <ol class="steps">
+        <li>The form changes to a green message telling you which inbox to check.</li>
+        <li>No email after a few minutes? Check your spam folder, then click <b class="ui">Resend email</b>. It changes to <b class="ui">Email sent</b>.</li>
+      </ol>
+      <figure class="shot">
+        <img width="1600" height="881" src="images/signup-check-email.webp" alt="Create an account page showing a green message asking the user to check their inbox, marked 1, and the Resend email button, marked 2" loading="lazy">
+        <figcaption><b>Step 1–2</b> After registering, FixFleet asks you to check your inbox.</figcaption>
+      </figure>
+      <p>Open the email with the subject <b class="ui">Confirm your FixFleet email</b> and click the link inside. The <b class="ui">Verify Your Email</b> page opens, confirms your address, signs you in and takes you to the dashboard. You only do this once.</p>
+      <div class="note info"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Note</div>
+        The link works once and expires after 24 hours. Requesting a new link cancels the old one, so always use the newest email. People an admin adds to the company don't need to verify. They sign in with the temporary password instead.</div>
 
       <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>First sign-in: set your own password</h3>
       <p>When an admin creates your account, they choose a temporary password. The first time you sign in, FixFleet asks you to replace it before you can continue.</p>
@@ -664,6 +690,22 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
       <details><summary>The page takes a long time to load the first time.</summary>
         <div><p>On some hosting plans the server goes to sleep when nobody has used it for a while. The first visit wakes it up, which can take around 30 seconds. After that, pages load normally.</p></div></details>
 
+      <details><summary>I didn't get the verification email.</summary>
+        <div><p>Wait a few minutes and check your spam or junk folder for <b class="ui">Confirm your FixFleet email</b>. Still nothing? Go to the sign-in page, enter your email and password, and click <b class="ui">Sign in</b>. Then click <b class="ui">Resend email</b> in the message that appears. Check that the email address you signed up with is spelled correctly.</p></div></details>
+
+      <details><summary>My verification link says it is invalid or has expired.</summary>
+        <div><p>Links expire after 24 hours, work only once, and stop working when you ask for a newer one. Click <b class="ui">Sign in</b>, try to sign in, and use <b class="ui">Resend email</b> to get a fresh link. If the link already worked once, your account is active and you can simply sign in.</p>
+        <figure class="shot">
+          <img width="1600" height="880" src="images/verify-link-expired.webp" alt="Verify Your Email page with the message This verification link is invalid or has expired, marked 1, and the Sign in button, marked 2" loading="lazy">
+          <figcaption><b>Step 1–2</b> An expired link (1). Click Sign in (2) to request a new one.</figcaption>
+        </figure></div></details>
+
+      <details><summary>I see “503 · Can't reach FixFleet”.</summary>
+        <div><p>Your device can't reach the FixFleet server. Check your internet connection, then click <b class="ui">Try again</b>. If the server was asleep (see below), it should respond within a minute. Anything you hadn't submitted yet needs to be entered again.</p></div></details>
+
+      <details><summary>I see “Oops · Something went wrong”.</summary>
+        <div><p>That page failed to display. Click <b class="ui">Try again</b> to reload it, or <b class="ui">Go home</b> to start again. If the sidebar is still showing, you can also open another page from it. If it keeps happening on the same page, tell your admin which page and what you clicked.</p></div></details>
+
       <details><summary>I can't see the Equipment page.</summary>
         <div><p>Equipment is for mechanics and admins. Operators see <b class="ui">My Reports</b> instead. If you need equipment access, ask an admin to change your role.</p></div></details>
 
@@ -680,7 +722,7 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
         <div><p>Push alerts have to be turned on separately on each device, and only if your company has enabled them. Open <b class="ui">Account Settings</b> on the phone, turn on notifications, then allow them when the browser asks. Your notifications are always in the bell feed, whether or not push is on.</p></div></details>
 
       <details><summary>Sign-in stopped working after several wrong passwords.</summary>
-        <div><p>FixFleet pauses sign-in after repeated failed attempts. Wait a few minutes before trying again, or use <b class="ui">Forgot password?</b> to set a new password.</p></div></details>
+        <div><p>After too many sign-in, sign-up or resend attempts from one network, FixFleet shows <b class="ui">Too many attempts from this IP, please try again after 15 minutes</b>. Wait 15 minutes before trying again. If you've forgotten your password, use <b class="ui">Forgot password?</b> once the wait is over.</p></div></details>
 
       <details><summary>Can I use FixFleet in dark mode?</summary>
         <div><p>Yes. Go to <b class="ui">Account Settings → Appearance &amp; Notifications</b> and use the light/dark switch. The setting applies only to the device you're using.</p></div></details>
@@ -688,7 +730,28 @@ footer.end { margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--li
       <div class="note info" style="margin-top:20px"><div class="lab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>Still stuck?</div>
         Contact your company's FixFleet admin. They can reset your access, change your role, or correct a record.</div>
 
-      <footer class="end">FixFleet User Guide · written for version 1.0.6 · Screenshots show the FixFleet demo farm.</footer>
+    </section>
+
+    <!-- ───────────── Recent updates ───────────── -->
+    <section id="updates">
+      <p class="eyebrow">Changelog</p>
+      <h2 class="sec">Recent updates</h2>
+      <h3>8 October 2026</h3>
+      <div class="tbl">
+        <table>
+          <thead><tr><th>Change</th><th>Where</th></tr></thead>
+          <tbody>
+            <tr><td><b>New:</b> new company accounts confirm their email before the first sign-in, using a link that is valid for 24 hours.</td><td><a href="#verify">Verify your email</a></td></tr>
+            <tr><td><b>New:</b> <b class="ui">Resend email</b> button after sign-up and on the sign-in error for accounts that aren't verified yet.</td><td><a href="#start">Getting started</a></td></tr>
+            <tr><td><b>New:</b> clearer error pages for an unreachable server (503) and for a page that fails to load.</td><td><a href="#help">Troubleshooting</a></td></tr>
+            <tr><td><b>Changed:</b> sign-up no longer signs you in straight away. You're signed in when you open the verification link.</td><td><a href="#start">Getting started</a></td></tr>
+            <tr><td><b>Changed:</b> the answer about repeated sign-in attempts now quotes the exact message and the 15-minute wait.</td><td><a href="#help">Troubleshooting</a></td></tr>
+            <tr><td><b>New screenshots:</b> <code>signup-check-email</code>, <code>login-email-not-verified</code>, <code>verify-link-expired</code>. No existing screenshots needed replacing.</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <footer class="end">FixFleet User Guide · written for version 1.0.6 · updated 8 October 2026 · Screenshots show the FixFleet demo farm.</footer>
     </section>
   </main>
 </div>
