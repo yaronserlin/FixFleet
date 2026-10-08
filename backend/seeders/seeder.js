@@ -6,7 +6,6 @@ const connectDB = require('../config/db');
 const Company = require('../models/Company');
 const User = require('../models/User');
 const Equipment = require('../models/Equipment');
-const Part = require('../models/Part');
 const Maintenance = require('../models/Maintenance');
 const Fault = require('../models/Fault');
 const AuditLog = require('../models/AuditLog');
@@ -54,7 +53,6 @@ const seed = async () => {
             Company.deleteMany(),
             User.deleteMany(),
             Equipment.deleteMany(),
-            Part.deleteMany(),
             Maintenance.deleteMany(),
             Fault.deleteMany(),
             AuditLog.deleteMany(),
@@ -131,15 +129,6 @@ const seed = async () => {
             },
         ]);
 
-        const valleyParts = await Part.insertMany([
-            { name: 'John Deere Engine Oil Filter', partNumber: 'RE572785', tool: valleyEquipment[0]._id, inStock: 6, companyId: valley._id },
-            { name: 'John Deere Fuel Filter', partNumber: 'RE539465', tool: valleyEquipment[0]._id, inStock: 8, companyId: valley._id },
-            { name: 'CLAAS JAGUAR V-Classic Knife', partNumber: 'CLAAS-000981', tool: valleyEquipment[1]._id, inStock: 48, companyId: valley._id },
-            { name: 'CLAAS Shear Bar', partNumber: 'CLAAS-000982', tool: valleyEquipment[1]._id, inStock: 2, companyId: valley._id },
-            { name: 'New Holland BigBaler Knotter Knife', partNumber: '84476512', tool: valleyEquipment[2]._id, inStock: 12, companyId: valley._id },
-            { name: 'Krone Mower Blade Set', partNumber: '1370660', tool: valleyEquipment[3]._id, inStock: 24, companyId: valley._id },
-            { name: 'JCB Hydraulic Return Filter', partNumber: '32/925346', tool: valleyEquipment[4]._id, inStock: 4, companyId: valley._id },
-        ]);
         await Maintenance.insertMany([
             { tool: valleyEquipment[0]._id, mechanic: valleyMechanic._id, details: 'Completed 2,000-hour service before spring field preparation. Oil samples sent to the lab; no abnormal wear reported.', date: daysAgo(12), companyId: valley._id },
             { tool: valleyEquipment[1]._id, mechanic: valleyMechanic._id, details: 'Replaced 24 worn forage harvester knives and set the shear bar. Metal detector test passed.', date: daysAgo(9), companyId: valley._id },
@@ -209,17 +198,6 @@ const seed = async () => {
             },
         ]);
 
-        const prairieParts = await Part.insertMany([
-            { name: 'Case IH Combine Rotor Rasp Bar', partNumber: '87339395', tool: prairieEquipment[0]._id, inStock: 16, companyId: prairie._id },
-            { name: 'Case IH Clean Grain Elevator Chain', partNumber: '87582918', tool: prairieEquipment[0]._id, inStock: 1, companyId: prairie._id },
-            { name: 'Fendt Vario Transmission Filter', partNumber: 'FENDT-H716', tool: prairieEquipment[1]._id, inStock: 3, companyId: prairie._id },
-            { name: 'John Deere 6220R Fuel Filter', partNumber: 'RE541922', tool: prairieEquipment[2]._id, inStock: 6, companyId: prairie._id },
-            { name: 'John Deere 569 Baler Belt', partNumber: 'AE57479', tool: prairieEquipment[3]._id, inStock: 4, companyId: prairie._id },
-            { name: 'Brent Grain Cart PTO Shear Bolt', partNumber: 'BR-2096-SB', tool: prairieEquipment[4]._id, inStock: 20, companyId: prairie._id },
-            { name: 'New Holland T7 Engine Oil Filter', partNumber: '84228431', tool: prairieEquipment[5]._id, inStock: 5, companyId: prairie._id },
-            { name: 'Massey Ferguson Baler Twine Knife', partNumber: 'XHD-2370-411', tool: prairieEquipment[6]._id, inStock: 8, companyId: prairie._id },
-            { name: 'Amazone Drill Coulter Disc', partNumber: 'AMZ-9576-DR', tool: prairieEquipment[7]._id, inStock: 24, companyId: prairie._id },
-        ]);
         await Maintenance.insertMany([
             { tool: prairieEquipment[0]._id, mechanic: prairieMechanic._id, details: 'Completed post-harvest clean-down and replaced two worn rotor rasp bars. Yield monitor calibration stored for next season.', date: daysAgo(14), companyId: prairie._id },
             { tool: prairieEquipment[3]._id, mechanic: prairieMechanic._id, details: 'Replaced three cracked pickup tines, aligned the belts, and tested the net wrap cycle with an empty chamber.', date: daysAgo(11), companyId: prairie._id },
@@ -253,9 +231,9 @@ const seed = async () => {
         console.log(`  Password for ALL seeded users below (generated this run): ${seedPassword}`);
         console.log('  0. Superadmin (superadmin@fixfleet.dev) -> /superadmin platform dashboard');
         console.log('  1. Green Valley Forage & Dairy (admin@greenvalleyfarm.com / mechanic@greenvalleyfarm.com / operator@greenvalleyfarm.com)');
-        console.log(`     -> ${valleyEquipment.length} equipment items, ${valleyFaults.length} faults, ${valleyParts.length} parts`);
+        console.log(`     -> ${valleyEquipment.length} equipment items, ${valleyFaults.length} faults`);
         console.log('  2. Prairie Crest Grain & Hay (admin@prairiecrestfarm.com / mechanic@prairiecrestfarm.com / operator@prairiecrestfarm.com)');
-        console.log(`     -> ${prairieEquipment.length} equipment items, ${prairieFaults.length} faults, ${prairieParts.length} parts`);
+        console.log(`     -> ${prairieEquipment.length} equipment items, ${prairieFaults.length} faults`);
         process.exit(0);
     } catch (error) {
         console.error('Seeding error:', error);

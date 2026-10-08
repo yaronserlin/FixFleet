@@ -24,18 +24,19 @@ const ACCESS_TOKEN_EXPIRY = '60m';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
 /**
- * Max-age, in milliseconds, for the access-token cookie. Kept in sync with
- * {@link ACCESS_TOKEN_EXPIRY} (60 minutes).
- * @type {number}
- */
-const ACCESS_COOKIE_MAX_AGE = 60 * 60 * 1000;
-
-/**
  * Max-age, in milliseconds, for the refresh-token cookie. Kept in sync with
  * {@link REFRESH_TOKEN_EXPIRY} (7 days).
  * @type {number}
  */
 const REFRESH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Version of the legal documents (frontend/src/content/legalDocuments.js)
+ * recorded when a user accepts them at signup. Must match the `version` of the
+ * terms and privacy documents there -- __tests__/termsVersion.test.js fails if they drift.
+ * @type {string}
+ */
+const CURRENT_TERMS_VERSION = '1.3';
 
 /**
  * Number of bcrypt salt rounds used when hashing user passwords.
@@ -63,9 +64,9 @@ const PASSWORD_RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
 module.exports = {
     ACCESS_TOKEN_EXPIRY,
     REFRESH_TOKEN_EXPIRY,
-    ACCESS_COOKIE_MAX_AGE,
     REFRESH_COOKIE_MAX_AGE,
     BCRYPT_SALT_ROUNDS,
+    CURRENT_TERMS_VERSION,
     REFRESH_REUSE_GRACE_MS,
     PASSWORD_RESET_TOKEN_TTL_MS,
 };

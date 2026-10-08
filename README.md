@@ -5,7 +5,7 @@
 [![React Version](https://img.shields.io/badge/react-19.3.0-blue.svg)](https://react.dev/)
 [![Express Version](https://img.shields.io/badge/express-5.2.1-lightgrey.svg)](https://expressjs.com/)
 
-A modern, multi-tenant web application designed for comprehensive industrial and commercial equipment maintenance, fault tracking, preventive maintenance scheduling, and spare parts management.
+A modern, multi-tenant web application designed for comprehensive industrial and commercial equipment maintenance, fault tracking, and preventive maintenance scheduling.
 
 **Live demo:** https://fixfleet-app.onrender.com/ - first load may take ~30 seconds (free hosting).
 
@@ -23,10 +23,9 @@ A modern, multi-tenant web application designed for comprehensive industrial and
 - **Equipment & Tool Management**: Track equipment catalog, upload technical manuals (PDFs), manage machine status, and attach maintenance routines.
 - **Fault Tracking & Reporting**: Log faults with multi-photo uploads, status workflows (Open, In Progress, Closed, Reopened), severity/priority levels, and mechanic assignments.
 - **Preventive Maintenance Schedules**: Set recurring maintenance plans with actionable task checklists, completion tracking, and historical logs.
-- **Spare Parts Inventory**: Monitor replacement parts stock levels, track part usage across maintenance operations, and link parts to specific equipment.
 - **Role-Based Access Control (RBAC)**:
   - `admin`: Organization setup, user management, and equipment catalog configuration.
-  - `mechanic`: Equipment maintenance, schedule execution, checklist management, fault resolution, and parts tracking.
+  - `mechanic`: Equipment maintenance, schedule execution, checklist management, and fault resolution.
   - `operator`: Equipment status view, fault reporting with photo uploads, and task visibility.
 - **Notifications & Web Push**: Mechanics and admins are alerted the moment a fault is reported, and admins can broadcast announcements to their organization (optionally targeting a single role). Every notification lands in an in-app feed with an unread badge, and is also delivered as a PWA push notification to each device the user has opted in on. Push is optional -- without VAPID keys configured, the in-app feed works unchanged.
 - **Progressive Web App (PWA)**: Built with `vite-plugin-pwa` for offline capability, pull-to-refresh on every screen, and mobile-friendly field operations.
@@ -40,8 +39,8 @@ A modern, multi-tenant web application designed for comprehensive industrial and
 - **Framework & Tooling**: [React 19](https://react.dev/), [Vite](https://vite.dev/), [Vite PWA](https://vite-pwa-org.netlify.app/)
 - **UI & Components**: [Material-UI (MUI v9)](https://mui.com/), [Emotion](https://emotion.sh/)
 - **State & Routing**: React Context API, [React Router v7](https://reactrouter.com/)
-- **Data Visualization & Scheduling**: [Recharts](https://recharts.org/), [FullCalendar](https://fullcalendar.io/)
-- **HTTP Client**: [Axios](https://axios-http.com/) with global auth interceptors and notifications via [Notistack](https://notistack.com/)
+- **Data Visualization**: [Recharts](https://recharts.org/)
+- **HTTP Client**: [Axios](https://axios-http.com/) with global auth interceptors and silent token refresh
 - **Testing & Quality**: [Jest](https://jestjs.io/), [React Testing Library](https://testing-library.com/), [ESLint 9](https://eslint.org/)
 
 ### Backend
@@ -129,7 +128,7 @@ cp .env.example .env
 *See [docs/ENV.md](docs/ENV.md) for detailed descriptions of all available environment configuration options.*
 
 ### 4. Seed the Database
-Populate your local MongoDB instance with initial test users, sample equipment, spare parts, and maintenance schedules:
+Populate your local MongoDB instance with initial test users, sample equipment and maintenance schedules:
 
 ```bash
 cd backend

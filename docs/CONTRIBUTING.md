@@ -42,7 +42,7 @@ cp frontend/.env.example frontend/.env
 Review and configure the variables (see [docs/ENV.md](ENV.md) for full descriptions).
 
 ### Database Seeding
-To populate your local database with initial test data (sample company, admin/mechanic/operator accounts, equipment, parts, and maintenance schedules):
+To populate your local database with initial test data (sample company, admin/mechanic/operator accounts, equipment, and maintenance schedules):
 
 ```bash
 cd backend
@@ -61,7 +61,7 @@ npm run seed
 | `npm run dev` | `nodemon app.js` | Start backend server in development mode with automatic restart on file changes |
 | `npm start` | `node app.js` | Start backend server in production mode |
 | `npm run build` | `node --check app.js` | Perform syntax and validity check on backend entry point |
-| `npm run seed` | `node seeders/seeder.js` | Seed MongoDB database with initial sample users, equipment, parts, and schedules |
+| `npm run seed` | `node seeders/seeder.js` | Seed MongoDB database with initial sample users, equipment, and schedules |
 | `npm run create-superadmin` | `node scripts/createSuperAdmin.js` | Create (or reset the password of) a platform superadmin: `npm run create-superadmin -- --email <email> [--name "<name>"]`. Uses `SUPERADMIN_PASSWORD` if set, otherwise generates and prints one once |
 | `npm test` | `jest --runInBand --detectOpenHandles --forceExit` | Execute backend test suite using in-memory MongoDB and Supertest |
 

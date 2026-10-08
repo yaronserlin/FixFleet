@@ -15,24 +15,6 @@ const maintenanceService = {
             .then((res) => res.data),
 
     /**
-     * Get single maintenance record by ID
-     * @param {string} id
-     */
-    getMaintenanceById: (id) =>
-        apiClient
-            .get(`/maintenance/${id}`)
-            .then((res) => res.data),
-
-    /**
-     * Create a new maintenance record
-     * @param {Object} payload - { tool, details, date, engineHours }
-     */
-    createMaintenance: (payload) =>
-        apiClient
-            .post('/maintenance', payload)
-            .then((res) => res.data),
-
-    /**
      * Delete a maintenance record
      * @param {string} id
      */

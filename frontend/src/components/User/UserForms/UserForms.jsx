@@ -157,15 +157,4 @@ export function CreateUserForm({ onSubmit }) {
     );
 }
 
-/** Pre-filled form for updating an existing user */
-export function UpdateUserForm({ initialValues, onSubmit }) {
-    return (
-        <UserForm
-            initialValues={initialValues}
-            onSubmit={onSubmit}
-            submitLabel="Update"
-        />
-    );
-}
-
 export default UserForm;

@@ -2,25 +2,22 @@ jest.mock('mongoose', () => ({
     set: jest.fn(),
     connect: jest.fn(),
 }));
+jest.mock('../utils/logger', () => ({ info: jest.fn(), error: jest.fn() }));
 
 describe('config/db connectDB', () => {
     let mongoose;
-    let consoleLogSpy;
-    let consoleErrorSpy;
+    let logger;
     let processExitSpy;
 
     beforeEach(() => {
         jest.resetModules();
         mongoose = require('mongoose');
-        consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
-        consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        logger = require('../utils/logger');
         processExitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
     });
 
     afterEach(() => {
         jest.clearAllMocks();
-        consoleLogSpy.mockRestore();
-        consoleErrorSpy.mockRestore();
         processExitSpy.mockRestore();
     });
 
@@ -32,7 +29,7 @@ describe('config/db connectDB', () => {
 
         expect(mongoose.set).toHaveBeenCalledWith('sanitizeFilter', true);
         expect(mongoose.connect).toHaveBeenCalledWith(process.env.MONGO_URI);
-        expect(consoleLogSpy).toHaveBeenCalledWith('MongoDB connected');
+        expect(logger.info).toHaveBeenCalledWith('MongoDB connected');
         expect(processExitSpy).not.toHaveBeenCalled();
     });
 
@@ -43,7 +40,7 @@ describe('config/db connectDB', () => {
 
         await connectDB();
 
-        expect(consoleErrorSpy).toHaveBeenCalledWith('MongoDB connection error:', connectionError);
+        expect(logger.error).toHaveBeenCalledWith('MongoDB connection error', connectionError);
         expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 });

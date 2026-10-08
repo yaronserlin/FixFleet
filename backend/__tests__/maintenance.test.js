@@ -24,68 +24,38 @@ async function createTool(token, overrides = {}) {
     return res.body;
 }
 
+// Records are created by completing a schedule task -- the only path the app
+// uses (POST /api/equipment/:id/schedules/:scheduleId/complete).
+async function logService(token, toolId, details, currentEngineHours) {
+    const addRes = await request(server)
+        .post(`/api/tools/${toolId}/schedules`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ title: details, intervalHours: 100 });
+    const scheduleId = addRes.body.maintenanceSchedule.at(-1)._id;
+    await request(server)
+        .post(`/api/tools/${toolId}/schedules/${scheduleId}/complete`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ currentEngineHours });
+}
+
+async function listRecords(token, toolId) {
+    const res = await request(server)
+        .get(`/api/maintenance?toolId=${toolId}`)
+        .set('Authorization', `Bearer ${token}`);
+    return res.body;
+}
+
 describe('Maintenance Controller', () => {
-    describe('POST /api/maintenance (createMaintenance)', () => {
-        it('rejects a request with no details', async () => {
-            const { token } = await registerCompanyAdmin(server);
-            const tool = await createTool(token);
-            const res = await request(server)
-                .post('/api/maintenance')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ tool: tool._id });
-            expect(res.status).toBe(400);
-            expect(res.body.message).toMatch(/details are required/i);
-        });
-
-        it('rejects a request with no tool reference', async () => {
-            const { token } = await registerCompanyAdmin(server);
-            const res = await request(server)
-                .post('/api/maintenance')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ details: 'Replaced filter' });
-            expect(res.status).toBe(400);
-            expect(res.body.message).toMatch(/tool reference is required/i);
-        });
-
-        it('rejects a tool that does not belong to the company', async () => {
-            const { token } = await registerCompanyAdmin(server);
-            const res = await request(server)
-                .post('/api/maintenance')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ details: 'Replaced filter', tool: '64b7f3f3f3f3f3f3f3f3f3f3' });
-            expect(res.status).toBe(400);
-            expect(res.body.message).toMatch(/does not exist in your organization/i);
-        });
-
-        it('creates a maintenance record with an explicit date', async () => {
-            const { token } = await registerCompanyAdmin(server);
-            const tool = await createTool(token);
-            const res = await request(server)
-                .post('/api/maintenance')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ tool: tool._id, details: 'Replaced filter', date: '2025-01-01' });
-            expect(res.status).toBe(201);
-            expect(res.body.details).toBe('Replaced filter');
-            expect(res.body.tool._id).toBe(tool._id);
-        });
-    });
-
     describe('GET /api/maintenance (getAllMaintenance)', () => {
         it('filters by toolId and paginates', async () => {
             const { token } = await registerCompanyAdmin(server);
             const toolA = await createTool(token, { name: 'Tool A' });
             const toolB = await createTool(token, { name: 'Tool B' });
-            await request(server).post('/api/maintenance').set('Authorization', `Bearer ${token}`)
-                .send({ tool: toolA._id, details: 'A1' });
-            await request(server).post('/api/maintenance').set('Authorization', `Bearer ${token}`)
-                .send({ tool: toolA._id, details: 'A2' });
-            await request(server).post('/api/maintenance').set('Authorization', `Bearer ${token}`)
-                .send({ tool: toolB._id, details: 'B1' });
+            await logService(token, toolA._id, 'A1');
+            await logService(token, toolA._id, 'A2');
+            await logService(token, toolB._id, 'B1');
 
-            const filtered = await request(server)
-                .get(`/api/maintenance?toolId=${toolA._id}`)
-                .set('Authorization', `Bearer ${token}`);
-            expect(filtered.body.length).toBe(2);
+            expect(await listRecords(token, toolA._id)).toHaveLength(2);
 
             const paged = await request(server)
                 .get('/api/maintenance?page=1&limit=1')
@@ -93,31 +63,6 @@ describe('Maintenance Controller', () => {
             expect(paged.body.logs).toHaveLength(1);
             expect(paged.body.total).toBe(3);
             expect(paged.body.pages).toBe(3);
-        });
-    });
-
-    describe('GET /api/maintenance/:id (getMaintenanceById)', () => {
-        it('returns 404 for a non-existent record', async () => {
-            const { token } = await registerCompanyAdmin(server);
-            const res = await request(server)
-                .get('/api/maintenance/64b7f3f3f3f3f3f3f3f3f3f3')
-                .set('Authorization', `Bearer ${token}`);
-            expect(res.status).toBe(404);
-        });
-
-        it('returns the record when found', async () => {
-            const { token } = await registerCompanyAdmin(server);
-            const tool = await createTool(token);
-            const createRes = await request(server)
-                .post('/api/maintenance')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ tool: tool._id, details: 'Oil change' });
-
-            const res = await request(server)
-                .get(`/api/maintenance/${createRes.body._id}`)
-                .set('Authorization', `Bearer ${token}`);
-            expect(res.status).toBe(200);
-            expect(res.body.details).toBe('Oil change');
         });
     });
 
@@ -133,20 +78,31 @@ describe('Maintenance Controller', () => {
         it('deletes an existing record', async () => {
             const { token } = await registerCompanyAdmin(server);
             const tool = await createTool(token);
-            const createRes = await request(server)
-                .post('/api/maintenance')
-                .set('Authorization', `Bearer ${token}`)
-                .send({ tool: tool._id, details: 'Oil change' });
+            await logService(token, tool._id, 'Oil change');
+            const [record] = await listRecords(token, tool._id);
 
             const res = await request(server)
-                .delete(`/api/maintenance/${createRes.body._id}`)
+                .delete(`/api/maintenance/${record._id}`)
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(200);
+            expect(await listRecords(token, tool._id)).toHaveLength(0);
+        });
 
-            const getRes = await request(server)
-                .get(`/api/maintenance/${createRes.body._id}`)
+        it('drops engine hours when the deleted record held the current reading', async () => {
+            const { token } = await registerCompanyAdmin(server);
+            const tool = await createTool(token);
+            await logService(token, tool._id, 'First', 100);
+            await logService(token, tool._id, 'Second', 300);
+            const records = await listRecords(token, tool._id);
+            const high = records.find((r) => r.engineHours === 300);
+
+            await request(server)
+                .delete(`/api/maintenance/${high._id}`)
                 .set('Authorization', `Bearer ${token}`);
-            expect(getRes.status).toBe(404);
+            const toolRes = await request(server)
+                .get(`/api/tools/${tool._id}`)
+                .set('Authorization', `Bearer ${token}`);
+            expect(toolRes.body.currentEngineHours).toBe(100);
         });
     });
 });

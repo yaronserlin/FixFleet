@@ -1,4 +1,7 @@
 // src/content/legalDocuments.js
+//
+// When bumping `version`, bump CURRENT_TERMS_VERSION in
+// backend/constants/auth.js too (a backend test enforces the match).
 
 export const LEGAL_CONTACT_EMAIL = 'yaronserlindev@gmail.com';
 

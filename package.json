@@ -1,12 +1,9 @@
 {
   "name": "FixFleet",
   "private": true,
-  "description": "Repository tooling. The apps live in backend/ and frontend/, each with its own package.json.",
+  "description": "Repository tooling. The apps live in backend/ and frontend/, each with its own package.json. The spec viewer builder has its own manifest in docs/system-spec/_build/.",
   "scripts": {
     "docs:build": "node docs/system-spec/_build/build.mjs",
     "docs:watch": "node docs/system-spec/_build/build.mjs --watch"
-  },
-  "devDependencies": {
-    "marked": "14.1.4"
   }
 }

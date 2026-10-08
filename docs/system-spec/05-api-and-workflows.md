@@ -13,7 +13,7 @@
 | Body formats | JSON (`express.json`, 10 MB) · urlencoded · multipart (multer, memory, 50 MB/file, jpeg/png/webp/gif/pdf). |
 | Sanitization | Keys starting with `$` or containing `.` are deleted from `body`, `query`, `params` (`sanitizeRequest`). |
 | ID params | `validateObjectId(...)` → `400 { message: "Invalid <param> format" }` before any DB access. |
-| Pagination | List endpoints for equipment, faults, maintenance and parts return a **plain array** when neither `page` nor `limit` is supplied, otherwise `{ <items>, page, limit, total, pages }`. `limit` clamped to 1–100 (default 20). Notifications and superadmin lists are always paginated. |
+| Pagination | List endpoints for equipment, faults and maintenance return a **plain array** when neither `page` nor `limit` is supplied, otherwise `{ <items>, page, limit, total, pages }`. `limit` clamped to 1–100 (default 20). Notifications and superadmin lists are always paginated. |
 | Error body | `{ message: string, code?: string }`. 4xx messages are always returned; 5xx message is `"Server error"` in production. |
 | Rate limits | Global 500 req / 15 min / IP. `/auth/register|login|refresh|forgot-password|reset-password`: +20 / 15 min / IP. `/auth/forgot-password`: +3 / 15 min **per email**. All skipped when `NODE_ENV=test`. Auth `429` body: `{ message: "Too many attempts from this IP, please try again after 15 minutes" }`. |
 
@@ -25,7 +25,7 @@
 | Mongoose `ValidationError` | 400 | Joined validator messages |
 | Mongoose `CastError` | 400 | `Invalid <path>: <value>` |
 | `MulterError` (e.g. size) | 400 | Multer message |
-| Multer file-filter rejection | **500** (plain `Error`, no status) | `Only image files (jpeg, png, webp, gif) and PDF documents are allowed` (masked as `Server error` in production) |
+| Multer file-filter rejection | 400 (`httpError` from `uploadMiddleware`) | `Only image files (jpeg, png, webp, gif) and PDF documents are allowed` |
 | CORS rejection | 403 | `CORS forbidden` |
 | `httpError(status, msg, {code})` from services | `status` | `msg` (+ `code`) |
 | Anything else | 500 | real message (dev) / `Server error` (prod) |
@@ -54,9 +54,9 @@ Role guards: `ensureAdmin` → `403 "Forbidden: Admins only"`; `ensureMechanicOr
 ```
 `GET /auth/me` returns the same keys but `company` is the **full** Company document (`{ _id, name, slug, isActive, createdAt, updatedAt }`) or `null` for a superadmin. `PUT /auth/me` omits `company`. `POST /auth/me/avatar` returns `{ id, _id, name, email, role, avatar, company }` (full company).
 
-**`Fault` (populated):** list/create/update populate `tool: { _id, name, serialNumber, model, currentEngineHours }` and `operator` / `resolvedBy: { _id, name, email, role }`. `GET /faults/:id` populates the full `tool`. **`close` and `reopen` populate full `tool`, `operator` and `resolvedBy` documents with no field selection — the populated users include the `password` hash** (see [Audit Observations](README.md#7-audit-observations)).
+**`Fault` (populated):** list/create/update populate `tool: { _id, name, serialNumber, model, currentEngineHours }` and `operator` / `resolvedBy: { _id, name, email, role }`. `close` and `reopen` use the same field selection (`FAULT_POPULATE_FIELDS`). `GET /faults/:id` populates the full `tool`. `User.password` is `select: false`, so no populated user ever carries the hash.
 
-**`Equipment`:** Equipment document; list endpoint populates `faults` (full Fault docs); detail endpoint populates `faults.operator` (`name email`).
+**`Equipment`:** Equipment document; the list endpoint returns `faults` as an array of ids (not populated); the detail endpoint populates `faults` and their `operator` (`name email`).
 
 ---
 
@@ -69,7 +69,7 @@ Legend — **Auth:** `—` public · `JWT` any authenticated tenant user · `M/A
 | Method | Path | Auth | Request | Response |
 |---|---|---|---|---|
 | GET | `/health`, `/api/health` | — | — | `200 { status: "healthy", timestamp, database: "connected" }` or `503 { status: "degraded", …, database: "disconnected" }` |
-| GET | `/uploads/:filename` | JWT (superadmin allowed) | `:filename` = GridFS id | Binary stream with `Content-Type`, `Content-Length`. `404 { message: "Media file not found" }` if unknown; `403 { message: "Forbidden: Cannot access media belonging to another organization" }` if referenced only by another company; served if referenced by the caller's company **or by no document at all**. |
+| GET | `/uploads/:filename` | JWT (superadmin allowed) | `:filename` = GridFS id | Binary stream with `Content-Type`, `Content-Length`. Ownership is an exact match on `/uploads/<id>` in `Equipment.books.fileUrl`, `Fault.photos` or `User.avatar`. Served if referenced by the caller's company; `403 { message: "Forbidden: Cannot access media belonging to another organization" }` if referenced only by another company; `404 { message: "Media file not found" }` if the file is unknown **or referenced by no document**. |
 
 ### 5.2.2 Auth — `/api/auth` (`authRoutes.js` → `authController.js` → `authService.js`)
 
@@ -93,11 +93,11 @@ All routes: `verifyToken`.
 
 | Method | Path | Auth | Request | Response | Notes |
 |---|---|---|---|---|---|
-| GET | `/` | JWT | `?page&limit` | `Equipment[]` or `{ tools, page, limit, total, pages }` | `faults` populated; newest first. |
+| GET | `/` | JWT | `?page&limit` | `Equipment[]` or `{ tools, page, limit, total, pages }` | `faults` as ids (fetch faults via `/api/faults`); newest first. |
 | GET | `/:id` | JWT | — | `Equipment` | Runs `syncEquipmentEngineHours` first; 404 `Equipment not found`. |
 | POST | `/` | A | `{ name*, serialNumber, description, model, localSerialNumber, currentEngineHours }` | `201 Equipment` | 400 `No data provided` / `Equipment name is required`. |
 | PUT | `/:id` | A | any subset of the whitelist | `200 Equipment` | 400 `No valid fields provided for update`; 404. |
-| DELETE | `/:id` | A | — | `204` | Cascades: book files, faults, parts, maintenance of this tool. |
+| DELETE | `/:id` | A | — | `204` | Cascades: manual files, the faults' photo files, notifications pointing at the tool or its faults, faults, maintenance of this tool. |
 | POST | `/:id/books` | M/A | multipart: `book` (file*), `title`* | `201 Equipment` | 400 `PDF document is required` / `Book title is required`; 404 checked **before** storing the file. |
 | DELETE | `/:id/books/:bookId` | M/A | — | `200 Equipment` | GridFS file deleted. |
 | POST | `/:id/schedules` | M/A | `{ title*, description, intervalHours, intervalDays, checklist: (string \| {text})[] }` | `201 Equipment` | Sets `lastPerformed*` = now / current hours, computes `nextDue*`. |
@@ -116,32 +116,21 @@ All routes: `verifyToken`.
 | GET | `/` | JWT | `?status=open\|closed&mine=<truthy>&page&limit` | `Fault[]` or `{ faults, page, limit, total, pages }` | `mine` filters `operator = caller`. Every role can list all company faults. |
 | GET | `/:id` | JWT | — | `Fault` | 404 `Fault not found`. |
 | POST | `/` | JWT (any role) | JSON or multipart: `tool*`, `description*`, `code`, `engineHours`, files `photos` (≤ 5) | `201 Fault` | 400 `Description is required` / `Tool reference is required` / `Referenced tool does not exist in your organization`. Triggers fault notification (failures logged, never surfaced). |
-| PUT | `/:id` | M/A | `{ description, code, engineHours, resolutionDescription, status }` | `200 Fault` | `status: closed` sets `closedAt`, `resolvedBy`; `status: open` unsets resolution fields. Re-syncs hours. (Controller JSDoc says PATCH; only PUT is routed.) |
+| PUT | `/:id` | M/A | `{ description, code, engineHours, resolutionDescription, status }` | `200 Fault` | `status: closed` sets `closedAt`, `resolvedBy`; `status: open` unsets resolution fields. Re-syncs hours (an unset closing reading is passed as `removedReading`). |
 | PATCH | `/:id/close` | M/A | `{ engineHours?, resolutionDescription? \| notes? \| description? }` | `200 Fault` | Sets `closingEngineHours` when valid ≥ 0; re-syncs hours with it as candidate. |
-| PUT \| PATCH | `/:id/reopen` | M/A | — | `200 Fault` | Unsets `closedAt, closingEngineHours, resolutionDescription, resolvedBy`. |
-| DELETE | `/:id` | M/A | — | `200 { message: "Fault deleted successfully" }` | Deletes photo files, pulls back-reference, re-syncs. |
+| PUT \| PATCH | `/:id/reopen` | M/A | — | `200 Fault` | Unsets `closedAt, closingEngineHours, resolutionDescription, resolvedBy`; re-syncs hours (drops if this fault held the current reading). |
+| DELETE | `/:id` | M/A | — | `200 { message: "Fault deleted successfully" }` | Deletes the fault's notifications and photo files, pulls back-reference, re-syncs (drops if this fault held the current reading). |
 
 ### 5.2.5 Maintenance logs — `/api/maintenance`
 
 | Method | Path | Auth | Request | Response |
 |---|---|---|---|---|
 | GET | `/` | JWT | `?toolId&page&limit` | `Maintenance[]` (tool: `name serialNumber model`, mechanic: `name email`, sorted `date` desc) or `{ logs, page, limit, total, pages }` |
-| GET | `/:id` | JWT | — | `Maintenance` (full tool) · 404 `Maintenance record not found` |
-| POST | `/` | M/A | `{ tool*, details*, date?, engineHours? }` | `201 Maintenance` (tool incl. `currentEngineHours`) |
-| DELETE | `/:id` | M/A | — | `200 { message: "Maintenance record deleted successfully" }` |
+| DELETE | `/:id` | M/A | — | `200 { message: "Maintenance record deleted successfully" }` · 404 `Maintenance record not found`; re-syncs hours (drops if this record held the current reading). |
 
-The frontend uses only `GET /` (by `toolId`) and `DELETE /:id`.
+Records are created only by completing a schedule task (`POST /api/equipment/:id/schedules/:scheduleId/complete`, §5.3.6).
 
-### 5.2.6 Parts — `/api/parts` (no frontend consumer)
-
-| Method | Path | Auth | Request | Response |
-|---|---|---|---|---|
-| GET | `/` | JWT | `?page&limit` | `Part[]` (tool `name serialNumber model`) or `{ parts, page, limit, total, pages }` |
-| POST | `/` | M/A | `{ name*, partNumber, tool, inStock }` | `201 Part` · 400 `Part name is required` / foreign tool |
-| PUT | `/:id` | M/A | subset of the above | `200 Part` · 400 `Part name cannot be empty` · 404 `Part not found` |
-| DELETE | `/:id` | M/A | — | `200 { message: "Part deleted successfully" }` |
-
-### 5.2.7 Notifications — `/api/notifications`
+### 5.2.6 Notifications — `/api/notifications`
 
 All routes: `verifyToken`; every read/write is scoped by `{ companyId, recipient: caller }`. Literal paths are declared before `/:id` so they are never shadowed.
 
@@ -157,18 +146,16 @@ All routes: `verifyToken`; every read/write is scoped by `{ companyId, recipient
 | PATCH | `/:id/read` | JWT | — | Updated notification (idempotent) · 404 if not the caller's |
 | DELETE | `/:id` | JWT | — | `204` · 404 if not the caller's |
 
-### 5.2.8 Company administration — `/api/admin` (all: `verifyToken` + `ensureAdmin`)
+### 5.2.7 Company administration — `/api/admin` (all: `verifyToken` + `ensureAdmin`)
 
 | Method | Path | Request | Response | Notes |
 |---|---|---|---|---|
 | GET | `/users` | — | `User[]` (no password), newest first | Company users only. |
 | POST | `/users` | `{ name* (≥2), email*, password* (≥8) }` (`role` ignored) | `201 User` (role `operator`, `mustChangePassword: true`) | Audit `user.created`. |
 | PATCH | `/users/:id/role` | `{ role: operator\|mechanic\|admin }` | `200 User` | 400 self-change / invalid / last admin. Audit `user.role_changed`. |
-| DELETE | `/users/:id` | — | `204` | 400 self-delete / last admin. Audit `user.deleted`. |
-| GET / POST | `/equipment`, `/tools` | as `/api/equipment` | as `/api/equipment` | Alias of equipment list/create. |
-| PUT / DELETE | `/equipment/:id`, `/tools/:id` | as `/api/equipment/:id` | as `/api/equipment/:id` | Alias. |
+| DELETE | `/users/:id` | — | `204` | 400 self-delete / last admin. Also deletes the user's refresh tokens, push subscriptions and avatar file. Audit `user.deleted`. |
 
-### 5.2.9 Platform administration — `/api/superadmin` (all: `verifyToken` + `ensureSuperAdmin`)
+### 5.2.8 Platform administration — `/api/superadmin` (all: `verifyToken` + `ensureSuperAdmin`)
 
 | Method | Path | Request | Response | Audit |
 |---|---|---|---|---|
@@ -387,7 +374,7 @@ Notation: **UI → Context/Service (frontend) → Route → Middleware → Contr
 ### 5.3.2 Login, silent refresh and reuse detection
 
 1. `LoginForm.jsx` → `AuthContext.login(email, password)` → `POST /api/auth/login`.
-2. `authService.login`: `users.findOne({ email }).populate(companyId)` → `bcrypt.compare` → company-active check → `generateTokens` (stamps `lastActiveAt`, inserts `RefreshToken`).
+2. `authService.login`: `users.findOne({ email }).select('+password').populate(companyId)` → `bcrypt.compare` → company-active check → `generateTokens` (stamps `lastActiveAt`, inserts `RefreshToken`).
 3. Controller: audits `auth.superadmin_login` (superadmin) or, on a 4xx with an email, `auth.login_failed`; sets the `refreshToken` cookie (`httpOnly`, `secure` in production, `sameSite: none` only in production with `COOKIE_DOMAIN`, else `lax`; path `/api/auth`; 7 days).
 4. Frontend stores the access token in `localStorage['token']` and as the axios default header; navigates to `/force-password-change` if `mustChangePassword`, else `homeRouteFor(user)` (`/superadmin` or `/dashboard`).
 5. Any later `401` (not from login/register/refresh): the `apiClient` interceptor queues concurrent failures, calls `POST /auth/refresh` once with raw axios (`withCredentials`), stores the new token, replays queued requests. On refresh failure: clears the token and hard-redirects to `/login` unless on a public path.
@@ -448,7 +435,7 @@ Notification content: title `New fault on <equipment name>`, body `<reporter> re
 
 ### 5.3.7 Fault resolution and engine-hours sync
 
-`FaultCard` / `FaultList` / `FaultModal` "Close" → `CloseFaultDialog.jsx` (requires a numeric reading ≥ 0) → `FaultContext.closeFault` or `faultsService.close` → `PATCH /api/faults/:id/close` (M/A) → `findOneAndUpdate` (status closed, `closedAt`, `resolvedBy`, `resolutionDescription`, `closingEngineHours`) → `syncEquipmentEngineHours(tool, company, closingHours)` → highest-wins update of `tools.currentEngineHours` and schedule statuses. Reopen → `PATCH /:id/reopen` → unsets fields → re-sync (the value cannot decrease).
+`FaultCard` / `FaultList` / `FaultModal` "Close" → `CloseFaultDialog.jsx` (requires a numeric reading ≥ 0) → `FaultContext.closeFault` or `faultsService.close` → `PATCH /api/faults/:id/close` (M/A) → `findOneAndUpdate` (status closed, `closedAt`, `resolvedBy`, `resolutionDescription`, `closingEngineHours`) → `syncEquipmentEngineHours(tool, company, closingHours)` → highest-wins update of `tools.currentEngineHours` and schedule statuses. Reopen → `PATCH /:id/reopen` → unsets fields → re-sync with the removed closing reading: if it was the current value, `currentEngineHours` drops to the highest remaining reading; a higher manual reading is kept.
 
 ### 5.3.8 Equipment manuals (PDF) upload and viewing
 
@@ -481,14 +468,12 @@ Platform variant: `SuperAdminDashboard.jsx` passes `companies` + `onSend = super
 |---|---|---|
 | `apiClient` (direct) | `GET /auth/me`, `POST /auth/login`, `/auth/register`, `/auth/logout`, `/auth/me/avatar`, `/auth/refresh` | `AuthContext.jsx`, interceptor |
 | `userService.getProfile / updateProfile / deleteAccount / changePassword / forgotPassword / resetPassword / uploadAvatar` | `/auth/me` (GET/PUT/DELETE), `/auth/me/change-password`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/me/avatar` | `AccountPage`, `ForcePasswordChangePage`, `ForcePasswordChangeDialog`, `ForgotPasswordForm`, `ResetPasswordPage` |
-| `equipmentService.*` (`toolsService` re-export) | `/equipment/**` | `EquipmentContext`, `Dashboard`, `EquipmentPage`, `EquipmentBooksPage`, `EquipmentSchedulePage`, `EquipmentBooksTab`, `EquipmentMaintenanceTab` |
+| `equipmentService.*` | `/equipment/**` | `EquipmentContext`, `Dashboard`, `EquipmentPage`, `EquipmentBooksPage`, `EquipmentSchedulePage`, `EquipmentBooksTab`, `EquipmentMaintenanceTab` |
 | `faultsService.*` | `/faults/**` | `FaultContext`, `Dashboard`, `EquipmentsPage`, `OperatorReportsPage`, `ProfilePage` |
 | `maintenanceService.getMaintenance / deleteMaintenance` | `GET /maintenance?toolId`, `DELETE /maintenance/:id` | `EquipmentMaintenanceTab` |
-| `maintenanceService.getMaintenanceById / createMaintenance` | `GET /maintenance/:id`, `POST /maintenance` | **unused** |
 | `notificationsService.*` | `/notifications/**` | `NotificationFeedContext`, `usePushNotifications`, `SendAnnouncementDialog` |
 | `adminService.getUsers / createUser / updateUserRole / deleteUser` | `/admin/users/**` | `AdminDashboard` |
-| `adminService.*Equipment / *Tool` | `/admin/equipment/**`, `/admin/tools/**` | **unused** (equipment CRUD goes through `EquipmentContext` → `/equipment`) |
 | `superadminService.*` | `/superadmin/**` | `SuperAdminDashboard` |
 | `useAuthenticatedBlobUrl` | `GET /uploads/:id` | `ImageViewerDialog`, `PdfViewerDialog` |
-| `push-sw.js` (service worker, `fetch` with cookies, no Bearer) | `GET /api/notifications/unread-count`, `PATCH /api/notifications/:id/read` | Always `401` — see Observations |
-| — | `/parts/**` | **no consumer** |
+| `push-sw.js` (service worker, `fetch`) | `POST /api/auth/refresh` (refresh cookie) → Bearer `GET /api/notifications/unread-count`, `PATCH /api/notifications/:id/read` | `push` and `notificationclick` handlers; same-origin URLs only, counted by the auth limiter (see [Audit Observations](README.md#7-audit-observations)) |
+| `faultsService.getById`, `equipmentService.addChecklistItem / deleteChecklistItem` | `GET /faults/:id`, `POST /equipment/:id/schedules/:scheduleId/checklist`, `DELETE …/checklist/:itemId` | **unused** (no component calls them; checklists are set when a schedule is created and only toggled afterwards) |

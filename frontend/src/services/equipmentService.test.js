@@ -11,17 +11,12 @@ jest.mock('./apiClient', () => ({
 
 import apiClient from './apiClient';
 import equipmentService from './equipmentService';
-import toolsService from './toolsService';
 
 const resolveWithData = (data) => Promise.resolve({ data });
 
 describe('equipmentService', () => {
     afterEach(() => {
         jest.clearAllMocks();
-    });
-
-    it('toolsService re-exports equipmentService for backward compatibility', () => {
-        expect(toolsService).toBe(equipmentService);
     });
 
     it('getAll resolves with response data', async () => {

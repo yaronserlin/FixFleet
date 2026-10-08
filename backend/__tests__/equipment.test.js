@@ -2,6 +2,8 @@ const request = require('supertest');
 const { connectTestDB, closeTestDB, registerCompanyAdmin, uniqueEmail } = require('./helpers/setup');
 
 const app = require('../app');
+const Notification = require('../models/Notification');
+const mediaStorage = require('../utils/mediaStorage');
 let server;
 
 jest.setTimeout(90000);
@@ -157,6 +159,32 @@ describe('Equipment/Tool Controller', () => {
                 .get(`/api/tools/${tool._id}`)
                 .set('Authorization', `Bearer ${token}`);
             expect(getRes.status).toBe(404);
+        });
+
+        it('removes fault photos and notifications of a deleted tool', async () => {
+            const { token, userId } = await registerCompanyAdmin(server);
+            const tool = await createTool(token);
+            const faultRes = await request(server)
+                .post('/api/faults')
+                .set('Authorization', `Bearer ${token}`)
+                .field('description', 'Leak')
+                .field('tool', tool._id)
+                .attach('photos', Buffer.from('fake-png'), { filename: 'p.png', contentType: 'image/png' });
+            const photoId = mediaStorage.idFromUrl(faultRes.body.photos[0]);
+            await Notification.create({
+                companyId: faultRes.body.companyId,
+                recipient: userId,
+                type: 'fault_reported',
+                title: 't',
+                body: 'b',
+                data: { faultId: faultRes.body._id, equipmentId: tool._id },
+            });
+
+            await request(server)
+                .delete(`/api/tools/${tool._id}`)
+                .set('Authorization', `Bearer ${token}`);
+            expect(await mediaStorage.getFileInfo(photoId)).toBeFalsy();
+            expect(await Notification.countDocuments({ 'data.equipmentId': tool._id })).toBe(0);
         });
     });
 

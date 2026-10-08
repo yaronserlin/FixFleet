@@ -1,7 +1,7 @@
 // src/components/User/UserForms/UserForms.test.jsx
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { CreateUserForm, UpdateUserForm } from './UserForms';
+import { CreateUserForm } from './UserForms';
 
 describe('CreateUserForm', () => {
     it('renders name/email/password fields and the default-role info note', () => {
@@ -63,40 +63,5 @@ describe('CreateUserForm', () => {
         fireEvent.change(screen.getByLabelText(/^Password/i), { target: { name: 'password', value: 'secret123' } });
         fireEvent.click(screen.getByRole('button', { name: /^Create$/i }));
         expect(await screen.findByText('Email already in use')).toBeInTheDocument();
-    });
-});
-
-describe('UpdateUserForm', () => {
-    const initialValues = { name: 'Jane Doe', email: 'jane@acme.com', password: '', role: 'mechanic' };
-
-    it('pre-fills fields and does not require a password', () => {
-        render(<UpdateUserForm initialValues={initialValues} onSubmit={jest.fn()} />);
-        expect(screen.getByLabelText(/^Name/i)).toHaveValue('Jane Doe');
-        expect(screen.getByLabelText(/^Email/i)).toHaveValue('jane@acme.com');
-        expect(screen.getByRole('button', { name: /^Update$/i })).toBeInTheDocument();
-    });
-
-    it('submits successfully with the password left blank (blank means "leave unchanged" on Update, unlike Create)', async () => {
-        const onSubmit = jest.fn().mockResolvedValue();
-        render(<UpdateUserForm initialValues={initialValues} onSubmit={onSubmit} />);
-        fireEvent.change(screen.getByLabelText(/^Name/i), { target: { name: 'name', value: 'Jane Updated' } });
-        fireEvent.click(screen.getByRole('button', { name: /^Update$/i }));
-        await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: 'Jane Updated', password: '' })));
-    });
-
-    it('does not reset the form after a successful update (only Create resets)', async () => {
-        const onSubmit = jest.fn().mockResolvedValue();
-        render(<UpdateUserForm initialValues={initialValues} onSubmit={onSubmit} />);
-        fireEvent.change(screen.getByLabelText(/^Name/i), { target: { name: 'name', value: 'Jane Updated' } });
-        fireEvent.click(screen.getByRole('button', { name: /^Update$/i }));
-        await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-        expect(screen.getByLabelText(/^Name/i)).toHaveValue('Jane Updated');
-    });
-
-    it('validates a too-short password if one is entered', () => {
-        const { container } = render(<UpdateUserForm initialValues={initialValues} onSubmit={jest.fn()} />);
-        fireEvent.change(screen.getByLabelText(/^Password/i), { target: { name: 'password', value: '123' } });
-        fireEvent.submit(container.querySelector('form'));
-        expect(screen.getByText(/at least 8 characters/i)).toBeInTheDocument();
     });
 });

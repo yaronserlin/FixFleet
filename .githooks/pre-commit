@@ -7,16 +7,24 @@ set -e
 
 cd "$(git rev-parse --show-toplevel)"
 
+# ── update-functional-doc: keep the spec viewer in sync ────────────────────────
+# Paste into the project's pre-commit hook (POSIX sh). Place it BEFORE any early
+# `exit 0` (e.g. branch guards) so it runs on every branch, and after any `cd` to
+# the repo root. Replace SPEC_DIR if the spec lives elsewhere. Rebuilds
+# <SPEC_DIR>/index.html when spec Markdown, the template, the config or the
+# builder is staged, and stages the result.
 # ponytail: builds from the working tree, so a partially staged .md is rendered with its
-# unstaged edits too; stage whole files (or use npm run docs:watch) if that matters.
-if git diff --cached --name-only | grep -qE '^docs/system-spec/(.*\.md|_build/)'; then
-  if [ -d node_modules/marked ]; then
-    node docs/system-spec/_build/build.mjs
-    git add docs/system-spec/index.html
+# unstaged edits too; stage whole files (or use the watch script) if that matters.
+SPEC_DIR="docs/system-spec"
+if git diff --cached --name-only | grep -qE "^${SPEC_DIR}/(.*\.md|_build/(template\.html|spec\.config\.json|build\.mjs))$"; then
+  if [ -d "${SPEC_DIR}/_build/node_modules/marked" ]; then
+    node "${SPEC_DIR}/_build/build.mjs" || exit 1
+    git add "${SPEC_DIR}/index.html"
   else
-    echo "pre-commit: docs/system-spec/index.html NOT rebuilt; run 'npm install' in the repo root once." >&2
+    echo "pre-commit: ${SPEC_DIR}/index.html NOT rebuilt; run 'npm install --prefix ${SPEC_DIR}/_build' once." >&2
   fi
 fi
+# ── end update-functional-doc ──────────────────────────────────────────────────
 
 [ "$(git branch --show-current)" = main ] || exit 0
 

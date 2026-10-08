@@ -23,7 +23,6 @@ const equipmentRoutes = require('./routes/equipmentRoutes');
 const toolRoutes = require('./routes/toolRoutes');
 const faultRoutes = require('./routes/faultRoutes');
 const maintenanceRoutes = require('./routes/maintenanceRoutes');
-const partRoutes = require('./routes/partRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const superadminRoutes = require('./routes/superadminRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
@@ -122,7 +121,8 @@ app.get('/uploads/:filename', verifyToken, async (req, res, next) => {
             return res.status(404).json({ message: 'Media file not found' });
         }
 
-        const safePattern = new RegExp(id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+        // Exact match on the stored reference form (see mediaStorage.idFromUrl).
+        const fileUrl = `/uploads/${id}`;
 
         const serve = () => {
             res.set('Content-Type', fileInfo.contentType || 'application/octet-stream');
@@ -132,9 +132,9 @@ app.get('/uploads/:filename', verifyToken, async (req, res, next) => {
 
         // Check if resource belongs to the requesting user's company
         const [ownsEquipmentBook, ownsFaultPhoto, ownsUserAvatar] = await Promise.all([
-            Equipment.exists({ companyId: req.user.companyId, 'books.fileUrl': safePattern }),
-            Fault.exists({ companyId: req.user.companyId, photos: safePattern }),
-            User.exists({ companyId: req.user.companyId, avatar: safePattern }),
+            Equipment.exists({ companyId: req.user.companyId, 'books.fileUrl': fileUrl }),
+            Fault.exists({ companyId: req.user.companyId, photos: fileUrl }),
+            User.exists({ companyId: req.user.companyId, avatar: fileUrl }),
         ]);
 
         if (ownsEquipmentBook || ownsFaultPhoto || ownsUserAvatar) {
@@ -148,17 +148,17 @@ app.get('/uploads/:filename', verifyToken, async (req, res, next) => {
         // `{ $eq: { $ne: ... } }`, which fails to cast (same bug fixed in
         // services/notificationService.js).
         const [otherEquipmentBook, otherFaultPhoto, otherUserAvatar] = await Promise.all([
-            Equipment.exists({ companyId: mongoose.trusted({ $ne: req.user.companyId }), 'books.fileUrl': safePattern }),
-            Fault.exists({ companyId: mongoose.trusted({ $ne: req.user.companyId }), photos: safePattern }),
-            User.exists({ companyId: mongoose.trusted({ $ne: req.user.companyId }), avatar: safePattern }),
+            Equipment.exists({ companyId: mongoose.trusted({ $ne: req.user.companyId }), 'books.fileUrl': fileUrl }),
+            Fault.exists({ companyId: mongoose.trusted({ $ne: req.user.companyId }), photos: fileUrl }),
+            User.exists({ companyId: mongoose.trusted({ $ne: req.user.companyId }), avatar: fileUrl }),
         ]);
 
         if (otherEquipmentBook || otherFaultPhoto || otherUserAvatar) {
             return res.status(403).json({ message: 'Forbidden: Cannot access media belonging to another organization' });
         }
 
-        // Fallback for unassigned or general media
-        serve();
+        // Referenced by nothing: no tenant owns it, so serve it to no one.
+        res.status(404).json({ message: 'Media file not found' });
     } catch (err) {
         next(err);
     }
@@ -182,7 +182,6 @@ app.use('/api/equipment', equipmentRoutes);
 app.use('/api/tools', toolRoutes);
 app.use('/api/faults', faultRoutes);
 app.use('/api/maintenance', maintenanceRoutes);
-app.use('/api/parts', partRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/superadmin', superadminRoutes);
 app.use('/api/notifications', notificationRoutes);

@@ -37,7 +37,7 @@ const formatUserName = (name) => {
  * @property {string} email - Login identifier. Required, unique (globally, not just per-company), lowercased, trimmed.
  * @property {'operator'|'mechanic'|'admin'|'superadmin'} [role='operator'] - Access level; see constants/roles.js. Only an admin can create/delete users or manage roles (middleware/authMiddleware.js `ensureAdmin`); mechanic or admin is required for equipment/fault/maintenance mutations (`ensureMechanicOrAdmin`).
  * @property {string|null} [avatar=null] - `/uploads/<filename>` path to the user's avatar image, or null if unset.
- * @property {string} password - bcrypt hash of the user's password (see constants/auth.js `BCRYPT_SALT_ROUNDS`). Required. Never returned to clients (services strip it before shaping a response).
+ * @property {string} password - bcrypt hash of the user's password (see constants/auth.js `BCRYPT_SALT_ROUNDS`). Required. Not selected by default (`select: false`): code that verifies a password must query with `.select('+password')`.
  * @property {mongoose.Types.ObjectId|null} companyId - The owning Company (tenant scope). Indexed; required for every role except `superadmin`, which is platform-level and has none.
  * @property {boolean} [mustChangePassword=false] - When true, the user is restricted to `/auth/me/change-password`, `/auth/logout`, and `GET /auth/me` until they set a new password (see middleware/authMiddleware.js `verifyToken`). Set true for users created by an admin (services/userService.js `createUser`).
  * @property {boolean} [termsAccepted=false] - Whether the user has accepted the Terms of Service / Privacy Policy.
@@ -54,7 +54,7 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     role: { type: String, enum: USER_SCHEMA_ROLES, default: DEFAULT_ROLE },
     avatar: { type: String, trim: true, default: null },
-    password: { type: String, required: true },
+    password: { type: String, required: true, select: false },
     companyId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Company',

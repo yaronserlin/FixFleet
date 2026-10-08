@@ -3,51 +3,60 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>FixFleet System Spec</title>
-<link rel="icon" type="image/svg+xml" href="<!--LOGO-->">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<title><!--PAGE_TITLE--></title>
+<!--FAVICON-->
+<!--FONT_LINK-->
 <style>
-/* Tokens mirror frontend/src/theme/index.js ("Industrial Blue Design System"):
-   blue = the only clickable colour, navy = identity, amber/red reserved for status.
-   Layout: sticky app bar · sticky sidebar (like SidebarNav) · stacked chapters. */
+/* ════════════════════════════════════════════════════════════════════════════
+   THEME TOKENS — the only block to change per project.
+   Map these to the project's own design system (theme file, Tailwind config,
+   CSS variables, brand guide). Keep every value a solid hex colour except the
+   *-tint / *-hover / divider / appbar entries: the diagram renderer reads the hex ones.
+   Source of these values: frontend/src/theme/index.js ("Industrial Blue Design System")
+   and frontend/src/index.css — blue = the only clickable colour, navy = identity.
+   Layout: sticky app bar · sticky sidebar · stacked chapter cards.
+   ════════════════════════════════════════════════════════════════════════════ */
 :root {
   --bg: #F1F5F9;            /* background.default */
-  --paper: #FFFFFF;         /* background.paper */
-  --subtle: #F8FAFC;        /* background.subtle / table head */
-  --text: #0F172A;          /* text.primary (brand navy) */
-  --text-2: #475569;        /* text.secondary */
+  --paper: #FFFFFF;         /* cards, sidebar */
+  --subtle: #F8FAFC;        /* table heads, inputs, diagram background */
+  --text: #0F172A;          /* primary text / brand ink */
+  --text-2: #475569;        /* secondary text */
+  --border: #E2E8F0;        /* solid border (diagrams) */
   --divider: rgba(0,0,0,0.08);
-  --primary: #2563EB;       /* primary.main */
+  --primary: #2563EB;       /* links, active states — the clickable colour */
   --primary-tint: rgba(37,99,235,0.08);
   --primary-hover: rgba(37,99,235,0.06);
-  --warning: #D97706;       /* warning.main */
+  --warning: #D97706;       /* status colour for audit findings */
   --warning-tint: rgba(217,119,6,0.08);
-  --error: #DC2626;         /* error.main */
+  --note-bg: #FEF3C7;       /* diagram notes */
   --code-bg: #F1F5F9;
   --appbar: rgba(255,255,255,0.95);
   --font: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --bar-h: 60px;
-  --rail-w: 264px;
+  --radius: 8px;            /* buttons, inputs */
+  --radius-card: 12px;      /* cards, tables */
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0B0F19; --paper: #111827; --subtle: #1E293B; --text: #F8FAFC; --text-2: #94A3B8;
-    --divider: rgba(255,255,255,0.08); --primary: #3B82F6; --primary-tint: rgba(59,130,246,0.14);
-    --primary-hover: rgba(59,130,246,0.10); --warning: #F59E0B; --warning-tint: rgba(245,158,11,0.12);
-    --error: #F43F5E; --code-bg: #1E293B; --appbar: rgba(15,23,42,0.95); color-scheme: dark;
+    --border: #334155; --divider: rgba(255,255,255,0.08); --primary: #3B82F6;
+    --primary-tint: rgba(59,130,246,0.14); --primary-hover: rgba(59,130,246,0.10);
+    --warning: #F59E0B; --warning-tint: rgba(245,158,11,0.12); --note-bg: #3A2A0A;
+    --code-bg: #1E293B; --appbar: rgba(15,23,42,0.95); color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0B0F19; --paper: #111827; --subtle: #1E293B; --text: #F8FAFC; --text-2: #94A3B8;
-  --divider: rgba(255,255,255,0.08); --primary: #3B82F6; --primary-tint: rgba(59,130,246,0.14);
-  --primary-hover: rgba(59,130,246,0.10); --warning: #F59E0B; --warning-tint: rgba(245,158,11,0.12);
-  --error: #F43F5E; --code-bg: #1E293B; --appbar: rgba(15,23,42,0.95); color-scheme: dark;
+  --border: #334155; --divider: rgba(255,255,255,0.08); --primary: #3B82F6;
+  --primary-tint: rgba(59,130,246,0.14); --primary-hover: rgba(59,130,246,0.10);
+  --warning: #F59E0B; --warning-tint: rgba(245,158,11,0.12); --note-bg: #3A2A0A;
+  --code-bg: #1E293B; --appbar: rgba(15,23,42,0.95); color-scheme: dark;
 }
+/* ═══════════════════════════ end of theme tokens ═══════════════════════════ */
 
+:root { --bar-h: 60px; --rail-w: 264px; }
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
@@ -58,13 +67,13 @@ body {
 }
 img { max-width: 100%; }
 [hidden] { display: none !important; }
-:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; border-radius: 4px; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; border-radius: 4px; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
 
-/* ── App bar (MuiAppBar override) ── */
+/* ── App bar ── */
 .appbar {
   position: sticky; top: 0; z-index: 30; height: var(--bar-h);
   display: flex; align-items: center; gap: 12px; padding-inline: 16px;
@@ -72,21 +81,24 @@ img { max-width: 100%; }
   border-bottom: 1px solid var(--divider);
 }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; text-decoration: none; color: var(--text); }
-.brand img { width: 34px; height: 34px; flex-shrink: 0; }
+.brand img, .logo-badge { width: 34px; height: 34px; flex-shrink: 0; }
+.logo-badge {
+  display: inline-grid; place-items: center; border-radius: 10px;
+  background: var(--primary); color: #fff; font-weight: 800; font-size: 17px;
+}
 .brand-text { display: grid; line-height: 1.15; min-width: 0; }
-.brand-text b { font-size: 18px; font-weight: 800; letter-spacing: -0.025em; }
+.brand-text b { font-size: 18px; font-weight: 800; letter-spacing: -0.025em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .brand-text span { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); white-space: nowrap; }
 .bar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 .chip {
-  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px;
+  display: inline-flex; align-items: center; height: 26px; padding: 0 9px;
   border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap;
   background: var(--subtle); color: var(--text-2); border: 1px solid var(--divider);
   font-variant-numeric: tabular-nums;
 }
-.chip code { font-family: var(--mono); font-size: 11.5px; color: var(--text); }
 .icon-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  height: 36px; min-width: 36px; padding: 0 10px; border-radius: 8px; cursor: pointer;
+  height: 36px; min-width: 36px; padding: 0 10px; border-radius: var(--radius); cursor: pointer;
   border: 1px solid var(--divider); background: var(--paper); color: var(--text);
   font: 600 13px var(--font); transition: background-color .15s ease;
 }
@@ -103,7 +115,7 @@ img { max-width: 100%; }
 }
 .search { position: relative; display: block; margin: 0 4px 14px; }
 .search input {
-  width: 100%; height: 40px; padding: 0 12px 0 34px; border-radius: 8px;
+  width: 100%; height: 40px; padding: 0 12px 0 34px; border-radius: var(--radius);
   border: 1px solid var(--divider); background: var(--subtle); color: var(--text);
   font: 14px var(--font);
 }
@@ -114,7 +126,7 @@ img { max-width: 100%; }
 .nav { display: grid; gap: 2px; }
 .nav-ch-link {
   display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 12px;
-  border-radius: 8px; color: var(--text-2); text-decoration: none;
+  border-radius: var(--radius); color: var(--text-2); text-decoration: none;
   font-size: 14px; font-weight: 500; transition: background-color .15s ease;
 }
 .nav-ch-link:hover { background: var(--primary-hover); }
@@ -139,7 +151,7 @@ img { max-width: 100%; }
 main { min-width: 0; padding: 28px 32px 96px; }
 .chapter {
   max-width: 1040px; margin: 0 auto 28px; padding: 28px 32px 32px;
-  background: var(--paper); border: 1px solid var(--divider); border-radius: 12px;
+  background: var(--paper); border: 1px solid var(--divider); border-radius: var(--radius-card);
 }
 h1, h2, h3, h4 { text-wrap: balance; scroll-margin-top: calc(var(--bar-h) + 16px); color: var(--text); }
 h1 { font-size: clamp(26px, 3.2vw, 34px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin: 0 0 12px; }
@@ -159,15 +171,15 @@ hr { border: 0; border-top: 1px solid var(--divider); margin: 24px 0; }
 code, .srclink { font-family: var(--mono); font-size: .85em; }
 :not(pre) > code { background: var(--code-bg); padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
 .srclink { border-bottom: 1px dotted var(--text-2); cursor: help; }
-.codewrap { overflow-x: auto; background: var(--code-bg); border-radius: 8px; margin: 14px 0; }
+.codewrap { overflow-x: auto; background: var(--code-bg); border-radius: var(--radius); margin: 14px 0; }
 .codewrap pre { margin: 0; padding: 14px 16px; font: 13px/1.6 var(--mono); }
-.diagram { overflow-x: auto; background: var(--subtle); border: 1px solid var(--divider); border-radius: 12px; padding: 16px; margin: 16px 0; text-align: center; }
+.diagram { overflow-x: auto; background: var(--subtle); border: 1px solid var(--divider); border-radius: var(--radius-card); padding: 16px; margin: 16px 0; text-align: center; }
 .diagram svg { max-width: 100%; height: auto; }
 .diagram-src { margin: 0; text-align: left; font: 12.5px/1.55 var(--mono); white-space: pre; color: var(--text-2); }
 .diagram-note { font-size: 12px; color: var(--text-2); margin: 0 0 8px; text-align: left; }
 
-/* Tables — MuiTableCell head styling */
-.tbl { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--divider); border-radius: 12px; }
+/* Tables */
+.tbl { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--divider); border-radius: var(--radius-card); }
 table { border-collapse: collapse; width: 100%; font-size: 13.5px; line-height: 1.5; font-variant-numeric: tabular-nums; }
 th, td { padding: 9px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--divider); }
 th { background: var(--subtle); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); white-space: nowrap; }
@@ -175,15 +187,15 @@ tbody tr:last-child td { border-bottom: 0; }
 .tbl td code { overflow-wrap: normal; } /* keep paths/identifiers whole; the table scrolls instead */
 tbody tr:hover td { background: var(--primary-hover); }
 
-/* Audit findings: status amber (warning), top three flagged */
+/* Audit findings: status colour, top three flagged */
 .findings tbody td:first-child { font-weight: 700; color: var(--warning); }
 .findings tbody tr:nth-child(-n+3) td { background: var(--warning-tint); }
 .findings tbody tr:nth-child(-n+3) td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
 
 .backtop {
   position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 20;
-  display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px;
-  border-radius: 8px; background: var(--primary); color: #fff; text-decoration: none;
+  display: inline-flex; align-items: center; height: 40px; padding: 0 14px;
+  border-radius: var(--radius); background: var(--primary); color: #fff; text-decoration: none;
   font: 600 13px var(--font); box-shadow: 0 4px 14px rgba(15,23,42,.18);
 }
 .scrim { display: none; }
@@ -204,7 +216,7 @@ tbody tr:hover td { background: var(--primary-hover); }
   h2 { font-size: 20px; }
 }
 @media (max-width: 640px) {
-  .chip.commit, .brand-text span, #theme-btn .label { display: none; }
+  .chip:not(:first-child), .brand-text span, #theme-btn .label { display: none; }
 }
 </style>
 </head>
@@ -214,13 +226,12 @@ tbody tr:hover td { background: var(--primary-hover); }
   <button class="icon-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="rail" aria-label="Open contents">
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
   </button>
-  <a class="brand" href="#overview">
-    <img src="<!--LOGO-->" alt="">
-    <span class="brand-text"><b>FixFleet</b><span>System Specification</span></span>
+  <a class="brand" href="#top">
+    <!--LOGO-->
+    <span class="brand-text"><b><!--PRODUCT--></b><span><!--SUBTITLE--></span></span>
   </a>
   <div class="bar-right">
-    <span class="chip" title="Documented version">v1.0.8</span>
-    <span class="chip commit" title="Baseline commit">commit <code>040749e</code></span>
+    <!--CHIPS-->
     <button class="icon-btn" id="theme-btn" type="button" aria-label="Toggle dark mode">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       <span class="label">Theme</span>
@@ -238,7 +249,7 @@ tbody tr:hover td { background: var(--primary-hover); }
     <p class="overline">Chapters</p>
     <ul class="nav" id="nav"><!--NAV--></ul>
     <p class="search-empty" id="search-empty" hidden>No section titles match.</p>
-    <p class="rail-foot">Generated from <code>docs/system-spec/*.md</code> by <code>npm run docs:build</code>. Dotted text marks a source-file reference in the repository.</p>
+    <p class="rail-foot">Generated from <code><!--SPEC_PATH-->/*.md</code>. Edit the Markdown, not this file. Dotted text marks a source-file reference in the repository.</p>
   </nav>
   <main id="top">
 <!--CONTENT-->
@@ -255,8 +266,8 @@ tbody tr:hover td { background: var(--primary-hover); }
   const chapters = [...nav.querySelectorAll('.nav-ch')];
   const subLinks = [...nav.querySelectorAll('.nav-sub a')];
 
-  // ── Theme (same storage key the app uses) ──
-  const THEME_KEY = 'maintenance_app_theme';
+  // ── Theme ──
+  const THEME_KEY = '<!--THEME_KEY-->';
   const isDark = () => root.dataset.theme
     ? root.dataset.theme === 'dark'
     : matchMedia('(prefers-color-scheme: dark)').matches;
@@ -267,10 +278,12 @@ tbody tr:hover td { background: var(--primary-hover); }
     renderDiagrams();
   });
 
-  // ── Diagrams: render with Mermaid; if the library can't load (offline), keep the readable source ──
+  // ── Diagrams: Mermaid, coloured from the theme tokens; offline keeps the readable source ──
   const diagrams = [...document.querySelectorAll('.diagram')].map(box => ({ box, src: box.querySelector('.diagram-src').textContent }));
+  const token = (name) => getComputedStyle(root).getPropertyValue(name).trim();
   let renderSeq = 0;
   async function renderDiagrams() {
+    if (!diagrams.length) return;
     if (!window.mermaid) {
       diagrams.forEach(({ box }) => {
         if (!box.querySelector('.diagram-note')) box.insertAdjacentHTML('afterbegin', '<p class="diagram-note">Diagram source (the diagram renderer could not load; check your internet connection).</p>');
@@ -278,29 +291,19 @@ tbody tr:hover td { background: var(--primary-hover); }
       return;
     }
     const seq = ++renderSeq;
-    // Diagram palette taken from the app theme (frontend/src/theme/index.js).
-    const dark = isDark();
+    const t = { paper: token('--paper'), subtle: token('--subtle'), text: token('--text'), text2: token('--text-2'),
+      border: token('--border'), primary: token('--primary'), warning: token('--warning'), note: token('--note-bg') };
     mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: 'strict',
-      theme: 'base',
-      fontFamily: 'Inter, system-ui, sans-serif',
-      themeVariables: dark ? {
-        darkMode: true, background: '#1E293B', fontFamily: 'Inter, system-ui, sans-serif',
-        primaryColor: '#111827', primaryTextColor: '#F8FAFC', primaryBorderColor: '#3B82F6',
-        secondaryColor: '#1E293B', tertiaryColor: '#0B0F19', lineColor: '#94A3B8', textColor: '#F8FAFC',
-        clusterBkg: '#0F172A', clusterBorder: '#334155', edgeLabelBackground: '#1E293B', titleColor: '#94A3B8',
-        actorBkg: '#111827', actorBorder: '#3B82F6', actorTextColor: '#F8FAFC', actorLineColor: '#475569',
-        signalColor: '#CBD5E1', signalTextColor: '#F8FAFC', labelBoxBkgColor: '#111827',
-        noteBkgColor: '#3A2A0A', noteBorderColor: '#F59E0B', noteTextColor: '#F8FAFC',
-      } : {
-        background: '#F8FAFC', fontFamily: 'Inter, system-ui, sans-serif',
-        primaryColor: '#FFFFFF', primaryTextColor: '#0F172A', primaryBorderColor: '#2563EB',
-        secondaryColor: '#F1F5F9', tertiaryColor: '#F8FAFC', lineColor: '#475569', textColor: '#0F172A',
-        clusterBkg: '#EFF6FF', clusterBorder: '#BFDBFE', edgeLabelBackground: '#F8FAFC', titleColor: '#475569',
-        actorBkg: '#FFFFFF', actorBorder: '#2563EB', actorTextColor: '#0F172A', actorLineColor: '#94A3B8',
-        signalColor: '#334155', signalTextColor: '#0F172A', labelBoxBkgColor: '#FFFFFF',
-        noteBkgColor: '#FEF3C7', noteBorderColor: '#D97706', noteTextColor: '#0F172A',
+      startOnLoad: false, securityLevel: 'strict', theme: 'base',
+      fontFamily: getComputedStyle(document.body).fontFamily,
+      themeVariables: {
+        darkMode: isDark(), background: t.subtle,
+        primaryColor: t.paper, primaryTextColor: t.text, primaryBorderColor: t.primary,
+        secondaryColor: t.subtle, tertiaryColor: t.subtle, lineColor: t.text2, textColor: t.text,
+        clusterBkg: t.paper, clusterBorder: t.border, edgeLabelBackground: t.subtle, titleColor: t.text2,
+        actorBkg: t.paper, actorBorder: t.primary, actorTextColor: t.text, actorLineColor: t.border,
+        signalColor: t.text2, signalTextColor: t.text, labelBoxBkgColor: t.paper,
+        noteBkgColor: t.note, noteBorderColor: t.warning, noteTextColor: t.text,
       },
     });
     for (const [i, d] of diagrams.entries()) {
@@ -314,16 +317,20 @@ tbody tr:hover td { background: var(--primary-hover); }
   }
   renderDiagrams();
 
-  // ── Mark the audit findings table (first table after §7) ──
-  let el = document.getElementById('7-audit-observations');
-  while (el && !(el.classList && el.classList.contains('tbl'))) el = el.nextElementSibling;
-  if (el) el.classList.add('findings');
+  // ── Mark the audit findings table (first table after the findings heading) ──
+  const FINDINGS = '<!--FINDINGS_HEADING-->'.toLowerCase();
+  if (FINDINGS) {
+    let el = [...document.querySelectorAll('main h2')].find(h => h.textContent.toLowerCase().includes(FINDINGS));
+    while (el && !(el.classList && el.classList.contains('tbl'))) el = el.nextElementSibling;
+    if (el) el.classList.add('findings');
+  }
 
   // ── Scroll spy ──
   const heads = [...document.querySelectorAll('main h1[id], main h2[id]')];
   let ticking = false;
   function spy() {
     ticking = false;
+    if (!heads.length) return;
     let cur = heads[0];
     for (const h of heads) { if (h.getBoundingClientRect().top <= 100) cur = h; else break; }
     const chap = cur.closest('.chapter').dataset.chapter;

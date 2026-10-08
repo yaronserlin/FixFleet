@@ -17,6 +17,24 @@ const NOTIFICATION_ICON = '/pwa-192x192.png';
 const NOTIFICATION_BADGE = '/pwa-192x192.png';
 
 /**
+ * Gets a fresh access token for the API calls below. The API accepts only
+ * `Authorization: Bearer` (backend/middleware/authMiddleware.js), and a
+ * service worker can't read the page's localStorage-held token -- which,
+ * at 60 minutes, has usually expired by the time a push arrives anyway. So
+ * the worker trades the httpOnly `refreshToken` cookie (path /api/auth) for
+ * its own token, like apiClient.js does on a 401. A concurrent rotation by
+ * an open tab is covered by the backend's REFRESH_REUSE_GRACE_MS window.
+ *
+ * @returns {Promise<string|null>} The access token, or null if signed out.
+ */
+async function getAccessToken() {
+    const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.accessToken || data.token || null;
+}
+
+/**
  * Reads the push payload defensively: a push can legitimately arrive with
  * no data at all (some services send empty "wake up" pushes), and a
  * malformed body must not throw inside the event handler -- doing so would
@@ -49,7 +67,11 @@ function readPayload(event) {
 async function syncAppBadge() {
     if (!('setAppBadge' in navigator)) return;
     try {
-        const res = await fetch('/api/notifications/unread-count', { credentials: 'include' });
+        const token = await getAccessToken();
+        if (!token) return;
+        const res = await fetch('/api/notifications/unread-count', {
+            headers: { Authorization: `Bearer ${token}` },
+        });
         if (!res.ok) return;
         const { unreadCount } = await res.json();
         if (unreadCount > 0) {
@@ -114,19 +136,18 @@ self.addEventListener('push', (event) => {
  * Marks the tapped notification read server-side, so the unread badge
  * reflects it without the user separately opening the in-app list -- which
  * they may never do if the push's own link already took them where they
- * needed. Uses the `token`/`accessToken` cookie authMiddleware.js accepts
- * as a fallback to the Authorization header (see backend/controllers/
- * authController.js), since a service worker has no access to the page's
- * localStorage-held JWT. Best-effort: an older cached SW build or a push
+ * needed. Authenticates via getAccessToken() above. Best-effort: an older cached SW build or a push
  * sent before this field existed just won't have a `notificationId`, and
  * any network/auth failure here must never block opening the notification.
  */
 async function markNotificationRead(notificationId) {
     if (!notificationId) return;
     try {
+        const token = await getAccessToken();
+        if (!token) return;
         await fetch(`/api/notifications/${notificationId}/read`, {
             method: 'PATCH',
-            credentials: 'include',
+            headers: { Authorization: `Bearer ${token}` },
         });
         await syncAppBadge();
     } catch {

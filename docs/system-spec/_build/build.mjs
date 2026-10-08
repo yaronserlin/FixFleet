@@ -1,12 +1,15 @@
-// docs/system-spec/_build/build.mjs
+// <spec-dir>/_build/build.mjs  (installed by the update-functional-doc skill)
 //
-// Renders docs/system-spec/*.md into the single-page viewer docs/system-spec/index.html.
+// Renders the spec Markdown in the parent folder into a single-page viewer, <spec-dir>/index.html.
 //
-//   npm run docs:build    build once
-//   npm run docs:watch    rebuild on every save of a chapter or of the template
+//   node <spec-dir>/_build/build.mjs            build once
+//   node <spec-dir>/_build/build.mjs --watch    rebuild on every save of a chapter, the template or the config
+//   node <spec-dir>/_build/build.mjs --check    exit 1 if index.html is stale or has broken links (CI)
 //
-// The .githooks/pre-commit hook also runs it whenever a spec file is staged, so the
-// committed index.html never lags behind the Markdown.
+// Chapters: README.md first (as "Overview"), then every file named like `01-...md` / `04a-...md`,
+// sorted by name. Labels come from each file's first `# Heading` (a leading "01 — " is dropped).
+// Branding (product name, logo, chips, font, theme key) comes from spec.config.json next to this file.
+// Requires Node >= 18 and the `marked` package (installed in this folder: `npm install`).
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,27 +18,52 @@ import { Marked } from 'marked';
 const BUILD_DIR = path.dirname(fileURLToPath(import.meta.url));
 const SPEC_DIR = path.resolve(BUILD_DIR, '..');
 const OUT_FILE = path.join(SPEC_DIR, 'index.html');
-const LOGO_FILE = path.resolve(SPEC_DIR, '../../frontend/public/favicon.svg');
 const TEMPLATE_FILE = path.join(BUILD_DIR, 'template.html');
+const CONFIG_FILE = path.join(BUILD_DIR, 'spec.config.json');
 
-// Order and labels of the chapters in the sidebar.
-const CHAPTERS = [
-  ['README.md', 'overview', 'Overview'],
-  ['01-architecture-and-layers.md', 'ch01', 'Architecture & Layers'],
-  ['02-database-and-schemas.md', 'ch02', 'Database & Schemas'],
-  ['03-dependencies-and-config.md', 'ch03', 'Dependencies & Config'],
-  ['04-file-inventory.md', 'ch04', 'File Inventory'],
-  ['05-api-and-workflows.md', 'ch05', 'API & Workflows'],
-];
-const chapterIdByFile = Object.fromEntries(CHAPTERS.map(([f, id]) => [f, id]));
+/** Walks up from the spec folder to the repository root (the folder holding .git). */
+function findRepoRoot(start) {
+  let dir = start;
+  while (dir !== path.dirname(dir)) {
+    if (fs.existsSync(path.join(dir, '.git'))) return dir;
+    dir = path.dirname(dir);
+  }
+  return process.cwd();
+}
+const REPO_ROOT = findRepoRoot(SPEC_DIR);
 
-const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 // GitHub-style heading slug, so `file.md#anchor` links written for GitHub resolve here too.
 const slug = (t) => t.trim().toLowerCase().replace(/[^\p{L}\p{N}\s-]/gu, '').replace(/\s/g, '-');
 const align = (a) => (a ? ` style="text-align:${a}"` : '');
 const unescapeXml = (s) => s
   .replace(/&#xa;/gi, '\n').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
   .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+
+function loadConfig() {
+  const defaults = {
+    productName: path.basename(REPO_ROOT),
+    subtitle: 'System Specification',
+    pageTitle: null,
+    logo: null,                 // path relative to the repo root (svg/png), or null for a letter badge
+    chips: [],                  // [{ "label": "v1.2.3", "title": "Documented version" }, ...]
+    fontStylesheet: null,       // e.g. a Google Fonts css2 URL; null = system fonts
+    themeStorageKey: 'spec-viewer-theme',
+    findingsHeading: 'Audit Observations', // h2 text whose first table gets status styling
+    chapters: null,             // optional explicit [{ "file": "README.md", "label": "Overview" }, ...]
+  };
+  if (!fs.existsSync(CONFIG_FILE)) return defaults;
+  return { ...defaults, ...JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')) };
+}
+
+function discoverChapters(config) {
+  if (Array.isArray(config.chapters) && config.chapters.length) {
+    return config.chapters.map((c, i) => ({ file: c.file, label: c.label || null, index: i }));
+  }
+  const numbered = fs.readdirSync(SPEC_DIR).filter(f => /^\d{2}[a-z]?-.+\.md$/i.test(f)).sort();
+  const files = (fs.existsSync(path.join(SPEC_DIR, 'README.md')) ? ['README.md'] : []).concat(numbered);
+  return files.map((file, index) => ({ file, label: null, index }));
+}
 
 /** draw.io blocks converted from Mermaid keep the original source in `mermaidData`. */
 function mermaidFromDrawio(xml) {
@@ -52,18 +80,24 @@ function safeMermaid(src) {
 
 const diagramHtml = (src) => `<div class="diagram"><pre class="diagram-src">${esc(safeMermaid(src))}</pre></div>`;
 
-function renderChapter([file, id], idx) {
-  // Drop the per-file breadcrumb line; the sidebar replaces it.
-  const md = fs.readFileSync(path.join(SPEC_DIR, file), 'utf8').replace(/^\[← Index\].*\n/m, '');
+function renderChapter(ch, chapterIdByFile) {
+  const raw = fs.readFileSync(path.join(SPEC_DIR, ch.file), 'utf8');
+  // Drop a breadcrumb/nav line such as "[← Index](README.md) · ..." — the sidebar replaces it.
+  const md = raw.replace(/^\[[^\]]*(?:Index|Contents|Back)[^\]]*\]\([^)]*\).*\n/im, '');
+  const id = chapterIdByFile[ch.file];
   const toc = [];
+  let h1Text = null;
   const marked = new Marked({ gfm: true });
   marked.use({
     renderer: {
       heading({ tokens, depth, text }) {
         const html = this.parser.parseInline(tokens);
+        if (depth === 1) {
+          h1Text = h1Text || html.replace(/<[^>]+>/g, '');
+          return `<h1 id="${id}">${html}</h1>`;
+        }
         const hid = slug(text);
         if (depth === 2) toc.push({ id: hid, html: html.replace(/<[^>]+>/g, '') });
-        if (depth === 1) return `<h1 id="${id}">${html}</h1>`;
         return `<h${depth} id="${hid}">${html}<a class="anchor" href="#${hid}" aria-label="Link to this section">#</a></h${depth}>`;
       },
       code({ text, lang }) {
@@ -82,52 +116,100 @@ function renderChapter([file, id], idx) {
       },
       link({ href, tokens }) {
         const inner = this.parser.parseInline(tokens);
-        if (/^https?:/.test(href)) return `<a href="${href}" target="_blank" rel="noopener">${inner}</a>`;
+        if (/^(https?:|mailto:)/.test(href)) return `<a href="${esc(href)}" target="_blank" rel="noopener">${inner}</a>`;
         const [p, anchor] = href.split('#');
         if (!p) return `<a href="#${anchor}">${inner}</a>`;
-        if (chapterIdByFile[p]) return `<a href="#${anchor || chapterIdByFile[p]}">${inner}</a>`;
-        // Repo source links can't be opened from the page; show them as code-style text.
+        const target = path.basename(p);
+        if (chapterIdByFile[target]) return `<a href="#${anchor || chapterIdByFile[target]}">${inner}</a>`;
+        // Repository source links can't be opened from a static page; show them as code-style text.
         return `<span class="srclink" title="${esc(href)}">${inner}</span>`;
       },
     },
   });
   const html = marked.parse(md);
-  return {
-    section: `<section class="chapter" id="sec-${id}" data-chapter="${id}">${html}</section>`,
-    num: idx === 0 ? '··' : String(idx).padStart(2, '0'),
-    toc,
-  };
+  // labelHtml is already HTML-escaped: h1Text comes from rendered (escaped) heading HTML.
+  const labelHtml = ch.label
+    ? esc(ch.label)
+    : (ch.file === 'README.md' ? 'Overview' : (h1Text || esc(ch.file)).replace(/^\s*\d{2}[a-z]?\s*[—–-]\s*/i, '').trim());
+  return { id, labelHtml, toc, section: `<section class="chapter" id="sec-${id}" data-chapter="${id}">${html}</section>` };
 }
 
-/** Builds index.html; returns whether it changed, its size, and any broken in-page links. */
-function build() {
-  const chapters = CHAPTERS.map((c, i) => ({ ...renderChapter(c, i), id: c[1], label: c[2] }));
-  const navHtml = chapters.map(c => `
-  <li class="nav-ch" data-ch="${c.id}">
-    <a class="nav-ch-link" href="#${c.id}"><span class="nav-num">${c.num}</span><span>${esc(c.label)}</span></a>
-    <ul class="nav-sub">${c.toc.map(t => `<li><a href="#${t.id}" data-target="${t.id}">${t.html}</a></li>`).join('')}</ul>
-  </li>`).join('');
+function logoMarkup(config) {
+  if (config.logo) {
+    const file = path.resolve(REPO_ROOT, config.logo);
+    if (fs.existsSync(file)) {
+      const ext = path.extname(file).toLowerCase();
+      const mime = ext === '.svg' ? 'image/svg+xml' : ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+      const uri = `data:${mime};base64,${fs.readFileSync(file).toString('base64')}`;
+      return { img: `<img src="${uri}" alt="">`, favicon: `<link rel="icon" href="${uri}">` };
+    }
+    console.warn(`Logo not found: ${config.logo} (falling back to a letter badge)`);
+  }
+  const letter = esc((config.productName || '?').trim().charAt(0).toUpperCase());
+  return { img: `<span class="logo-badge" aria-hidden="true">${letter}</span>`, favicon: '' };
+}
 
-  const logoUri = `data:image/svg+xml;base64,${fs.readFileSync(LOGO_FILE).toString('base64')}`;
+/** Renders the page; returns { html, broken, chapters } without writing anything. */
+function render() {
+  const config = loadConfig();
+  const chapters = discoverChapters(config);
+  if (!chapters.length) throw new Error(`No chapters found in ${SPEC_DIR} (expected README.md and/or NN-name.md files)`);
+
+  const chapterIdByFile = {};
+  chapters.forEach((c) => {
+    chapterIdByFile[c.file] = c.file === 'README.md' ? 'overview' : `ch-${slug(c.file.replace(/\.md$/i, ''))}`;
+  });
+  const rendered = chapters.map(c => renderChapter(c, chapterIdByFile));
+
+  let n = 0;
+  const navHtml = rendered.map((c) => {
+    const num = c.id === 'overview' ? '··' : String(++n).padStart(2, '0');
+    return `
+  <li class="nav-ch" data-ch="${c.id}">
+    <a class="nav-ch-link" href="#${c.id}"><span class="nav-num">${num}</span><span>${c.labelHtml}</span></a>
+    <ul class="nav-sub">${c.toc.map(t => `<li><a href="#${t.id}" data-target="${t.id}">${t.html}</a></li>`).join('')}</ul>
+  </li>`;
+  }).join('');
+
+  const logo = logoMarkup(config);
+  const chips = (config.chips || []).map(c => `<span class="chip"${c.title ? ` title="${esc(c.title)}"` : ''}>${esc(c.label)}</span>`).join('');
+  const fontLink = config.fontStylesheet
+    ? `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="${esc(config.fontStylesheet)}">`
+    : '';
+  const specPath = path.relative(REPO_ROOT, SPEC_DIR).split(path.sep).join('/') || '.';
+
   const html = fs.readFileSync(TEMPLATE_FILE, 'utf8')
-    .replaceAll('<!--LOGO-->', logoUri)
+    .replaceAll('<!--PAGE_TITLE-->', esc(config.pageTitle || `${config.productName} ${config.subtitle}`))
+    .replaceAll('<!--PRODUCT-->', esc(config.productName))
+    .replaceAll('<!--SUBTITLE-->', esc(config.subtitle))
+    .replaceAll('<!--FAVICON-->', logo.favicon)
+    .replaceAll('<!--LOGO-->', logo.img)
+    .replaceAll('<!--CHIPS-->', chips)
+    .replaceAll('<!--FONT_LINK-->', fontLink)
+    .replaceAll('<!--THEME_KEY-->', esc(config.themeStorageKey))
+    .replaceAll('<!--FINDINGS_HEADING-->', esc(config.findingsHeading || ''))
+    .replaceAll('<!--SPEC_PATH-->', esc(specPath))
     .replace('<!--NAV-->', navHtml)
-    .replace('<!--CONTENT-->', chapters.map(c => c.section).join('\n'));
+    .replace('<!--CONTENT-->', rendered.map(c => c.section).join('\n'));
 
   const ids = new Set([...html.matchAll(/ id="([^"]+)"/g)].map(m => m[1]));
   const broken = [...new Set([...html.matchAll(/href="#([^"]+)"/g)].map(m => m[1]).filter(a => !ids.has(a)))];
-
-  // Only touch the file when the output changed (keeps watchers and git quiet).
-  const previous = fs.existsSync(OUT_FILE) ? fs.readFileSync(OUT_FILE, 'utf8') : null;
-  if (previous !== html) fs.writeFileSync(OUT_FILE, html);
-  return { changed: previous !== html, bytes: Buffer.byteLength(html), broken };
+  return { html, broken, chapters: rendered.length };
 }
 
-function runBuild() {
+function runBuild({ check = false } = {}) {
   try {
-    const { changed, bytes, broken } = build();
-    const note = broken.length ? ` (warning: broken links to #${broken.join(', #')})` : '';
-    console.log(`${changed ? 'Built' : 'Up to date:'} docs/system-spec/index.html, ${Math.round(bytes / 1024)} KB${note}`);
+    const { html, broken, chapters } = render();
+    const previous = fs.existsSync(OUT_FILE) ? fs.readFileSync(OUT_FILE, 'utf8') : null;
+    const stale = previous !== html;
+    const brokenNote = broken.length ? ` (broken links: #${broken.join(', #')})` : '';
+    if (check) {
+      console.log(`${stale ? 'STALE' : 'OK'}: index.html, ${chapters} chapters${brokenNote}`);
+      return !stale && broken.length === 0;
+    }
+    // Only touch the file when the output changed (keeps watchers and git quiet).
+    if (stale) fs.writeFileSync(OUT_FILE, html);
+    console.log(`${stale ? 'Built' : 'Up to date:'} ${path.relative(REPO_ROOT, OUT_FILE)}, ${chapters} chapters, ${Math.round(Buffer.byteLength(html) / 1024)} KB${brokenNote}`);
     return true;
   } catch (err) {
     console.error(`Spec build failed: ${err.message}`);
@@ -142,9 +224,9 @@ if (process.argv.includes('--watch')) {
     clearTimeout(timer);
     timer = setTimeout(() => { console.log(`Changed: ${file}`); runBuild(); }, 150);
   };
-  fs.watch(SPEC_DIR, (_event, file) => { if (file && file.endsWith('.md')) schedule(file); });
-  fs.watch(BUILD_DIR, (_event, file) => { if (file === 'template.html') schedule(file); });
-  console.log('Watching docs/system-spec/*.md for changes (Ctrl+C to stop)');
+  fs.watch(SPEC_DIR, (_e, file) => { if (file && file.endsWith('.md')) schedule(file); });
+  fs.watch(BUILD_DIR, (_e, file) => { if (file === 'template.html' || file === 'spec.config.json') schedule(file); });
+  console.log(`Watching ${path.relative(REPO_ROOT, SPEC_DIR)}/*.md for changes (Ctrl+C to stop)`);
 } else {
-  process.exitCode = runBuild() ? 0 : 1;
+  process.exitCode = runBuild({ check: process.argv.includes('--check') }) ? 0 : 1;
 }

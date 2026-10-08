@@ -15,11 +15,8 @@ const {
     BCRYPT_SALT_ROUNDS,
     REFRESH_REUSE_GRACE_MS,
     PASSWORD_RESET_TOKEN_TTL_MS,
+    CURRENT_TERMS_VERSION,
 } = require('../constants/auth');
-
-// Version of the legal documents (frontend/src/content/legalDocuments.js)
-// presented at signup. Bump when the published terms/privacy version changes.
-const CURRENT_TERMS_VERSION = '1.3';
 const { httpError } = require('../utils/httpError');
 const mediaStorage = require('../utils/mediaStorage');
 const mailer = require('../utils/mailer');
@@ -39,7 +36,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  */
 async function deleteAccount(userId, body) {
     const { confirmation, currentPassword } = body || {};
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select('+password');
     if (!user) {
         throw httpError(404, 'User not found');
     }
@@ -261,7 +258,7 @@ async function login(body) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const user = await User.findOne({ email: normalizedEmail }).populate('companyId');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password').populate('companyId');
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
         throw httpError(400, 'Invalid credentials');
@@ -419,7 +416,7 @@ async function updateProfile(userId, body) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
-    const currentUser = await User.findById(userId);
+    const currentUser = await User.findById(userId).select('+password');
     if (!currentUser) {
         throw httpError(404, 'User not found');
     }
@@ -522,7 +519,7 @@ async function uploadAvatar(userId, file) {
  */
 async function changePassword(userId, body) {
     const { currentPassword, newPassword, agreeToTerms, termsAccepted } = body || {};
-    const user = await User.findById(userId);
+    const user = await User.findById(userId).select('+password');
     if (!user) {
         throw httpError(404, 'User not found');
     }

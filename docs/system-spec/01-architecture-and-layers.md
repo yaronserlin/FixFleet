@@ -30,7 +30,7 @@ flowchart LR
         M["Mongoose models"]
         U["Media route: GET /uploads/:id"]
     end
-    DB[("MongoDB<br/>10 collections + GridFS 'uploads'")]
+    DB[("MongoDB<br/>9 collections + GridFS 'uploads'")]
     MAIL["EmailJS REST API"]
     PUSH["Browser push services"]
 
@@ -54,7 +54,7 @@ flowchart LR
 | Layout shell | `components/Navbar/*`, `components/Legal/LegalFooter`, `components/AccessibilityMenu`, `components/PullToRefresh` | Responsive navigation (sidebar ≥ 1200 px, rail 600–1200 px, bottom bar < 600 px), footer, a11y tools, pull-to-refresh. |
 | Pages | `pages/*` (17 screens + 2 aliases) | Screen composition, local UI state, data loading via services/contexts. |
 | Feature components | `components/Fault/*`, `components/Tool/*`, `components/User/*`, `components/Notifications/*`, `components/LoginComponent/*` | Domain widgets, dialogs and forms. |
-| Generic components | `ConfirmDialog`, `DialogComponent`, `ErrorComponent`, `LoadingComponent`, `Skeletons`, `Form/*`, `ImageViewer`, `PdfViewer`, `Logo`, `TabPanel` | Reusable building blocks. |
+| Generic components | `ConfirmDialog`, `DialogComponent`, `ErrorComponent`, `LoadingComponent`, `Skeletons`, `Form/*`, `ImageViewer`, `PdfViewer`, `Logo` | Reusable building blocks. |
 | State management | `contexts/*` | Auth/session, equipment and fault caches, toasts, notification feed, page-refresh registry, theme. |
 | Data access (client) | `services/*` | One module per API area over a shared axios `apiClient` with token handling and silent refresh. |
 | Utilities & hooks | `utils/*`, `hooks/*` | Sorting, retry/backoff, formatting, validation, media URL resolution, forms, push subscription, authenticated blob loading, gestures. |
@@ -83,15 +83,14 @@ Controllers are thin: they read `req.user.companyId` / `req.user.userId`, call o
 | Service | Domain | Core rules |
 |---|---|---|
 | `authService` | Identity & sessions | Company signup, login, JWT issue, refresh-token rotation with reuse detection, profile, avatar, password change/reset, self-deletion. |
-| `userService` | Tenant user admin | Create (operator + forced change), role change, delete; self-protection; last-admin invariant. |
-| `equipmentService` | Fleet, manuals, maintenance programs | Field whitelist, cascade delete, PDF manuals, schedule creation/completion, checklist, progress notes. |
-| `faultService` | Fault lifecycle | Tenant-checked creation with photos, close/reopen/update/delete, engine-hours sync. |
-| `maintenanceService` | Service history | Log creation/deletion with engine-hours sync. |
-| `partService` | Spare parts | CRUD with tenant-checked tool reference. |
+| `userService` | Tenant user admin | Create (operator + forced change), role change, delete (with sessions, push subscriptions and avatar); self-protection; last-admin invariant. |
+| `equipmentService` | Fleet, manuals, maintenance programs | Field whitelist, cascade delete (manual files, fault photos, faults, maintenance, related notifications), PDF manuals, schedule creation/completion, checklist, progress notes. |
+| `faultService` | Fault lifecycle | Tenant-checked creation with photos, close/reopen/update/delete (delete also removes the fault's notifications), engine-hours sync. |
+| `maintenanceService` | Service history | List and delete logs (records are created only by schedule completion); engine-hours re-sync on delete. |
 | `notificationService` | In-app notifications | Per-recipient fan-out, fault alerts, company and platform announcements, feed reads. |
 | `pushService` | Web Push transport | VAPID config, subscription upsert/removal, best-effort delivery with pruning. |
 | `superadminService` | Platform operations | KPIs/trends, company activation, cross-tenant user ops, temporary passwords, audit log queries. |
-| `utils/equipmentEngineHours` | Derived data | Highest-wins engine hours + schedule status. |
+| `utils/equipmentEngineHours` | Derived data | Highest-wins engine hours (recomputed downward when the record holding the current reading is removed) + schedule status. |
 
 ### 1.3.4 Data access / Persistence layer (`backend/models/`, `backend/config/db.js`, `backend/utils/mediaStorage.js`)
 
@@ -101,12 +100,12 @@ Services use Mongoose models directly (no repository abstraction). `sanitizeFilt
 
 | Integration | Module | Mode | Failure behaviour |
 |---|---|---|---|
-| MongoDB | `config/db.js` | Required | Process exits on connection failure; `/health` returns 503 when disconnected. |
-| GridFS | `utils/mediaStorage.js` | Required for uploads | Upload errors propagate as 500; deletes are best-effort. |
+| MongoDB | `config/db.js` | Required | Logged via `logger`; process exits on connection failure; `/health` returns 503 when disconnected. |
+| GridFS | `utils/mediaStorage.js` | Required for uploads | Storage errors propagate as 500 (a rejected MIME type is a 400); deletes are best-effort. |
 | Web Push (VAPID) | `services/pushService.js` | Optional | Disabled without keys; delivery errors logged, dead endpoints pruned; never fails the triggering action. |
 | EmailJS | `utils/mailer.js` | Optional in dev, needed for reset emails in production | Dev: logged to console. Production: throws, caught and logged; HTTP response unchanged. |
 | Google Fonts | `frontend/index.html` | Optional | Falls back to the system font stack. |
-| GitHub Actions | `.github/workflows/increment-build-version.yml` | CI | Builds the frontend only. |
+| GitHub Actions | `.github/workflows/increment-build-version.yml` | CI | Two jobs: frontend lint → test → build; backend syntax check → test. A red job does not affect the running app. |
 
 ## 1.4 Authorization Model (RBAC)
 
@@ -119,10 +118,10 @@ Services use Mongoose models directly (no repository abstraction). `sanitizeFilt
 | Create / edit / delete equipment | ✘ | ✘ | ✔ | ✘ | `ensureAdmin` |
 | Upload/delete manuals; create/complete/delete schedules; checklist & progress | ✘ | ✔ | ✔ | ✘ | `ensureMechanicOrAdmin` |
 | Report a fault (with photos) | ✔ | ✔ | ✔ | ✘ | `verifyToken` |
-| List faults | ✔ (API returns all company faults; UI shows own) | ✔ | ✔ | ✘ | `verifyToken` |
+| List faults | ✔ (API returns all company faults by design; UI shows own) | ✔ | ✔ | ✘ | `verifyToken` |
 | Close / reopen / edit / delete faults | ✘ | ✔ | ✔ | ✘ | `ensureMechanicOrAdmin` |
 | Read maintenance logs | ✔ | ✔ | ✔ | ✘ | `verifyToken` |
-| Create/delete maintenance logs; create/update/delete parts | ✘ | ✔ | ✔ | ✘ | `ensureMechanicOrAdmin` |
+| Delete maintenance logs (logs are created by completing a schedule) | ✘ | ✔ | ✔ | ✘ | `ensureMechanicOrAdmin` |
 | Receive fault notifications | ✘ | ✔ | ✔ | ✘ | `notifyFaultReported` role filter |
 | Own notification feed, push subscription | ✔ | ✔ | ✔ | ✘ | `verifyToken` + recipient scoping |
 | Company announcement | ✘ | ✘ | ✔ | ✘ | `ensureAdmin` |
@@ -138,28 +137,28 @@ Services use Mongoose models directly (no repository abstraction). `sanitizeFilt
 
 - **Access token:** HS256 JWT `{ userId, role, companyId }`, 60 min, sent **only** as `Authorization: Bearer`. Stored client-side in `localStorage['token']` and the axios default header.
 - **Refresh token:** HS256 JWT `{ userId, familyId, jti }`, 7 days, HTTP-only cookie scoped to `/api/auth`; persisted only as a SHA-256 hash (`RefreshToken`). Rotated on each use; reuse of a revoked token revokes the whole family (`TOKEN_REUSE_DETECTED`) unless it was rotated ≤ 30 s ago (multi-tab race).
-- **Revocation triggers:** logout (that token), password change/reset (all of the user's), superadmin password reset (all of the user's), company deactivation (all of the company's), reuse detection (the family).
+- **Revocation triggers:** logout (that token), password change/reset (all of the user's), superadmin password reset (all of the user's), company deactivation (all of the company's), reuse detection (the family). Deleting a user (self, admin or superadmin) deletes all of that user's refresh tokens and push subscriptions.
 - **Per-request revalidation:** `verifyToken` reloads user and company on every call, so deletion or deactivation takes effect immediately even with a valid JWT.
 - **CSRF stance:** cookie-based access auth was removed; the refresh cookie is `SameSite=Lax` (`None` only for the `COOKIE_DOMAIN` split deployment) and path-restricted.
 
 ### 1.5.2 Multi-tenant isolation
 
 - Every tenant document carries `companyId`; every service query filters by the caller's `companyId` (from the token, never the body).
-- Cross-references are validated in-tenant (fault / maintenance / part → tool).
+- Cross-references are validated in-tenant (fault → tool; schedule completion creates maintenance on the tenant's own equipment).
 - Foreign ids yield 404 (not 403), avoiding existence leaks; notifications additionally scope by `recipient`.
-- Media: `/uploads/:id` serves files referenced by the caller's company and returns 403 for files referenced only by another company.
-- Covered by `backend/__tests__/tenantIsolation.test.js` (37 cases).
+- Media: `/uploads/:id` matches the exact `/uploads/<id>` reference; it serves files referenced by the caller's company, returns 403 for files referenced only by another company, and 404 for files no document references.
+- Covered by `backend/__tests__/tenantIsolation.test.js` (34 cases).
 
 ### 1.5.3 Input validation & injection defence
 
 - `sanitizeRequest` strips `$` and dotted keys from body/query/params; `sanitizeFilter` neutralizes operators in query filters; services check `typeof` on credentials.
 - `validateObjectId` rejects malformed ids before DB access; Mongoose schema validators (`required`, `min`, `enum`) are the last line.
-- Field whitelists for equipment and parts; the server ignores client-supplied `role`, `companyId`, `operator` and photo URLs.
+- Field whitelist for equipment; the server ignores client-supplied `role`, `companyId`, `operator` and photo URLs.
 - Regex search inputs are escaped (`superadminService.escapeRegex`).
 
 ### 1.5.4 Error handling
 
-Services throw `httpError(status, message, { code })`; controllers forward with `next(err)`; `errorHandler` maps known error types (JSON syntax, Mongoose validation/cast, multer, CORS) and service errors, logs 4xx as `warn` and others as `error`, and hides 5xx messages in production. Side effects that must not fail the request (notifications, push, audit writes, reset emails, GridFS cleanup) are caught and logged. Frontend: `ErrorBoundary` at the root, `ErrorComponent` with retry per page, toasts via `useNotify`, and `retry()` with exponential backoff (500 ms, ×5, 3 retries, never on 401/403/404).
+Services and the upload MIME filter throw `httpError(status, message, { code })`; controllers forward with `next(err)`; `errorHandler` maps known error types (JSON syntax, Mongoose validation/cast, multer, CORS) and service errors, logs 4xx as `warn` and others as `error`, and hides 5xx messages in production. Side effects that must not fail the request (notifications, push, audit writes, reset emails, GridFS cleanup) are caught and logged. Frontend: `ErrorBoundary` at the root, `ErrorComponent` with retry per page, toasts via `useNotify`, and `retry()` with exponential backoff (500 ms, ×5, 3 retries, never on 401/403/404).
 
 ### 1.5.5 Logging & audit
 
@@ -172,7 +171,7 @@ Helmet defaults + CSP `frame-ancestors` restricted to self and configured origin
 
 ### 1.5.7 Files & media
 
-Multer memory storage → GridFS `uploads` bucket; references `/uploads/<id>`; MIME allow-list and 50 MB cap. GridFS cleanup on avatar replacement, book removal, fault deletion, equipment deletion (books only) and account deletion. The client fetches media through `useAuthenticatedBlobUrl` so the Bearer token and silent refresh apply.
+Multer memory storage → GridFS `uploads` bucket; references `/uploads/<id>`; MIME allow-list and 50 MB cap. GridFS cleanup on avatar replacement, book removal, fault deletion, equipment deletion (manuals and the faults' photos), and user deletion (self or by an admin/superadmin). A file no document references is never served (404). A rejected MIME type returns 400. The client fetches media through `useAuthenticatedBlobUrl` so the Bearer token and silent refresh apply.
 
 ### 1.5.8 Offline / PWA
 
@@ -218,8 +217,8 @@ The domain was renamed from *Tool* to *Equipment*; both names remain for backwar
 |---|---|---|
 | MongoDB collection | `tools` | — |
 | Mongoose model | `Equipment` | `Tool` (same schema) |
-| API | `/api/equipment` | `/api/tools`, `/api/admin/tools` |
-| Controller | `equipmentController.js` | `toolController.js` |
+| API | `/api/equipment` | `/api/tools` |
+| Controller | `equipmentController.js` | `toolController.js` (no importers) |
 | Frontend routes | `/equipment…` | `/tools…` |
-| Frontend modules | `EquipmentContext`, `equipmentService`, `EquipmentsPage`, `EquipmentPage` | `ToolContext`, `toolsService`, `ToolsPage`, `ToolPage`, `EquipmentList`, `EquipmentPanel` |
-| Field names | — | `Fault.tool`, `Maintenance.tool`, `Part.tool`, query `toolId`, response key `tools` |
+| Frontend modules | `EquipmentContext`, `equipmentService`, `EquipmentsPage`, `EquipmentPage` | `ToolContext`, `ToolsPage`, `ToolPage`, `EquipmentList`, `EquipmentPanel` |
+| Field names | — | `Fault.tool`, `Maintenance.tool`, query `toolId`, response key `tools` |

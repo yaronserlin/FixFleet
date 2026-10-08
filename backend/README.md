@@ -7,7 +7,7 @@ Express 5 REST API over MongoDB (Mongoose 8). It handles multi-tenant data (ever
 ```bash
 npm install
 cp .env.example .env   # set MONGO_URI and JWT_SECRET at minimum
-npm run seed           # optional: sample company, users, equipment, parts, schedules
+npm run seed           # optional: sample company, users, equipment, schedules
 npm run dev            # http://localhost:5001
 ```
 
@@ -42,7 +42,7 @@ config/        # MongoDB connection
 constants/     # Roles, auth/token settings, rate limits, fault/schedule status, pagination
 controllers/   # HTTP layer
 middleware/    # verifyToken/role guards, ObjectId validation, upload (multer), sanitize, error handler
-models/        # Mongoose schemas (Company, User, Equipment, Fault, Maintenance, Part, Notification, ...)
+models/        # Mongoose schemas (Company, User, Equipment, Fault, Maintenance, Notification, ...)
 routes/        # Route declarations; see docs/API.md for the full endpoint list
 services/      # Business logic, including notification fan-out and Web Push
 utils/         # logger, GridFS mediaStorage, EmailJS mailer, httpError

@@ -2,6 +2,8 @@ const request = require('supertest');
 const { connectTestDB, closeTestDB, registerCompanyAdmin, uniqueEmail } = require('./helpers/setup');
 
 const app = require('../app');
+const RefreshToken = require('../models/RefreshToken');
+const PushSubscription = require('../models/PushSubscription');
 let server;
 
 jest.setTimeout(90000);
@@ -215,6 +217,27 @@ describe('Admin User Controller', () => {
                 .delete(`/api/admin/users/${createRes.body._id}`)
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(204);
+        });
+
+        it('removes the deleted user\'s sessions and push subscriptions', async () => {
+            const { token } = await registerCompanyAdmin(server);
+            const { res: createRes, email } = await createUser(token);
+            const userId = createRes.body._id;
+            await request(server).post('/api/auth/login').send({ email, password: 'password123' });
+            await PushSubscription.create({
+                companyId: createRes.body.companyId,
+                user: userId,
+                endpoint: `https://push.example/${userId}`,
+                p256dh: 'k',
+                auth: 'a',
+            });
+            expect(await RefreshToken.countDocuments({ userId })).toBeGreaterThan(0);
+
+            await request(server)
+                .delete(`/api/admin/users/${userId}`)
+                .set('Authorization', `Bearer ${token}`);
+            expect(await RefreshToken.countDocuments({ userId })).toBe(0);
+            expect(await PushSubscription.countDocuments({ user: userId })).toBe(0);
         });
 
         it('allows deleting a second admin while another admin remains', async () => {

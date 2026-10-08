@@ -111,7 +111,7 @@ exports.deleteFault = async (req, res, next) => {
 };
 
 /**
- * PATCH /api/faults/:id - Partially updates a fault's editable fields.
+ * PUT /api/faults/:id - Partially updates a fault's editable fields.
  * @param {import('express').Request} req - Express request; uses `req.user.companyId`, `req.user.userId`, `req.params.id`, and `req.body`.
  * @param {import('express').Response} res - Express response.
  * @param {import('express').NextFunction} next - Express next function.

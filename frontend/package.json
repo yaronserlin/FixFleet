@@ -1,7 +1,7 @@
 {
   "name": "frontend",
   "private": true,
-  "version": "1.0.9",
+  "version": "1.0.10",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -14,16 +14,9 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
-    "@fontsource/roboto": "^5.3.0",
-    "@fullcalendar/daygrid": "^6.1.21",
-    "@fullcalendar/react": "^6.1.21",
     "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.4.0",
-    "@mui/x-data-grid": "^9.13.0",
     "axios": "^1.20.0",
-    "dotenv": "^17.4.2",
-    "fullcalendar": "^6.1.21",
-    "notistack": "^3.0.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "react-router-dom": "^7.18.3",

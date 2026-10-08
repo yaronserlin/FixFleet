@@ -1,8 +1,9 @@
 // services/equipmentService.js
+const mongoose = require('mongoose');
 const Equipment = require('../models/Equipment');
 const Fault = require('../models/Fault');
-const Part = require('../models/Part');
 const Maintenance = require('../models/Maintenance');
+const Notification = require('../models/Notification');
 const { DEFAULT_PAGE, DEFAULT_LIMIT, MAX_LIMIT } = require('../constants/pagination');
 const { SCHEDULE_STATUS } = require('../constants/scheduleStatus');
 const { syncEquipmentEngineHours } = require('../utils/equipmentEngineHours');
@@ -39,7 +40,8 @@ function filterEquipmentFields(body) {
 }
 
 /**
- * Lists equipment/tools for a company, optionally paginated.
+ * Lists equipment/tools for a company, optionally paginated. `faults` holds
+ * fault ids only (not populated) -- fetch faults via /api/faults.
  *
  * @param {string} companyId - Tenant scope; only equipment for this company is returned.
  * @param {{ page?: string|number, limit?: string|number }} [query] - Raw pagination query params.
@@ -57,7 +59,6 @@ async function getAllTools(companyId, query = {}) {
 
         const [tools, total] = await Promise.all([
             Equipment.find(filter)
-                .populate('faults')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limitNum),
@@ -73,9 +74,7 @@ async function getAllTools(companyId, query = {}) {
         };
     }
 
-    return Equipment.find(filter)
-        .populate('faults')
-        .sort({ createdAt: -1 });
+    return Equipment.find(filter).sort({ createdAt: -1 });
 }
 
 /**
@@ -186,10 +185,27 @@ async function deleteTool(companyId, toolId) {
             .map(id => mediaStorage.deleteFile(id))
     );
 
+    // The faults' photos go with them (same best-effort GridFS cleanup), and
+    // so do notifications that would otherwise deep-link to a deleted record.
+    // mongoose.trusted(): the `$in` below is server-built, but the global
+    // `sanitizeFilter` (config/db.js) would otherwise neutralize it.
+    const faults = await Fault.find({ tool: tool._id, companyId }).select('photos').lean();
+    const faultIds = faults.map(f => f._id);
+    await Promise.all(
+        faults
+            .flatMap(f => f.photos || [])
+            .map(mediaStorage.idFromUrl)
+            .filter(Boolean)
+            .map(id => mediaStorage.deleteFile(id))
+    );
+
     // Cascade cleanup of dependent records within this company
     await Promise.all([
+        Notification.deleteMany({
+            companyId,
+            $or: [{ 'data.equipmentId': tool._id }, { 'data.faultId': mongoose.trusted({ $in: faultIds }) }],
+        }),
         Fault.deleteMany({ tool: tool._id, companyId }),
-        Part.deleteMany({ tool: tool._id, companyId }),
         Maintenance.deleteMany({ tool: tool._id, companyId }),
     ]);
 }

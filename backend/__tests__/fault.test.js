@@ -24,6 +24,28 @@ async function createTool(token, overrides = {}) {
     return res.body;
 }
 
+async function reportFault(token, toolId) {
+    const res = await request(server)
+        .post('/api/faults')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ description: 'Check engine', tool: toolId });
+    return res.body;
+}
+
+function closeFault(token, faultId, engineHours) {
+    return request(server)
+        .patch(`/api/faults/${faultId}/close`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({ engineHours });
+}
+
+async function engineHours(token, toolId) {
+    const res = await request(server)
+        .get(`/api/tools/${toolId}`)
+        .set('Authorization', `Bearer ${token}`);
+    return res.body.currentEngineHours;
+}
+
 async function createOperator(adminToken) {
     const email = uniqueEmail('operator');
     const createRes = await request(server)
@@ -94,6 +116,19 @@ describe('Fault Controller', () => {
             // equipment's currentEngineHours when the fault is resolved (see closeFault /
             // syncEquipmentEngineHours) -- creating a fault never raises it immediately.
             expect(res.body.tool.currentEngineHours).toBe(0);
+        });
+
+        it('rejects a disallowed photo file type with 400', async () => {
+            const { token } = await registerCompanyAdmin(server);
+            const tool = await createTool(token);
+            const res = await request(server)
+                .post('/api/faults')
+                .set('Authorization', `Bearer ${token}`)
+                .field('description', 'Leak')
+                .field('tool', tool._id)
+                .attach('photos', Buffer.from('hello'), { filename: 'notes.txt', contentType: 'text/plain' });
+            expect(res.status).toBe(400);
+            expect(res.body.message).toMatch(/only image files/i);
         });
 
         it('does not raise tool engine hours when created by an operator', async () => {
@@ -248,6 +283,50 @@ describe('Fault Controller', () => {
                 .put('/api/faults/64b7f3f3f3f3f3f3f3f3f3f3/reopen')
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(404);
+        });
+
+        it('never returns user password hashes on close or reopen', async () => {
+            const { token } = await registerCompanyAdmin(server);
+            const tool = await createTool(token);
+            const fault = await reportFault(token, tool._id);
+
+            const closeRes = await closeFault(token, fault._id, 10);
+            expect(closeRes.body.operator.name).toBeDefined();
+            expect(closeRes.body.operator.password).toBeUndefined();
+            expect(closeRes.body.resolvedBy.password).toBeUndefined();
+
+            const reopenRes = await request(server)
+                .patch(`/api/faults/${fault._id}/reopen`)
+                .set('Authorization', `Bearer ${token}`);
+            expect(reopenRes.status).toBe(200);
+            expect(reopenRes.body.operator.password).toBeUndefined();
+        });
+
+        it('drops engine hours to the next-highest reading when the fault held the current one', async () => {
+            const { token } = await registerCompanyAdmin(server);
+            const tool = await createTool(token);
+            const low = await reportFault(token, tool._id);
+            const high = await reportFault(token, tool._id);
+            await closeFault(token, low._id, 100);
+            await closeFault(token, high._id, 200);
+            expect(await engineHours(token, tool._id)).toBe(200);
+
+            await request(server)
+                .patch(`/api/faults/${high._id}/reopen`)
+                .set('Authorization', `Bearer ${token}`);
+            expect(await engineHours(token, tool._id)).toBe(100);
+        });
+
+        it('keeps a higher manual engine-hours reading on reopen', async () => {
+            const { token } = await registerCompanyAdmin(server);
+            const tool = await createTool(token, { currentEngineHours: 500 });
+            const fault = await reportFault(token, tool._id);
+            await closeFault(token, fault._id, 200);
+
+            await request(server)
+                .patch(`/api/faults/${fault._id}/reopen`)
+                .set('Authorization', `Bearer ${token}`);
+            expect(await engineHours(token, tool._id)).toBe(500);
         });
     });
 

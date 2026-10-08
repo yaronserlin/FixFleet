@@ -19,14 +19,13 @@
 | 3 | `Equipment` (alias `Tool`) | **`tools`** | `models/Equipment.js`, `models/Tool.js` | Yes | A machine; embeds manuals and maintenance schedules. |
 | 4 | `Fault` | `faults` | `models/Fault.js` | Yes | A reported problem on a machine. |
 | 5 | `Maintenance` | `maintenances` | `models/Maintenance.js` | Yes | A completed service log entry. |
-| 6 | `Part` | `parts` | `models/Part.js` | Yes | Spare-parts inventory row. |
-| 7 | `Notification` | `notifications` | `models/Notification.js` | Yes | One in-app notification per recipient. |
-| 8 | `PushSubscription` | `pushsubscriptions` | `models/PushSubscription.js` | Yes | One browser Web Push endpoint. |
-| 9 | `RefreshToken` | `refreshtokens` | `models/RefreshToken.js` | Yes (null for superadmin) | Hashed refresh token for rotation & reuse detection. |
-| 10 | `AuditLog` | `auditlogs` | `models/AuditLog.js` | Optional (`companyId` nullable) | Append-only security/platform event log. |
-| 11 | — (GridFS bucket `uploads`) | `uploads.files`, `uploads.chunks` | `utils/mediaStorage.js` | Indirect (via references) | Binary storage for photos, PDFs, avatars. |
+| 6 | `Notification` | `notifications` | `models/Notification.js` | Yes | One in-app notification per recipient. |
+| 7 | `PushSubscription` | `pushsubscriptions` | `models/PushSubscription.js` | Yes | One browser Web Push endpoint. |
+| 8 | `RefreshToken` | `refreshtokens` | `models/RefreshToken.js` | Yes (null for superadmin) | Hashed refresh token for rotation & reuse detection. |
+| 9 | `AuditLog` | `auditlogs` | `models/AuditLog.js` | Optional (`companyId` nullable) | Append-only security/platform event log. |
+| 10 | — (GridFS bucket `uploads`) | `uploads.files`, `uploads.chunks` | `utils/mediaStorage.js` | Indirect (via references) | Binary storage for photos, PDFs, avatars. |
 
-> `Tool` is registered as a second Mongoose model name over the **same** `EquipmentSchema` and `tools` collection (`models/Equipment.js` lines 101–104). `models/Tool.js` simply re-exports `Equipment`. `ref: 'Tool'` (used by Fault, Maintenance, Part, Notification) and `ref: 'Equipment'` resolve to the same documents.
+> `Tool` is registered as a second Mongoose model name over the **same** `EquipmentSchema` and `tools` collection (`models/Equipment.js` lines 101–104). `models/Tool.js` simply re-exports `Equipment`. `ref: 'Tool'` (used by Fault, Maintenance, Notification) and `ref: 'Equipment'` resolve to the same documents.
 
 ---
 
@@ -38,7 +37,6 @@ erDiagram
     COMPANY ||--o{ EQUIPMENT : "companyId"
     COMPANY ||--o{ FAULT : "companyId"
     COMPANY ||--o{ MAINTENANCE : "companyId"
-    COMPANY ||--o{ PART : "companyId"
     COMPANY ||--o{ NOTIFICATION : "companyId"
     COMPANY ||--o{ PUSH_SUBSCRIPTION : "companyId"
     COMPANY |o--o{ REFRESH_TOKEN : "companyId (null=superadmin)"
@@ -56,7 +54,6 @@ erDiagram
     EQUIPMENT ||--o{ FAULT : "Fault.tool"
     EQUIPMENT }o--o{ FAULT : "Equipment.faults[] backref"
     EQUIPMENT ||--o{ MAINTENANCE : "tool"
-    EQUIPMENT |o--o{ PART : "tool (optional)"
     EQUIPMENT ||--|{ BOOK : "embeds books[]"
     EQUIPMENT ||--|{ SCHEDULE_TASK : "embeds maintenanceSchedule[]"
     SCHEDULE_TASK ||--|{ CHECKLIST_ITEM : "embeds checklist[]"
@@ -72,10 +69,10 @@ erDiagram
 **Relationship notes**
 
 - **No database-level foreign keys or cascades exist** (MongoDB). All referential integrity is enforced in services:
-  - `equipmentService.deleteTool` → deletes the equipment's own book files from GridFS, then `Fault.deleteMany`, `Part.deleteMany`, `Maintenance.deleteMany` filtered by `{ tool, companyId }`.
-  - `faultService.deleteFault` → deletes photo files from GridFS, `$pull`s the fault id from `Equipment.faults`, re-syncs engine hours.
+  - `equipmentService.deleteTool` → deletes the equipment's own book files and its faults' photo files from GridFS (best-effort), then `Notification.deleteMany` (where `data.equipmentId` is the tool or `data.faultId` is one of its faults), `Fault.deleteMany` and `Maintenance.deleteMany`, all filtered by `companyId`.
+  - `faultService.deleteFault` → deletes the fault's notifications (`data.faultId`), deletes photo files from GridFS, `$pull`s the fault id from `Equipment.faults`, re-syncs engine hours.
   - `authService.deleteAccount` → deletes `User`, all `RefreshToken`s, all `PushSubscription`s, and the avatar file.
-  - `userService.deleteUser` (admin / superadmin) → deletes `User` and avatar file only (refresh tokens and push subscriptions are **not** removed; see [Audit Observations](README.md#7-audit-observations)).
+  - `userService.deleteUser` (admin / superadmin) → deletes `User`, all `RefreshToken`s, all `PushSubscription`s, and the avatar file (same cleanup as self-deletion).
 - `Equipment.faults[]` is a **denormalized back-reference** maintained by `faultService.createFault` (`$push`) and `deleteFault` (`$pull`). The canonical relation is `Fault.tool`.
 - `Company` deletion is not implemented anywhere (only activate/deactivate).
 
@@ -106,12 +103,12 @@ Root of the tenant boundary. Created only by `authService.register` (self-servic
 | `email` | String | required, **unique (global)**, lowercase, trim | — | Login identifier. Unique across all tenants. |
 | `role` | String | enum `operator \| mechanic \| admin \| superadmin` | `operator` | Access level (see [01 §1.4](01-architecture-and-layers.md#14-authorization-model-rbac)). |
 | `avatar` | String | trim | `null` | `/uploads/<gridfsId>` reference or null. |
-| `password` | String | required | — | bcrypt hash, 10 rounds (`BCRYPT_SALT_ROUNDS`). Stripped from all responses. |
+| `password` | String | required, `select: false` | — | bcrypt hash, 10 rounds (`BCRYPT_SALT_ROUNDS`). Never loaded unless a query asks for `+password` (login, password change, email change, self-deletion), so populated users never carry it. |
 | `companyId` | ObjectId → `Company` | required unless `role === 'superadmin'`; indexed | — | Tenant scope. `null` for superadmin. |
 | `mustChangePassword` | Boolean | — | `false` | `true` for admin-created users and after superadmin reset; gates all routes except change-password / logout / `GET /auth/me`. |
 | `termsAccepted` | Boolean | — | `false` | Terms of Service & Privacy acceptance flag. |
 | `termsAcceptedAt` | Date | — | `null` | Acceptance timestamp. |
-| `termsVersion` | String | — | `null` | Version accepted at signup (`CURRENT_TERMS_VERSION = '1.3'` in `authService.js`). Not set by the forced-change flow. |
+| `termsVersion` | String | — | `null` | Version accepted at signup (`CURRENT_TERMS_VERSION = '1.3'` in `constants/auth.js`; `__tests__/termsVersion.test.js` fails if it drifts from the terms/privacy versions in `legalDocuments.js`). Not set by the forced-change flow. |
 | `passwordResetTokenHash` | String | indexed, `select: false` | `null` | SHA-256 of the pending forgot-password token. |
 | `passwordResetExpires` | Date | `select: false` | `null` | Token expiry (now + 30 min). |
 | `lastActiveAt` | Date | — | `null` | Stamped on every login / register / refresh (`generateTokens`). Drives superadmin activity metrics. |
@@ -134,10 +131,10 @@ Root of the tenant boundary. Created only by `authService.register` (self-servic
 | `description` | String | trim | — | Free text. |
 | `model` | String | trim | — | Model designation. |
 | `localSerialNumber` | String | trim | — | Internal asset tag; the frontend sorts equipment by it (`sortToolsByLocalSerial`). |
-| `currentEngineHours` | Number | min 0 | `0` | Hour-meter reading; kept "highest-wins" by `syncEquipmentEngineHours`. |
+| `currentEngineHours` | Number | min 0 | `0` | Hour-meter reading; kept "highest-wins" by `syncEquipmentEngineHours` ([§2.14](#213-derived-data-engine-hours-synchronization)). |
 | `books` | `[EquipmentBook]` | embedded array | `[]` | Attached PDF manuals. |
 | `maintenanceSchedule` | `[MaintenanceScheduleTask]` | embedded array | `[]` | Recurring service routines. |
-| `faults` | `[ObjectId → Fault]` | — | `[]` | Denormalized back-reference list. |
+| `faults` | `[ObjectId → Fault]` | — | `[]` | Denormalized back-reference list. Returned as ids by the list endpoint, populated by the detail endpoint. |
 | `createdAt` / `updatedAt` | Date | timestamps | auto | Lists sort by `createdAt` desc. |
 
 **Indexes:** `_id`; `companyId`; compound `{ companyId: 1, name: 1 }`.
@@ -179,7 +176,7 @@ Root of the tenant boundary. Created only by `authService.register` (self-servic
 |---|---|---|---|---|
 | `_id` | ObjectId | PK | auto | — |
 | `companyId` | ObjectId → `Company` | required, indexed | — | Tenant scope. |
-| `code` | String | trim | — | Optional server-side; **required by the frontend form** (`validateFaultValues`). |
+| `code` | String | trim | — | Optional (server and frontend form). |
 | `tool` | ObjectId → `Tool` | required | — | Machine; validated to belong to the same company on create. |
 | `operator` | ObjectId → `User` | required | — | Reporter (from JWT, not body). |
 | `description` | String | required, trim | — | Problem text. |
@@ -205,8 +202,8 @@ Root of the tenant boundary. Created only by `authService.register` (self-servic
 | `companyId` | ObjectId → `Company` | required, indexed | — | Tenant scope. |
 | `tool` | ObjectId → `Tool` | required | — | Machine serviced. |
 | `mechanic` | ObjectId → `User` | required | — | Performer (from JWT). |
-| `details` | String | required, trim | — | Work text. From schedule completion: `Routine: <title> - <description>\nNotes: <merged notes>`. |
-| `engineHours` | Number | min 0 | — | Reading at service; contributes to highest-wins sync. |
+| `details` | String | required, trim | — | Work text, built by schedule completion (the only way records are created): `Routine: <title> - <description>\nNotes: <merged notes>`. |
+| `engineHours` | Number | min 0 | — | Reading at service; contributes to highest-wins sync, and is passed as the removed reading when the record is deleted. |
 | `checklist` | `[{ text: String (trim), done: Boolean (default true) }]` | embedded | `[]` | Snapshot of the task checklist at completion time. |
 | `date` | Date | — | `Date.now` | When performed; lists sort by `date` desc. |
 | `createdAt` / `updatedAt` | Date | timestamps | auto | — |
@@ -215,24 +212,7 @@ Root of the tenant boundary. Created only by `authService.register` (self-servic
 
 ---
 
-## 2.8 `Part` — collection `parts`
-
-| Field | Type | Constraints / Attributes | Default | Description / Business Meaning |
-|---|---|---|---|---|
-| `_id` | ObjectId | PK | auto | — |
-| `companyId` | ObjectId → `Company` | required, indexed | — | Tenant scope. |
-| `name` | String | required, trim | — | Part name. |
-| `partNumber` | String | trim | — | Catalog number. |
-| `tool` | ObjectId → `Tool` | optional | — | Associated machine; must belong to the same company (validated). |
-| `inStock` | Number | — | `0` | Quantity. No min validator. |
-| `createdAt` / `updatedAt` | Date | timestamps | auto | — |
-
-**Indexes:** `_id`; `companyId`; `{ companyId, tool }`. **Writable fields:** `name, partNumber, tool, inStock`.
-**Note:** the API exists and is tested, but **no frontend screen consumes `/api/parts`** (seeded data only).
-
----
-
-## 2.9 `Notification` — collection `notifications`
+## 2.8 `Notification` — collection `notifications`
 
 Stored **per recipient** (a fault reported to five mechanics → five documents). Source of truth for the in-app feed; Web Push is a best-effort transport on top.
 
@@ -256,7 +236,7 @@ Stored **per recipient** (a fault reported to five mechanics → five documents)
 
 ---
 
-## 2.10 `PushSubscription` — collection `pushsubscriptions`
+## 2.9 `PushSubscription` — collection `pushsubscriptions`
 
 | Field | Type | Constraints / Attributes | Default | Description / Business Meaning |
 |---|---|---|---|---|
@@ -275,7 +255,7 @@ Stored **per recipient** (a fault reported to five mechanics → five documents)
 
 ---
 
-## 2.11 `RefreshToken` — collection `refreshtokens`
+## 2.10 `RefreshToken` — collection `refreshtokens`
 
 Implements **refresh-token rotation (RTR) with reuse detection**.
 
@@ -295,7 +275,7 @@ Implements **refresh-token rotation (RTR) with reuse detection**.
 
 ---
 
-## 2.12 `AuditLog` — collection `auditlogs`
+## 2.11 `AuditLog` — collection `auditlogs`
 
 Append-only; written only by `utils/audit.js#recordAudit` (best-effort, never throws); read only by the superadmin audit view.
 
@@ -329,7 +309,7 @@ The frontend mirror for labels/colours is `frontend/src/constants/audit.js` (`AU
 
 ---
 
-## 2.13 GridFS bucket `uploads`
+## 2.12 GridFS bucket `uploads`
 
 Managed by [backend/utils/mediaStorage.js](../../backend/utils/mediaStorage.js) (`bucketName: 'uploads'`).
 
@@ -344,27 +324,36 @@ Managed by [backend/utils/mediaStorage.js](../../backend/utils/mediaStorage.js) 
 
 ---
 
-## 2.14 Derived Data: Engine-Hours Synchronization
+## 2.13 Derived Data: Engine-Hours Synchronization
 
-`utils/equipmentEngineHours.js#syncEquipmentEngineHours(toolId, companyId, additionalCandidate?)`:
+`utils/equipmentEngineHours.js#syncEquipmentEngineHours(toolId, companyId, additionalCandidate = null, removedReading = null)`:
 
 1. Loads the equipment (company-scoped).
-2. `highest = equipment.currentEngineHours`.
+2. `highest = equipment.currentEngineHours`, **unless** `removedReading` equals it — the record just reopened or deleted held the current reading — in which case `highest = 0`.
 3. `highest = max(highest, every closed Fault.closingEngineHours > 0, every Maintenance.engineHours > 0, additionalCandidate > 0)`.
 4. Writes `currentEngineHours = highest` and recomputes every hour-based schedule `status`.
 
-Called from: `getToolById` (on every detail read), `completeSchedule`, `closeFault`, `reopenFault`, `deleteFault`, `updateFault`, `createMaintenance`, `deleteMaintenance`.
-**Consequence:** because the current value seeds the maximum, the reading is **monotonic** — reopening a fault or deleting a maintenance record never lowers it (contrary to some in-code comments; see [Audit Observations](README.md#7-audit-observations)).
+| Caller | `additionalCandidate` | `removedReading` |
+|---|---|---|
+| `equipmentService.getToolById` (every detail read) | — | — |
+| `equipmentService.completeSchedule` | completion reading | — |
+| `faultService.closeFault` | closing reading | — |
+| `faultService.reopenFault` | — | the fault's `closingEngineHours` before reopening |
+| `faultService.updateFault` | — | previous `closingEngineHours`, read only when the update `$unset`s resolution fields (`status: open`) |
+| `faultService.deleteFault` | — | the deleted fault's `closingEngineHours` |
+| `maintenanceService.deleteMaintenance` | — | the deleted record's `engineHours` |
+
+**Consequence:** the reading only rises, except that removing the record that held it lowers it to the highest remaining reading. A manually set reading (`PUT /api/equipment/:id`) is never lowered by a sync, unless a removed record's reading happens to equal it.
 
 ---
 
-## 2.15 Seed Data (`backend/seeders/seeder.js`, dev only)
+## 2.14 Seed Data (`backend/seeders/seeder.js`, dev only)
 
-Refuses to run when `NODE_ENV=production`. Wipes `Company, User, Equipment, Part, Maintenance, Fault, AuditLog` (not `Notification`, `PushSubscription`, `RefreshToken`, GridFS), then creates:
+Refuses to run when `NODE_ENV=production`. Wipes `Company, User, Equipment, Maintenance, Fault, AuditLog` (not `Notification`, `PushSubscription`, `RefreshToken`, GridFS), then creates:
 
 | Tenant | Users (role) | Data |
 |---|---|---|
-| Green Valley Forage & Dairy (`green-valley-forage-dairy`) | `admin@greenvalleyfarm.com` (admin), `mechanic@greenvalleyfarm.com` (mechanic), `operator@greenvalleyfarm.com` (operator, `mustChangePassword`) | Equipment with schedules/checklists, parts, maintenance logs, faults (linked into `Equipment.faults`). |
+| Green Valley Forage & Dairy (`green-valley-forage-dairy`) | `admin@greenvalleyfarm.com` (admin), `mechanic@greenvalleyfarm.com` (mechanic), `operator@greenvalleyfarm.com` (operator, `mustChangePassword`) | Equipment with schedules/checklists, maintenance logs, faults (linked into `Equipment.faults`). |
 | Prairie Crest Grain & Hay (`prairie-crest-grain-hay`) | `admin@`, `mechanic@`, `operator@prairiecrestfarm.com` | Same shape. |
 | — | `superadmin@fixfleet.dev` (superadmin, no company) | — |
 

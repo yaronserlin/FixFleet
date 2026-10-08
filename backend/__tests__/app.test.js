@@ -143,10 +143,22 @@ describe('App-level middleware and error handling', () => {
             expect(res.status).toBe(403);
         });
 
-        it('falls back to serving unassigned media not referenced by any record', async () => {
+        it('returns 404 for media not referenced by any record', async () => {
             const { token } = await registerCompanyAdmin(server);
             const res = await request(server)
                 .get(`/uploads/${filename}`)
+                .set('Authorization', `Bearer ${token}`);
+            expect(res.status).toBe(404);
+        });
+
+        it('serves the requesting user\'s own avatar', async () => {
+            const { token } = await registerCompanyAdmin(server);
+            const upload = await request(server)
+                .post('/api/auth/me/avatar')
+                .set('Authorization', `Bearer ${token}`)
+                .attach('avatar', Buffer.from('fake-png'), { filename: 'a.png', contentType: 'image/png' });
+            const res = await request(server)
+                .get(upload.body.avatar)
                 .set('Authorization', `Bearer ${token}`);
             expect(res.status).toBe(200);
         });

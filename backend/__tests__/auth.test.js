@@ -314,7 +314,7 @@ describe('Auth Controller', () => {
                     filename: 'malware.exe',
                     contentType: 'application/x-msdownload',
                 });
-            expect(res.status).toBe(500);
+            expect(res.status).toBe(400);
             expect(res.body.message).toMatch(/only image files/i);
         });
     });

@@ -8,16 +8,19 @@ const { FAULT_STATUS } = require('../constants/faultStatus');
  * 1. All closed/resolved faults for this equipment (closingEngineHours and engineHours)
  * 2. All maintenance/service records for this equipment (engineHours)
  * 3. Any additional candidate reading passed in (e.g. validHours from a current completion/resolution)
- * 4. Existing equipment currentEngineHours
+ * 4. Existing equipment currentEngineHours -- unless `removedReading` equals it, i.e. the record
+ *    just reopened/deleted held the current reading. Then the value is recomputed from the
+ *    remaining records alone and may drop. A manually set reading is otherwise never lowered.
  *
  * Also recalculates the status (overdue, due_soon, normal) of all scheduled maintenance routines.
  *
  * @param {string|mongoose.Types.ObjectId} toolId
  * @param {string|mongoose.Types.ObjectId} companyId
  * @param {number|null} [additionalCandidate=null]
+ * @param {number|null} [removedReading=null] - Engine-hours reading of a record that was just reopened or deleted.
  * @returns {Promise<Object|null>} Updated equipment document
  */
-async function syncEquipmentEngineHours(toolId, companyId, additionalCandidate = null) {
+async function syncEquipmentEngineHours(toolId, companyId, additionalCandidate = null, removedReading = null) {
     if (!toolId || !companyId) return null;
 
     const Equipment = mongoose.models.Equipment || mongoose.model('Equipment');
@@ -40,9 +43,9 @@ async function syncEquipmentEngineHours(toolId, companyId, additionalCandidate =
         companyId,
     }).select('engineHours').lean();
 
-    let highestHours = typeof tool.currentEngineHours === 'number' && !isNaN(tool.currentEngineHours)
-        ? tool.currentEngineHours
-        : 0;
+    const hasCurrent = typeof tool.currentEngineHours === 'number' && !isNaN(tool.currentEngineHours);
+    const currentWasRemoved = hasCurrent && typeof removedReading === 'number' && removedReading === tool.currentEngineHours;
+    let highestHours = hasCurrent && !currentWasRemoved ? tool.currentEngineHours : 0;
 
     for (const f of closedFaults) {
         if (typeof f.closingEngineHours === 'number' && !isNaN(f.closingEngineHours) && f.closingEngineHours > 0) {

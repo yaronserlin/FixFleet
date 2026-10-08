@@ -6,10 +6,12 @@
 
 | Manifest | Package name | Version | Module system | Purpose |
 |---|---|---|---|---|
-| `package-lock.json` (root) | `MaintenanceSystemApp` | — | — | Empty stub lockfile (`"packages": {}`); there is **no root `package.json`** and no workspace tooling. Each app is installed separately. |
-| `backend/package.json` | `backend` | 1.0.8 | CommonJS | Express API. Also declares a non-standard `"defaultLanguage": "en"` key. |
+| `package.json` (root) | `FixFleet` | — | — | Repository tooling only: `docs:build` / `docs:watch` scripts for the spec viewer. No dependencies, no workspaces; each app is installed separately. |
+| `package-lock.json` (root) | — | lockfile v3 | — | Empty (no root dependencies). |
+| `docs/system-spec/_build/package.json` | `spec-viewer-build` | — | ESM | Spec viewer builder; one dev dependency, `marked` 14.1.4. Installed with `npm install --prefix docs/system-spec/_build`. |
+| `backend/package.json` | `backend` | 1.0.9 | CommonJS | Express API. Also declares a non-standard `"defaultLanguage": "en"` key. |
 | `backend/package-lock.json` | — | lockfile v3 | — | Pins the backend tree. |
-| `frontend/package.json` | `frontend` | 1.0.8 | ESM (`"type": "module"`) | React SPA / PWA. |
+| `frontend/package.json` | `frontend` | 1.0.9 | ESM (`"type": "module"`) | React SPA / PWA. |
 | `frontend/package-lock.json` | — | lockfile v3 | — | Pins the frontend tree. |
 
 Frontend and backend versions are kept identical by `.githooks/pre-commit` (see §3.6).
@@ -30,6 +32,8 @@ Frontend and backend versions are kept identical by `.githooks/pre-commit` (see 
 | frontend | `lint` | `eslint .` | Flat-config lint. |
 | frontend | `preview` | `vite preview` | Serve the built bundle (port 4173 — allowed by backend dev CORS). |
 | frontend | `prepare` | `git config core.hooksPath .githooks \|\| true` | Installs the repo's git hooks on `npm install`. |
+| root | `docs:build` | `node docs/system-spec/_build/build.mjs` | Regenerates `docs/system-spec/index.html`. |
+| root | `docs:watch` | `node docs/system-spec/_build/build.mjs --watch` | Rebuilds the viewer on every save of a spec file. |
 
 ---
 
@@ -71,11 +75,6 @@ Resolved versions come from `backend/package-lock.json`.
 | `@emotion/styled` | ^11.14.1 | 11.14.1 | Styling (peer) | Backs MUI `styled()` (e.g. `VisuallyHiddenInput`). |
 | `axios` | ^1.20.0 | 1.20.0 | HTTP | `apiClient` instance, interceptors, upload progress, blob downloads. |
 | `recharts` | ^3.10.1 | 3.10.1 | Charts | 14-day fault trend (`Dashboard.jsx`), 12-month growth charts (`SuperAdminDashboard.jsx`). |
-| `@mui/x-data-grid` | ^9.13.0 | 9.13.0 | UI kit | **Not imported anywhere in `src/`.** |
-| `notistack` | ^3.0.2 | 3.0.2 | UI | **Not imported** (toasts use MUI `Snackbar` in `NotificationContext`). |
-| `@fullcalendar/react`, `@fullcalendar/daygrid`, `fullcalendar` | ^6.1.21 | 6.1.21 | UI | **Not imported.** |
-| `@fontsource/roboto` | ^5.3.0 | 5.3.0 | Fonts | **Not imported** (Inter is loaded from Google Fonts in `index.html`). |
-| `dotenv` | ^17.4.2 | 17.4.2 | Config | **Not imported** (Vite reads `.env` natively). |
 | `vite` *(dev)* | ^7.3.6 | 7.3.6 | Build | Dev server, proxy, production bundling with `manualChunks` (`vendor`, `mui`). |
 | `@vitejs/plugin-react` *(dev)* | ^4.7.0 | 4.7.0 | Build | JSX + Fast Refresh. |
 | `vite-plugin-pwa` *(dev)* | ^1.3.0 | 1.3.0 | Build / PWA | Manifest, Workbox `generateSW` (precache `**/*.{js,css,html,ico,png,svg}`), `importScripts: ['push-sw.js']`, `virtual:pwa-register`. |
@@ -133,8 +132,8 @@ In Jest, `import.meta` is rewritten to `{ env: process.env }` by an inline Babel
 
 | File | Responsibility |
 |---|---|
-| `backend/config/db.js` | Enables `sanitizeFilter`; connects to `MONGO_URI`; exits the process on failure. |
-| `backend/constants/auth.js` | `ACCESS_TOKEN_EXPIRY '60m'`, `REFRESH_TOKEN_EXPIRY '7d'`, `ACCESS_COOKIE_MAX_AGE 3 600 000` (unused since access cookies were removed), `REFRESH_COOKIE_MAX_AGE 604 800 000`, `BCRYPT_SALT_ROUNDS 10`, `REFRESH_REUSE_GRACE_MS 30 000`, `PASSWORD_RESET_TOKEN_TTL_MS 1 800 000`. |
+| `backend/config/db.js` | Enables `sanitizeFilter`; connects to `MONGO_URI`; logs success/failure through `utils/logger`; exits the process on failure. |
+| `backend/constants/auth.js` | `ACCESS_TOKEN_EXPIRY '60m'`, `REFRESH_TOKEN_EXPIRY '7d'`, `REFRESH_COOKIE_MAX_AGE 604 800 000`, `CURRENT_TERMS_VERSION '1.3'` (must equal the terms/privacy `version` in `frontend/src/content/legalDocuments.js`; enforced by `__tests__/termsVersion.test.js`), `BCRYPT_SALT_ROUNDS 10`, `REFRESH_REUSE_GRACE_MS 30 000`, `PASSWORD_RESET_TOKEN_TTL_MS 1 800 000`. |
 | `backend/constants/rateLimits.js` | `AUTH_RATE_LIMIT {15 min, 20}`, `GENERAL_RATE_LIMIT {15 min, 500}`, `PASSWORD_RESET_RATE_LIMIT {15 min, 3}`. |
 | `backend/constants/pagination.js` | `DEFAULT_PAGE 1`, `DEFAULT_LIMIT 20`, `MAX_LIMIT 100`. |
 | `backend/constants/notifications.js` | Types, `NOTIFICATION_PAGE_SIZE {DEFAULT 20, MAX 100}`, `ANNOUNCEMENT_LIMITS {TITLE_MAX 120, BODY_MAX 1000}`. |
@@ -149,8 +148,8 @@ In Jest, `import.meta` is rewritten to `{ env: process.env }` by an inline Babel
 | `frontend/index.html` | SPA shell: `theme-color #0F172A`, favicons, Apple PWA meta (standalone — required for iOS Web Push), Inter font, `#root`, `/src/main.jsx`. |
 | `frontend/src/index.css` | Global reset, Inter font stack, reduced-motion rules, scrollbars, focus ring `#2563EB`, `#root` fade-in, accessibility classes `.a11y-high-contrast`, `.a11y-underline-links`. |
 | `frontend/src/theme/index.js` | `getAppTheme(mode)` — MUI palette (light/dark), typography (Inter), component overrides. |
-| `.vscode/settings.json` | Editor chat-tool auto-approve list (`npm run build`, `npx eslint`, `npm test`). Listed in `.gitignore` but tracked. |
-| `.gitignore`, `backend/.gitignore`, `frontend/.gitignore` | Ignore `node_modules`, `dist`, `.env*` (except `.env.example`), `uploads/*`, `.mongo-binaries/`, editor files, `.agents/*`, `.claude/*`. |
+| `.gitignore`, `backend/.gitignore`, `frontend/.gitignore` | Ignore `node_modules` (including `docs/system-spec/_build/node_modules`), `dist`, `.env*` (except `.env.example`), `uploads/*`, `.mongo-binaries/`, `backend/coverage/`, editor files (including `.vscode`), `.agents/*`, `.claude/*`. |
+| `docs/system-spec/_build/` | Spec viewer builder: `build.mjs`, `template.html` (theme tokens copied from `frontend/src/theme/index.js`), `spec.config.json` (product name, logo, chips, font, theme key `maintenance_app_theme`). |
 
 ---
 
@@ -158,8 +157,8 @@ In Jest, `import.meta` is rewritten to `{ env: process.env }` by an inline Babel
 
 | Item | Behaviour |
 |---|---|
-| `.githooks/pre-commit` | Runs on `main` only. If the staged `frontend/package.json` version equals `HEAD`'s, runs `npm version patch` in `frontend`; otherwise keeps the manual bump. Copies the version into `backend/package.json` and stages both manifests and lockfiles. Skip with `--no-verify`. Enabled by the frontend `prepare` script. |
-| `.github/workflows/increment-build-version.yml` | Workflow name "Build". On push to any branch: checkout → `npm ci` → `npm run build` in `frontend/`. **No backend build, no tests, no lint in CI.** |
+| `.githooks/pre-commit` | (1) On every branch: when spec Markdown or the viewer's template/config/builder is staged, rebuilds `docs/system-spec/index.html` and stages it (skipped with a warning if the builder's `node_modules` is missing). (2) On `main` only: if the staged `frontend/package.json` version equals `HEAD`'s, runs `npm version patch` in `frontend`; otherwise keeps the manual bump. Copies the version into `backend/package.json` and stages both manifests and lockfiles. Skip with `--no-verify`. Enabled by the frontend `prepare` script. |
+| `.github/workflows/increment-build-version.yml` | Workflow name "Build". On push to any branch, two jobs: **frontend** (`npm ci` → `npm run lint` → `npm test` → `npm run build`) and **backend** (cache `backend/.mongo-binaries` keyed on `backend/package-lock.json` → `npm ci` → `npm run build` (syntax check) → `npm test`). No backend lint (no ESLint config). |
 | App version display | `frontend/src/constants/appVersion.js` reads the `package.json` version → shown in `LegalFooter`. |
 | Service-worker updates | `main.jsx` registers the SW (`autoUpdate`) and calls `registration.update()` hourly and on every return to foreground. |
 
@@ -173,7 +172,6 @@ In Jest, `import.meta` is rewritten to `{ env: process.env }` by an inline Babel
 | `media/` | `demo.png`, `equipment.png` — README screenshots. |
 | `docs/user-guide/` | `index.html` (illustrated end-user guide) + 29 `.webp` screenshots + `fixfleet-mark.svg`. |
 | `docs/API.md`, `ENV.md`, `RUNBOOK.md`, `CONTRIBUTING.md` | Hand-written operational docs (pre-existing). |
-| `backend/coverage/coverage-summary.json` | Committed, **stale** Istanbul summary (59 % lines) referencing absolute local paths and only part of the current files. |
 | `.claude/plans/multi-tenant-migration.md` | Historical design document (2026-09-14) for the multi-tenant migration. |
 | `.agents/` | Local AI-agent tooling (agents, rules, skills, workflows) — git-ignored. |
 | `test.sock` | Stray Unix socket in the repo root (untracked). |

@@ -24,14 +24,12 @@ import { FAULT_STATUS } from '../../../constants/faultStatus';
 import { isRequired } from '../../../utils/validate';
 
 /**
- * Shared validation for fault create/edit forms: equipment selection,
- * fault code, and description are all required.
+ * Shared validation for fault create/edit forms: equipment selection and
+ * description are required; the fault code is optional, as in the API.
  */
 function validateFaultValues(values) {
     const errs = {};
     if (!values.tool) errs.tool = 'Please select an equipment';
-    const codeErr = isRequired(values.code, 'Fault code');
-    if (codeErr) errs.code = codeErr;
     const descriptionErr = isRequired(values.description, 'Description');
     if (descriptionErr) errs.description = descriptionErr;
     return errs;
@@ -126,7 +124,6 @@ function FaultFormFields({
     onRemoveFile,
     tools = [],
     equipment,
-    isEdit = false,
     errors = {},
     lockEquipment = false,
 }) {
@@ -221,7 +218,6 @@ function FaultFormFields({
                 <TextField
                     label="Fault Code"
                     name="code"
-                    required
                     fullWidth
                     value={values.code}
                     onChange={onChange}
@@ -330,36 +326,6 @@ function FaultFormFields({
                 )}
             </Box>
 
-            {/* Status selector - only visible in edit mode */}
-            {isEdit && (
-                <>
-                    <FormControl fullWidth>
-                        <InputLabel id="status-select-label">Status</InputLabel>
-                        <Select
-                            labelId="status-select-label"
-                            label="Status"
-                            name="status"
-                            value={values.status || FAULT_STATUS.OPEN}
-                            onChange={onChange}
-                        >
-                            <MenuItem value={FAULT_STATUS.OPEN}>Open</MenuItem>
-                            <MenuItem value={FAULT_STATUS.CLOSED}>Closed</MenuItem>
-                        </Select>
-                    </FormControl>
-
-                    {/* Closed date, if status is closed */}
-                    {values.status === FAULT_STATUS.CLOSED && (
-                        <TextField
-                            label="Closed At"
-                            name="closedAt"
-                            type="date"
-                            InputLabelProps={{ shrink: true }}
-                            value={values.closedAt}
-                            onChange={onChange}
-                        />
-                    )}
-                </>
-            )}
         </Box>
     );
 }
@@ -466,89 +432,6 @@ export function CreateFaultForm({
                     </Button>
                 </Box>
             )}
-        </form>
-    );
-}
-
-/**
- * Form for editing an existing Fault.
- */
-export function EditFaultForm({ initialValues, onSubmit, formId = 'edit-fault-form' }) {
-    const { tools = [] } = useTool();
-    const [values, setValues] = useState({
-        tool: initialValues?.tool?._id || initialValues?.tool || '',
-        code: initialValues?.code || '',
-        engineHours: initialValues?.engineHours ?? '',
-        description: initialValues?.description || '',
-        files: [],
-        status: initialValues?.status || FAULT_STATUS.OPEN,
-        closedAt: initialValues?.closedAt ? initialValues.closedAt.slice(0, 10) : '',
-    });
-    const [errors, setErrors] = useState({});
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const handleChange = (e) => {
-        if (e.target.type === 'file') {
-            const selectedFiles = Array.from(e.target.files || []);
-            setValues(prev => ({
-                ...prev,
-                files: [...prev.files, ...selectedFiles],
-            }));
-        } else {
-            const { name, value } = e.target;
-            if (errors[name]) {
-                setErrors(prev => ({ ...prev, [name]: undefined }));
-            }
-            setValues(prev => ({ ...prev, [name]: value }));
-        }
-    };
-
-    const handleFilesAdded = (newFiles) => {
-        setValues(prev => ({
-            ...prev,
-            files: [...prev.files, ...newFiles],
-        }));
-    };
-
-    const handleRemoveFile = (indexToRemove) => {
-        setValues(prev => ({
-            ...prev,
-            files: prev.files.filter((_, idx) => idx !== indexToRemove),
-        }));
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (isSubmitting) return;
-
-        const validationErrors = validateFaultValues(values);
-        setErrors(validationErrors);
-        if (Object.keys(validationErrors).length > 0) return;
-
-        setIsSubmitting(true);
-        try {
-            await onSubmit(values);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    return (
-        <form id={formId} onSubmit={handleSubmit}>
-            <FaultFormFields
-                values={values}
-                onChange={handleChange}
-                onFilesAdded={handleFilesAdded}
-                onRemoveFile={handleRemoveFile}
-                tools={tools}
-                errors={errors}
-                isEdit
-            />
-            <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end' }}>
-                <Button type="submit" variant="contained" color="primary" disabled={isSubmitting}>
-                    {isSubmitting ? 'Updating…' : 'Update Fault'}
-                </Button>
-            </Box>
         </form>
     );
 }

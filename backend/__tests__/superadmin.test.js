@@ -61,7 +61,7 @@ beforeAll(async () => {
     await addMember(companyB.token, 'operator');
 
     const equipment = await request(server)
-        .post('/api/admin/equipment')
+        .post('/api/equipment')
         .set('Authorization', `Bearer ${companyA.token}`)
         .send({ name: 'Alpha Tractor', serialNumber: 'ALPHA-001' });
     await request(server)

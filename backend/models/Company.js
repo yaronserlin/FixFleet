@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 
 /**
  * A tenant organization. Every other collection (User, Equipment, Fault,
- * Part, Maintenance, RefreshToken) scopes its documents to a `companyId`,
+ * Maintenance, RefreshToken) scopes its documents to a `companyId`,
  * making Company the root of the multi-tenant isolation boundary.
  *
  * @typedef {Object} CompanyDocument

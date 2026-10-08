@@ -21,11 +21,9 @@ function isTrustedOrigin(url) {
  * valid auth token) as a blob and exposes it as a local object URL.
  *
  * `<img>`/`<object>`/`<iframe>`/`<a download>` elements can't attach an
- * `Authorization` header themselves, so they rely entirely on the `token`
- * cookie -- which is short-lived and only gets refreshed by `apiClient`'s
- * response interceptor when an *axios* request 401s. If nothing else has
- * called the API in a while, that cookie can quietly expire, and a raw
- * `<object data="...">`/`window.open(url)` then shows the backend's plain
+ * `Authorization` header, and the API accepts no cookie for access auth
+ * (backend/middleware/authMiddleware.js), so a raw `<object data="...">`/
+ * `window.open(url)` would just show the backend's plain
  * `{"message":"..."}` 401 JSON body instead of the document/photo.
  *
  * Routing the fetch through `apiClient` instead gets the same Bearer token

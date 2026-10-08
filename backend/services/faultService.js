@@ -1,6 +1,7 @@
 // services/faultService.js
 const Fault = require('../models/Fault');
 const Tool = require('../models/Tool');
+const Notification = require('../models/Notification');
 const { DEFAULT_PAGE, DEFAULT_LIMIT, MAX_LIMIT } = require('../constants/pagination');
 const { FAULT_STATUS, ALL_FAULT_STATUSES } = require('../constants/faultStatus');
 const { syncEquipmentEngineHours } = require('../utils/equipmentEngineHours');
@@ -192,7 +193,7 @@ async function closeFault(companyId, userId, faultId, body = {}) {
         { _id: faultId, companyId },
         updateData,
         { new: true, runValidators: true }
-    ).populate('tool operator resolvedBy');
+    ).populate(FAULT_POPULATE_FIELDS.map(([path, select]) => ({ path, select })));
 
     if (!fault) {
         throw httpError(404, 'Fault not found');
@@ -210,8 +211,8 @@ async function closeFault(companyId, userId, faultId, body = {}) {
 
 /**
  * Reopens a previously-closed fault, clearing its resolution fields and
- * re-syncing the tool's currentEngineHours (which may drop if this fault
- * held the highest reading).
+ * re-syncing the tool's currentEngineHours (which drops to the highest
+ * remaining reading if this fault's closing reading was the current one).
  *
  * @param {string} companyId - Tenant scope.
  * @param {string} faultId - The fault's ObjectId.
@@ -219,6 +220,7 @@ async function closeFault(companyId, userId, faultId, body = {}) {
  * @returns {Promise<Object>} The updated, populated fault.
  */
 async function reopenFault(companyId, faultId) {
+    const before = await Fault.findOne({ _id: faultId, companyId }).select('closingEngineHours').lean();
     const fault = await Fault.findOneAndUpdate(
         { _id: faultId, companyId },
         {
@@ -226,7 +228,7 @@ async function reopenFault(companyId, faultId) {
             $unset: { closedAt: 1, closingEngineHours: 1, resolutionDescription: 1, resolvedBy: 1 },
         },
         { new: true, runValidators: true }
-    ).populate('tool operator resolvedBy');
+    ).populate(FAULT_POPULATE_FIELDS.map(([path, select]) => ({ path, select })));
 
     if (!fault) {
         throw httpError(404, 'Fault not found');
@@ -234,7 +236,7 @@ async function reopenFault(companyId, faultId) {
 
     if (fault.tool) {
         const toolId = fault.tool._id || fault.tool;
-        await syncEquipmentEngineHours(toolId, companyId);
+        await syncEquipmentEngineHours(toolId, companyId, null, before?.closingEngineHours);
     }
 
     return fault;
@@ -256,6 +258,8 @@ async function deleteFault(companyId, faultId) {
         throw httpError(404, 'Fault not found');
     }
 
+    await Notification.deleteMany({ companyId, 'data.faultId': fault._id });
+
     // Best-effort: an externally-hosted photo URL has nothing in GridFS to
     // delete (idFromUrl returns null for those), and a storage hiccup here
     // must never turn an already-completed delete into an error.
@@ -272,7 +276,7 @@ async function deleteFault(companyId, faultId) {
             { _id: toolId, companyId },
             { $pull: { faults: fault._id } }
         );
-        await syncEquipmentEngineHours(toolId, companyId);
+        await syncEquipmentEngineHours(toolId, companyId, null, fault.closingEngineHours);
     }
 }
 
@@ -319,6 +323,9 @@ async function updateFault(companyId, userId, faultId, body) {
         }
     }
 
+    const before = updates.$unset
+        ? await Fault.findOne({ _id: faultId, companyId }).select('closingEngineHours').lean()
+        : null;
     const fault = await Fault.findOneAndUpdate(
         { _id: faultId, companyId },
         updates,
@@ -333,7 +340,7 @@ async function updateFault(companyId, userId, faultId, body) {
 
     if (fault.tool) {
         const toolId = fault.tool._id || fault.tool;
-        await syncEquipmentEngineHours(toolId, companyId);
+        await syncEquipmentEngineHours(toolId, companyId, null, before?.closingEngineHours);
     }
 
     return fault;

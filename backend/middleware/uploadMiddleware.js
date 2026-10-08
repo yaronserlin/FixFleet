@@ -1,12 +1,11 @@
 // middleware/uploadMiddleware.js
 const multer = require('multer');
+const { httpError } = require('../utils/httpError');
 
 /**
  * Restricts uploads to jpeg/png/webp/gif images and PDF documents by mime
- * type. Rejecting via `cb(new Error(...), false)` surfaces as a request
- * error that the global error handler (middleware/errorMiddleware.js)
- * turns into a response (see its "Unhandled server error" fallback path,
- * since this isn't a `MulterError`).
+ * type. A rejected file is passed on as a 400 `httpError`, which the global
+ * error handler (middleware/errorMiddleware.js) returns as a client error.
  *
  * @param {import('express').Request} req - Express request (unused).
  * @param {Express.Multer.File} file - The incoming file; reads `mimetype`.
@@ -24,7 +23,7 @@ const fileFilter = (req, file, cb) => {
     if (allowedMimeTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error('Only image files (jpeg, png, webp, gif) and PDF documents are allowed'), false);
+        cb(httpError(400, 'Only image files (jpeg, png, webp, gif) and PDF documents are allowed'), false);
     }
 };
 

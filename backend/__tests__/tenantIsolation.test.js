@@ -54,8 +54,6 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
     let toolAId;
     let toolBId;
     let faultAId;
-    let partAId;
-    let maintenanceAId;
 
     let companyAOperatorToken;
 
@@ -264,57 +262,21 @@ describe('Multi-Tenant SaaS Isolation & Security Tests', () => {
         });
     });
 
-    // ── 4. Part & Maintenance Tenant Isolation ──────────────────────
-    describe('Part & Maintenance Isolation', () => {
-        it('Company A creates a Part for Tool A', async () => {
-            const res = await request(server)
-                .post('/api/parts')
+    // ── 4. Maintenance Tenant Isolation ─────────────────────────────
+    describe('Maintenance Isolation', () => {
+        it('Company A logs maintenance on Tool A', async () => {
+            const addRes = await request(server)
+                .post(`/api/equipment/${toolAId}/schedules`)
                 .set('Authorization', `Bearer ${companyAToken}`)
-                .send({
-                    name: 'Laser Lens',
-                    partNumber: 'LL-1',
-                    tool: toolAId,
-                    inStock: 4,
-                });
+                .send({ title: 'Optics service', intervalHours: 100 });
+            const scheduleId = addRes.body.maintenanceSchedule[0]._id;
 
-            expect(res.status).toBe(201);
-            partAId = res.body._id;
-        });
-
-        it('Company B cannot see Company A parts', async () => {
             const res = await request(server)
-                .get('/api/parts')
-                .set('Authorization', `Bearer ${companyBToken}`);
+                .post(`/api/equipment/${toolAId}/schedules/${scheduleId}/complete`)
+                .set('Authorization', `Bearer ${companyAToken}`)
+                .send({ notes: 'Cleaned laser optics and recalibrated' });
 
             expect(res.status).toBe(200);
-            expect(res.body.length).toBe(0);
-        });
-
-        it('Company B cannot link a part to Company A tool', async () => {
-            const res = await request(server)
-                .post('/api/parts')
-                .set('Authorization', `Bearer ${companyBToken}`)
-                .send({
-                    name: 'Illicit Part',
-                    tool: toolAId,
-                    inStock: 1,
-                });
-
-            expect(res.status).toBe(400);
-            expect(res.body.message).toMatch(/does not exist in your organization/i);
-        });
-
-        it('Company A logs maintenance on Tool A', async () => {
-            const res = await request(server)
-                .post('/api/maintenance')
-                .set('Authorization', `Bearer ${companyAToken}`)
-                .send({
-                    tool: toolAId,
-                    details: 'Cleaned laser optics and recalibrated',
-                });
-
-            expect(res.status).toBe(201);
-            maintenanceAId = res.body._id;
         });
 
         it('Company B cannot see Company A maintenance logs', async () => {

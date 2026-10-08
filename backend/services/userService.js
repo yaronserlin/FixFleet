@@ -1,5 +1,7 @@
 // services/userService.js
 const User = require('../models/User');
+const RefreshToken = require('../models/RefreshToken');
+const PushSubscription = require('../models/PushSubscription');
 const bcrypt = require('bcrypt');
 const { ROLES, ALL_ROLES, DEFAULT_ROLE } = require('../constants/roles');
 const { BCRYPT_SALT_ROUNDS } = require('../constants/auth');
@@ -150,7 +152,12 @@ async function deleteUser(companyId, actingUserId, targetUserId) {
         }
     }
 
-    await User.findByIdAndDelete(targetUserId);
+    // Same cleanup as self-deletion (authService.deleteAccount).
+    await Promise.all([
+        User.findByIdAndDelete(targetUserId),
+        RefreshToken.deleteMany({ userId: targetUser._id }),
+        PushSubscription.deleteMany({ user: targetUser._id }),
+    ]);
 
     const avatarFileId = mediaStorage.idFromUrl(targetUser.avatar);
     if (avatarFileId) {
