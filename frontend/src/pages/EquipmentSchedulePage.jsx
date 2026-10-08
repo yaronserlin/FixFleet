@@ -227,7 +227,7 @@ export default function EquipmentSchedulePage() {
                                 variant="outlined"
                             />
                             <Chip
-                                label={(schedule.status || 'NORMAL').toUpperCase()}
+                                label={(schedule.status || 'NORMAL').toUpperCase().replace('_', ' ')}
                                 color={schedule.status === 'overdue' ? 'error' : (schedule.status === 'due_soon' ? 'warning' : 'success')}
                                 sx={{ fontWeight: 700 }}
                             />
@@ -260,11 +260,11 @@ export default function EquipmentSchedulePage() {
                         <Typography variant="caption" color="text.secondary">
                             Frequency: {schedule.intervalHours > 0 ? `Every ${schedule.intervalHours} engine hours` : ''}
                             {schedule.intervalHours > 0 && schedule.intervalDays > 0 ? ' or ' : ''}
-                            {schedule.intervalDays > 0 ? `Every ${schedule.intervalDays} days` : ''}
+                            {schedule.intervalDays > 0 ? `Every ${schedule.intervalDays} days` : ''}{' '}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                             Last performed: {schedule.lastPerformedHours ?? 0} hrs
-                            {schedule.lastPerformedDate ? ` on ${new Date(schedule.lastPerformedDate).toLocaleDateString('en-GB')}` : ''}
+                            {schedule.lastPerformedDate ? ` on ${new Date(schedule.lastPerformedDate).toLocaleDateString('en-GB')}` : ''}{' '}
                         </Typography>
                         {schedule.nextDueHours > 0 && (
                             <Typography variant="caption" fontWeight="bold" color="primary">

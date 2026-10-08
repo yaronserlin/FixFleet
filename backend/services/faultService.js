@@ -8,7 +8,7 @@ const { httpError } = require('../utils/httpError');
 const mediaStorage = require('../utils/mediaStorage');
 
 const FAULT_POPULATE_FIELDS = [
-    ['tool', 'name serialNumber model'],
+    ['tool', 'name serialNumber model currentEngineHours'],
     ['operator', 'name email role'],
     ['resolvedBy', 'name email role'],
 ];

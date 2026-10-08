@@ -329,11 +329,11 @@ export default function EquipmentMaintenanceTab({ equipment, tool, onRefresh }) 
                                         <Typography variant="caption" display="block" color="text.secondary">
                                             Frequency: {task.intervalHours > 0 ? `Every ${task.intervalHours} engine hours` : ''}
                                             {task.intervalHours > 0 && task.intervalDays > 0 ? ' or ' : ''}
-                                            {task.intervalDays > 0 ? `Every ${task.intervalDays} days` : ''}
+                                            {task.intervalDays > 0 ? `Every ${task.intervalDays} days` : ''}{' '}
                                         </Typography>
                                         <Typography variant="caption" display="block" color="text.secondary">
                                             Last performed: {task.lastPerformedHours ?? 0} hrs
-                                            {task.lastPerformedDate ? ` on ${new Date(task.lastPerformedDate).toLocaleDateString('en-GB')}` : ''}
+                                            {task.lastPerformedDate ? ` on ${new Date(task.lastPerformedDate).toLocaleDateString('en-GB')}` : ''}{' '}
                                         </Typography>
                                         {task.nextDueHours > 0 && (
                                             <Typography variant="caption" display="block" fontWeight="medium" color="primary">

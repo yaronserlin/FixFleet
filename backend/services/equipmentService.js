@@ -419,6 +419,13 @@ async function completeSchedule(companyId, userId, toolId, scheduleId, body) {
     if (task.checklist?.length > 0) {
         task.checklist.forEach(item => { item.done = false; });
     }
+    // Saved progress notes belong in the record even if the client didn't
+    // resend them; skip them when the submitted notes already include them.
+    const progressNotes = (task.inProgressNotes || '').trim();
+    const finalNotes = typeof notes === 'string' ? notes.trim() : '';
+    const combinedNotes = finalNotes.includes(progressNotes)
+        ? finalNotes
+        : [progressNotes, finalNotes].filter(Boolean).join('\n');
     task.inProgressNotes = '';
     tool.markModified('maintenanceSchedule');
 
@@ -426,8 +433,8 @@ async function completeSchedule(companyId, userId, toolId, scheduleId, body) {
     if (task.description && typeof task.description === 'string' && task.description.trim()) {
         detailsText += ` - ${task.description.trim()}`;
     }
-    if (notes && typeof notes === 'string' && notes.trim()) {
-        detailsText += `\nNotes: ${notes.trim()}`;
+    if (combinedNotes) {
+        detailsText += `\nNotes: ${combinedNotes}`;
     }
 
     // Record entry in Maintenance collection with checklist and service engine hours.

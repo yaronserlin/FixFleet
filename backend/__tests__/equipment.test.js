@@ -353,6 +353,32 @@ describe('Equipment/Tool Controller', () => {
             expect(maintenanceRes.body.length).toBeGreaterThan(0);
         });
 
+        it('carries saved progress notes into the maintenance record', async () => {
+            const { token } = await registerCompanyAdmin(server);
+            const tool = await createTool(token);
+            const addRes = await request(server)
+                .post(`/api/tools/${tool._id}/schedules`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({ title: 'Oil Change', intervalHours: 100 });
+            const scheduleId = addRes.body.maintenanceSchedule[0]._id;
+
+            await request(server)
+                .patch(`/api/tools/${tool._id}/schedules/${scheduleId}/progress`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({ inProgressNotes: 'Belt worn' });
+            await request(server)
+                .post(`/api/tools/${tool._id}/schedules/${scheduleId}/complete`)
+                .set('Authorization', `Bearer ${token}`)
+                .send({ currentEngineHours: 150, notes: 'Oil replaced' });
+
+            const maintenanceRes = await request(server)
+                .get('/api/maintenance')
+                .set('Authorization', `Bearer ${token}`);
+            const details = maintenanceRes.body.map((m) => m.details).join(' ');
+            expect(details).toContain('Belt worn');
+            expect(details).toContain('Oil replaced');
+        });
+
         it('returns 404 completing a non-existent schedule task', async () => {
             const { token } = await registerCompanyAdmin(server);
             const tool = await createTool(token);
