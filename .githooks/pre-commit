@@ -1,11 +1,24 @@
 #!/bin/sh
-# Bumps the shared frontend/backend patch version inside the commit being made (main only).
-# A manual minor/major bump (staged frontend version differs from HEAD) is kept and copied to the backend.
+# 1. Rebuilds docs/system-spec/index.html when spec Markdown is staged (every branch).
+# 2. Bumps the shared frontend/backend patch version inside the commit being made (main only).
+#    A manual minor/major bump (staged frontend version differs from HEAD) is kept and copied to the backend.
 # Skip with: git commit --no-verify
 set -e
 
-[ "$(git branch --show-current)" = main ] || exit 0
 cd "$(git rev-parse --show-toplevel)"
+
+# ponytail: builds from the working tree, so a partially staged .md is rendered with its
+# unstaged edits too; stage whole files (or use npm run docs:watch) if that matters.
+if git diff --cached --name-only | grep -qE '^docs/system-spec/(.*\.md|_build/)'; then
+  if [ -d node_modules/marked ]; then
+    node docs/system-spec/_build/build.mjs
+    git add docs/system-spec/index.html
+  else
+    echo "pre-commit: docs/system-spec/index.html NOT rebuilt; run 'npm install' in the repo root once." >&2
+  fi
+fi
+
+[ "$(git branch --show-current)" = main ] || exit 0
 
 version_of() { node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version"; }
 

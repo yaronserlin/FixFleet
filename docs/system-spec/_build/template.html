@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FixFleet System Spec</title>
+<link rel="icon" type="image/svg+xml" href="<!--LOGO-->">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Tokens mirror frontend/src/theme/index.js ("Industrial Blue Design System"):
+   blue = the only clickable colour, navy = identity, amber/red reserved for status.
+   Layout: sticky app bar · sticky sidebar (like SidebarNav) · stacked chapters. */
+:root {
+  --bg: #F1F5F9;            /* background.default */
+  --paper: #FFFFFF;         /* background.paper */
+  --subtle: #F8FAFC;        /* background.subtle / table head */
+  --text: #0F172A;          /* text.primary (brand navy) */
+  --text-2: #475569;        /* text.secondary */
+  --divider: rgba(0,0,0,0.08);
+  --primary: #2563EB;       /* primary.main */
+  --primary-tint: rgba(37,99,235,0.08);
+  --primary-hover: rgba(37,99,235,0.06);
+  --warning: #D97706;       /* warning.main */
+  --warning-tint: rgba(217,119,6,0.08);
+  --error: #DC2626;         /* error.main */
+  --code-bg: #F1F5F9;
+  --appbar: rgba(255,255,255,0.95);
+  --font: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --bar-h: 60px;
+  --rail-w: 264px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0F19; --paper: #111827; --subtle: #1E293B; --text: #F8FAFC; --text-2: #94A3B8;
+    --divider: rgba(255,255,255,0.08); --primary: #3B82F6; --primary-tint: rgba(59,130,246,0.14);
+    --primary-hover: rgba(59,130,246,0.10); --warning: #F59E0B; --warning-tint: rgba(245,158,11,0.12);
+    --error: #F43F5E; --code-bg: #1E293B; --appbar: rgba(15,23,42,0.95); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0F19; --paper: #111827; --subtle: #1E293B; --text: #F8FAFC; --text-2: #94A3B8;
+  --divider: rgba(255,255,255,0.08); --primary: #3B82F6; --primary-tint: rgba(59,130,246,0.14);
+  --primary-hover: rgba(59,130,246,0.10); --warning: #F59E0B; --warning-tint: rgba(245,158,11,0.12);
+  --error: #F43F5E; --code-bg: #1E293B; --appbar: rgba(15,23,42,0.95); color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.6 var(--font);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid #2563EB; outline-offset: 2px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+/* ── App bar (MuiAppBar override) ── */
+.appbar {
+  position: sticky; top: 0; z-index: 30; height: var(--bar-h);
+  display: flex; align-items: center; gap: 12px; padding-inline: 16px;
+  background: var(--appbar); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--divider);
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; text-decoration: none; color: var(--text); }
+.brand img { width: 34px; height: 34px; flex-shrink: 0; }
+.brand-text { display: grid; line-height: 1.15; min-width: 0; }
+.brand-text b { font-size: 18px; font-weight: 800; letter-spacing: -0.025em; }
+.brand-text span { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); white-space: nowrap; }
+.bar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 9px;
+  border-radius: 6px; font-size: 12px; font-weight: 600; white-space: nowrap;
+  background: var(--subtle); color: var(--text-2); border: 1px solid var(--divider);
+  font-variant-numeric: tabular-nums;
+}
+.chip code { font-family: var(--mono); font-size: 11.5px; color: var(--text); }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 36px; min-width: 36px; padding: 0 10px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--divider); background: var(--paper); color: var(--text);
+  font: 600 13px var(--font); transition: background-color .15s ease;
+}
+.icon-btn:hover { background: var(--primary-hover); }
+.icon-btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#menu-btn { display: none; }
+
+/* ── Shell ── */
+.shell { display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); }
+.rail {
+  position: sticky; top: var(--bar-h); height: calc(100dvh - var(--bar-h));
+  overflow-y: auto; padding: 16px 12px 32px;
+  background: var(--paper); border-right: 1px solid var(--divider);
+}
+.search { position: relative; display: block; margin: 0 4px 14px; }
+.search input {
+  width: 100%; height: 40px; padding: 0 12px 0 34px; border-radius: 8px;
+  border: 1px solid var(--divider); background: var(--subtle); color: var(--text);
+  font: 14px var(--font);
+}
+.search input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px var(--primary-tint); }
+.search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; fill: none; stroke: var(--text-2); stroke-width: 2; stroke-linecap: round; }
+.overline { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); margin: 4px 12px 8px; }
+.nav, .nav-sub { list-style: none; margin: 0; padding: 0; }
+.nav { display: grid; gap: 2px; }
+.nav-ch-link {
+  display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 6px 12px;
+  border-radius: 8px; color: var(--text-2); text-decoration: none;
+  font-size: 14px; font-weight: 500; transition: background-color .15s ease;
+}
+.nav-ch-link:hover { background: var(--primary-hover); }
+.nav-num {
+  flex-shrink: 0; width: 26px; height: 22px; display: inline-grid; place-items: center;
+  border-radius: 6px; background: var(--subtle); font: 600 11px var(--mono); color: var(--text-2);
+}
+.nav-ch.active > .nav-ch-link { background: var(--primary-tint); color: var(--primary); font-weight: 700; }
+.nav-ch.active > .nav-ch-link .nav-num { background: var(--primary); color: #fff; }
+.nav-sub { display: none; margin: 2px 0 8px 25px; padding-left: 12px; border-left: 2px solid var(--divider); }
+.nav-ch.active .nav-sub, .rail.searching .nav-sub { display: block; }
+.nav-sub a {
+  display: block; padding: 5px 8px; border-radius: 6px; color: var(--text-2);
+  text-decoration: none; font-size: 13px; line-height: 1.35;
+}
+.nav-sub a:hover { color: var(--text); background: var(--primary-hover); }
+.nav-sub a.current { color: var(--primary); font-weight: 600; background: var(--primary-tint); }
+.search-empty { color: var(--text-2); font-size: 13px; margin: 8px 12px; }
+.rail-foot { margin: 20px 12px 0; padding-top: 14px; border-top: 1px solid var(--divider); color: var(--text-2); font-size: 12px; }
+
+/* ── Content ── */
+main { min-width: 0; padding: 28px 32px 96px; }
+.chapter {
+  max-width: 1040px; margin: 0 auto 28px; padding: 28px 32px 32px;
+  background: var(--paper); border: 1px solid var(--divider); border-radius: 12px;
+}
+h1, h2, h3, h4 { text-wrap: balance; scroll-margin-top: calc(var(--bar-h) + 16px); color: var(--text); }
+h1 { font-size: clamp(26px, 3.2vw, 34px); font-weight: 800; letter-spacing: -0.025em; line-height: 1.15; margin: 0 0 12px; }
+h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.25; margin: 40px 0 10px; padding-top: 24px; border-top: 1px solid var(--divider); }
+h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.015em; margin: 28px 0 8px; }
+h4 { font-size: 15px; font-weight: 600; margin: 20px 0 6px; }
+.anchor { margin-left: 8px; color: var(--text-2); text-decoration: none; font-weight: 500; opacity: 0; }
+h2:hover .anchor, h3:hover .anchor, h4:hover .anchor, .anchor:focus-visible { opacity: 1; }
+p, li { max-width: 75ch; }
+p { margin: 10px 0; }
+ul, ol { padding-left: 22px; }
+li { margin: 4px 0; }
+a { color: var(--primary); text-underline-offset: 2px; }
+strong { font-weight: 600; }
+hr { border: 0; border-top: 1px solid var(--divider); margin: 24px 0; }
+.chapter > hr { display: none; } /* every h2 already draws its own divider */
+code, .srclink { font-family: var(--mono); font-size: .85em; }
+:not(pre) > code { background: var(--code-bg); padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere; }
+.srclink { border-bottom: 1px dotted var(--text-2); cursor: help; }
+.codewrap { overflow-x: auto; background: var(--code-bg); border-radius: 8px; margin: 14px 0; }
+.codewrap pre { margin: 0; padding: 14px 16px; font: 13px/1.6 var(--mono); }
+.diagram { overflow-x: auto; background: var(--subtle); border: 1px solid var(--divider); border-radius: 12px; padding: 16px; margin: 16px 0; text-align: center; }
+.diagram svg { max-width: 100%; height: auto; }
+.diagram-src { margin: 0; text-align: left; font: 12.5px/1.55 var(--mono); white-space: pre; color: var(--text-2); }
+.diagram-note { font-size: 12px; color: var(--text-2); margin: 0 0 8px; text-align: left; }
+
+/* Tables — MuiTableCell head styling */
+.tbl { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--divider); border-radius: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+th, td { padding: 9px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--divider); }
+th { background: var(--subtle); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--text-2); white-space: nowrap; }
+tbody tr:last-child td { border-bottom: 0; }
+.tbl td code { overflow-wrap: normal; } /* keep paths/identifiers whole; the table scrolls instead */
+tbody tr:hover td { background: var(--primary-hover); }
+
+/* Audit findings: status amber (warning), top three flagged */
+.findings tbody td:first-child { font-weight: 700; color: var(--warning); }
+.findings tbody tr:nth-child(-n+3) td { background: var(--warning-tint); }
+.findings tbody tr:nth-child(-n+3) td:first-child { box-shadow: inset 3px 0 0 var(--warning); }
+
+.backtop {
+  position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 20;
+  display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px;
+  border-radius: 8px; background: var(--primary); color: #fff; text-decoration: none;
+  font: 600 13px var(--font); box-shadow: 0 4px 14px rgba(15,23,42,.18);
+}
+.scrim { display: none; }
+
+/* ── Tablet / phone: sidebar becomes a drawer ── */
+@media (max-width: 960px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  #menu-btn { display: inline-flex; }
+  .rail {
+    position: fixed; left: 0; top: calc(var(--bar-h) + env(safe-area-inset-top, 0px)); bottom: 0; height: auto;
+    width: min(300px, 86vw); z-index: 25; transform: translateX(-102%); transition: transform .2s ease;
+    box-shadow: 0 8px 24px rgba(15,23,42,.2);
+  }
+  body.drawer-open .rail { transform: none; }
+  body.drawer-open .scrim { display: block; position: fixed; inset: 0; z-index: 24; background: rgba(15,23,42,.4); }
+  main { padding: 16px 12px 88px; }
+  .chapter { padding: 20px 16px 24px; }
+  h2 { font-size: 20px; }
+}
+@media (max-width: 640px) {
+  .chip.commit, .brand-text span, #theme-btn .label { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <button class="icon-btn" id="menu-btn" type="button" aria-expanded="false" aria-controls="rail" aria-label="Open contents">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+  <a class="brand" href="#overview">
+    <img src="<!--LOGO-->" alt="">
+    <span class="brand-text"><b>FixFleet</b><span>System Specification</span></span>
+  </a>
+  <div class="bar-right">
+    <span class="chip" title="Documented version">v1.0.8</span>
+    <span class="chip commit" title="Baseline commit">commit <code>040749e</code></span>
+    <button class="icon-btn" id="theme-btn" type="button" aria-label="Toggle dark mode">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <span class="label">Theme</span>
+    </button>
+  </div>
+</header>
+
+<div class="scrim" id="scrim"></div>
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Contents">
+    <label class="search" for="nav-search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="nav-search" type="search" placeholder="Filter sections" autocomplete="off" aria-label="Filter sections">
+    </label>
+    <p class="overline">Chapters</p>
+    <ul class="nav" id="nav"><!--NAV--></ul>
+    <p class="search-empty" id="search-empty" hidden>No section titles match.</p>
+    <p class="rail-foot">Generated from <code>docs/system-spec/*.md</code> by <code>npm run docs:build</code>. Dotted text marks a source-file reference in the repository.</p>
+  </nav>
+  <main id="top">
+<!--CONTENT-->
+  </main>
+</div>
+<a class="backtop" href="#top" aria-label="Back to top">↑ Top</a>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.15.0/mermaid.min.js"></script>
+<script>
+(() => {
+  const root = document.documentElement;
+  const nav = document.getElementById('nav');
+  const rail = document.getElementById('rail');
+  const chapters = [...nav.querySelectorAll('.nav-ch')];
+  const subLinks = [...nav.querySelectorAll('.nav-sub a')];
+
+  // ── Theme (same storage key the app uses) ──
+  const THEME_KEY = 'maintenance_app_theme';
+  const isDark = () => root.dataset.theme
+    ? root.dataset.theme === 'dark'
+    : matchMedia('(prefers-color-scheme: dark)').matches;
+  try { const saved = localStorage.getItem(THEME_KEY); if (saved === 'dark' || saved === 'light') root.dataset.theme = saved; } catch {}
+  document.getElementById('theme-btn').addEventListener('click', () => {
+    root.dataset.theme = isDark() ? 'light' : 'dark';
+    try { localStorage.setItem(THEME_KEY, root.dataset.theme); } catch {}
+    renderDiagrams();
+  });
+
+  // ── Diagrams: render with Mermaid; if the library can't load (offline), keep the readable source ──
+  const diagrams = [...document.querySelectorAll('.diagram')].map(box => ({ box, src: box.querySelector('.diagram-src').textContent }));
+  let renderSeq = 0;
+  async function renderDiagrams() {
+    if (!window.mermaid) {
+      diagrams.forEach(({ box }) => {
+        if (!box.querySelector('.diagram-note')) box.insertAdjacentHTML('afterbegin', '<p class="diagram-note">Diagram source (the diagram renderer could not load; check your internet connection).</p>');
+      });
+      return;
+    }
+    const seq = ++renderSeq;
+    // Diagram palette taken from the app theme (frontend/src/theme/index.js).
+    const dark = isDark();
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      themeVariables: dark ? {
+        darkMode: true, background: '#1E293B', fontFamily: 'Inter, system-ui, sans-serif',
+        primaryColor: '#111827', primaryTextColor: '#F8FAFC', primaryBorderColor: '#3B82F6',
+        secondaryColor: '#1E293B', tertiaryColor: '#0B0F19', lineColor: '#94A3B8', textColor: '#F8FAFC',
+        clusterBkg: '#0F172A', clusterBorder: '#334155', edgeLabelBackground: '#1E293B', titleColor: '#94A3B8',
+        actorBkg: '#111827', actorBorder: '#3B82F6', actorTextColor: '#F8FAFC', actorLineColor: '#475569',
+        signalColor: '#CBD5E1', signalTextColor: '#F8FAFC', labelBoxBkgColor: '#111827',
+        noteBkgColor: '#3A2A0A', noteBorderColor: '#F59E0B', noteTextColor: '#F8FAFC',
+      } : {
+        background: '#F8FAFC', fontFamily: 'Inter, system-ui, sans-serif',
+        primaryColor: '#FFFFFF', primaryTextColor: '#0F172A', primaryBorderColor: '#2563EB',
+        secondaryColor: '#F1F5F9', tertiaryColor: '#F8FAFC', lineColor: '#475569', textColor: '#0F172A',
+        clusterBkg: '#EFF6FF', clusterBorder: '#BFDBFE', edgeLabelBackground: '#F8FAFC', titleColor: '#475569',
+        actorBkg: '#FFFFFF', actorBorder: '#2563EB', actorTextColor: '#0F172A', actorLineColor: '#94A3B8',
+        signalColor: '#334155', signalTextColor: '#0F172A', labelBoxBkgColor: '#FFFFFF',
+        noteBkgColor: '#FEF3C7', noteBorderColor: '#D97706', noteTextColor: '#0F172A',
+      },
+    });
+    for (const [i, d] of diagrams.entries()) {
+      try {
+        const { svg } = await mermaid.render(`diagram-${i}-${seq}`, d.src);
+        if (seq === renderSeq) d.box.innerHTML = svg;
+      } catch (err) {
+        console.warn('Diagram failed to render', err);
+      }
+    }
+  }
+  renderDiagrams();
+
+  // ── Mark the audit findings table (first table after §7) ──
+  let el = document.getElementById('7-audit-observations');
+  while (el && !(el.classList && el.classList.contains('tbl'))) el = el.nextElementSibling;
+  if (el) el.classList.add('findings');
+
+  // ── Scroll spy ──
+  const heads = [...document.querySelectorAll('main h1[id], main h2[id]')];
+  let ticking = false;
+  function spy() {
+    ticking = false;
+    let cur = heads[0];
+    for (const h of heads) { if (h.getBoundingClientRect().top <= 100) cur = h; else break; }
+    const chap = cur.closest('.chapter').dataset.chapter;
+    chapters.forEach(li => li.classList.toggle('active', li.dataset.ch === chap));
+    subLinks.forEach(a => a.classList.toggle('current', a.dataset.target === cur.id));
+    const current = rail.querySelector('.nav-sub a.current');
+    if (current && !rail.classList.contains('searching')) {
+      const r = current.getBoundingClientRect(), box = rail.getBoundingClientRect();
+      if (r.top < box.top || r.bottom > box.bottom) current.scrollIntoView({ block: 'nearest' });
+    }
+  }
+  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(spy); } }, { passive: true });
+  spy();
+
+  // ── Section filter ──
+  const input = document.getElementById('nav-search');
+  const empty = document.getElementById('search-empty');
+  input.addEventListener('input', () => {
+    const q = input.value.trim().toLowerCase();
+    rail.classList.toggle('searching', q.length > 0);
+    let shown = 0;
+    chapters.forEach(li => {
+      const chapMatch = li.querySelector('.nav-ch-link').textContent.toLowerCase().includes(q);
+      let anySub = false;
+      li.querySelectorAll('.nav-sub li').forEach(s => {
+        const ok = !q || chapMatch || s.textContent.toLowerCase().includes(q);
+        s.hidden = !ok; if (ok) anySub = true;
+      });
+      const visible = !q || chapMatch || anySub;
+      li.hidden = !visible; if (visible) shown++;
+    });
+    empty.hidden = shown > 0;
+  });
+
+  // ── Drawer (narrow screens) ──
+  const menuBtn = document.getElementById('menu-btn');
+  const setDrawer = (open) => { document.body.classList.toggle('drawer-open', open); menuBtn.setAttribute('aria-expanded', String(open)); };
+  menuBtn.addEventListener('click', () => setDrawer(!document.body.classList.contains('drawer-open')));
+  document.getElementById('scrim').addEventListener('click', () => setDrawer(false));
+  rail.addEventListener('click', e => { if (e.target.closest('a')) setDrawer(false); });
+  addEventListener('keydown', e => { if (e.key === 'Escape') setDrawer(false); });
+})();
+</script>
+</body>
+</html>
